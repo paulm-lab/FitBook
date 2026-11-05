@@ -22,3 +22,8 @@
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
+
+###> fitbook ###
+# Avatars envoyés par les utilisateurs (jamais versionnés).
+/public/uploads/
+###< fitbook ###

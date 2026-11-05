@@ -26,7 +26,7 @@ final class FrontendRedirectController extends AbstractController
     #[Route(
         '/{path}',
         name: 'app_frontend_redirect',
-        requirements: ['path' => '(?!api(/|$)|_(profiler|wdt|error)(/|$)|bundles/).*'],
+        requirements: ['path' => '(?!api(/|$)|_(profiler|wdt|error)(/|$)|bundles/|uploads/).*'],
         defaults: ['path' => ''],
         methods: ['GET'],
         priority: -100,

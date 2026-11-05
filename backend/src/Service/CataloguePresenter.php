@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Activity;
+use App\Entity\Availability;
 use App\Entity\CoachProfile;
 use App\Entity\Gym;
+use App\Entity\Reservation;
+use App\Entity\Review;
 use App\Entity\Session;
+use App\Enum\ReservationStatus;
 use App\Enum\SessionLevel;
 
 /**
@@ -60,6 +64,7 @@ final class CataloguePresenter
             'description' => $coach->getBio(),
             'biographie' => $coach->getBio(),
             'experience' => $coach->getExperienceYears() !== null ? $coach->getExperienceYears() . ' ans' : null,
+            'experienceAnnees' => $coach->getExperienceYears(),
             'certification' => $coach->getCertifications(),
             'tarifHoraire' => $coach->getHourlyRate(),
             'ville' => $coach->getCity(),
@@ -122,10 +127,112 @@ final class CataloguePresenter
             'prix' => $session->getPrice(),
             'niveau' => $session->getLevel()->value,
             'statut' => $session->getStatus()->value,
-            'activite' => $activity ? ['id' => $activity->getId(), 'nom' => $activity->getName()] : null,
-            'coach' => $coach ? ['id' => $coach->getId(), 'nom' => $coach->getUser()?->getLastName(), 'prenom' => $coach->getUser()?->getFirstName()] : null,
-            'salle' => $gym ? ['id' => $gym->getId(), 'nom' => $gym->getName(), 'adresse' => $gym->getAddress() . ', ' . $gym->getCity()] : null,
+            'image' => $activity?->getIcon(),
+            'activite' => $activity ? ['id' => $activity->getId(), 'nom' => $activity->getName(), 'categorie' => $activity->getCategory()] : null,
+            'coach' => $coach ? ['id' => $coach->getId(), 'nom' => $coach->getUser()?->getLastName(), 'prenom' => $coach->getUser()?->getFirstName(), 'photo' => $coach->getUser()?->getAvatar()] : null,
+            'salle' => $gym ? ['id' => $gym->getId(), 'nom' => $gym->getName(), 'adresse' => $gym->getAddress() . ', ' . $gym->getCity(), 'ville' => $gym->getCity(), 'latitude' => $gym->getLatitude(), 'longitude' => $gym->getLongitude()] : null,
         ];
+    }
+
+    /**
+     * Note moyenne des avis visibles : { "note": 4.3, "nbAvis": 12 } (note null sans avis).
+     *
+     * @param array{note: float|null, nbAvis: int}|null $rating
+     *
+     * @return array{note: float|null, nbAvis: int}
+     */
+    public function rating(?array $rating): array
+    {
+        return ['note' => $rating['note'] ?? null, 'nbAvis' => $rating['nbAvis'] ?? 0];
+    }
+
+    /**
+     * Avis publié. Le commentaire est renvoyé brut : le front l'affiche en texte, jamais en HTML.
+     *
+     * @return array<string, mixed>
+     */
+    public function review(Review $review, bool $withTarget = false): array
+    {
+        $author = $review->getAuthor();
+        $data = [
+            'id' => $review->getId(),
+            'note' => $review->getRating(),
+            'commentaire' => $review->getComment(),
+            'date' => $review->getCreatedAt()->format(\DATE_ATOM),
+            // Prénom et initiale du nom seulement : l'auteur reste discret.
+            'auteur' => $author ? trim($author->getFirstName() . ' ' . mb_substr((string) $author->getLastName(), 0, 1) . '.') : null,
+            'auteurId' => $author?->getId(),
+            'estModere' => $review->isModerated(),
+            'estVisible' => $review->isVisible(),
+        ];
+
+        if ($withTarget) {
+            $data['cible'] = $this->target($review->getTarget());
+        }
+
+        return $data;
+    }
+
+    /** @return array<string, mixed> */
+    public function availability(Availability $availability): array
+    {
+        return [
+            'id' => $availability->getId(),
+            'coachId' => $availability->getCoach()?->getId(),
+            'salleId' => $availability->getGym()?->getId(),
+            'recurrent' => $availability->isRecurring(),
+            'jourSemaine' => $availability->getDayOfWeek(),
+            'date' => $availability->getDate()?->format('Y-m-d'),
+            'heureDebut' => $availability->getStartTime()?->format('H:i'),
+            'heureFin' => $availability->getEndTime()?->format('H:i'),
+        ];
+    }
+
+    /**
+     * Réservation vue par le sportif (ou par l'organisateur, avec $withUser).
+     *
+     * @return array<string, mixed>
+     */
+    public function reservation(Reservation $reservation, \DateTimeImmutable $now, bool $withUser = false, ?int $confirmedCount = null): array
+    {
+        $session = $reservation->getSession();
+        $data = [
+            'id' => $reservation->getId(),
+            'statut' => $reservation->getStatus()->value,
+            'dateReservation' => $reservation->getCreatedAt()->format(\DATE_ATOM),
+            'dateAnnulation' => $reservation->getCancelledAt()?->format(\DATE_ATOM),
+            'annulable' => $reservation->isCancellable($now),
+            'qrToken' => $reservation->getStatus() === ReservationStatus::Confirmee ? $reservation->getQrToken() : null,
+            'seance' => $session ? $this->session($session, $confirmedCount ?? $session->getConfirmedCount()) : null,
+        ];
+
+        if ($withUser) {
+            $user = $reservation->getUser();
+            $data['sportif'] = $user ? [
+                'id' => $user->getId(),
+                'nom' => $user->getLastName(),
+                'prenom' => $user->getFirstName(),
+                'email' => $user->getEmail(),
+                'telephone' => $user->getPhone(),
+            ] : null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Cible d'un favori ou d'un avis : { "type": "salle", "id": 3, "nom": "…" }.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function target(Gym|CoachProfile|Session|null $target): ?array
+    {
+        return match (true) {
+            $target instanceof Gym => ['type' => 'salle', 'id' => $target->getId(), 'nom' => $target->getName(), 'image' => $target->getPhotos()[0] ?? null],
+            $target instanceof CoachProfile => ['type' => 'coach', 'id' => $target->getId(), 'nom' => $target->getUser()?->getFullName(), 'image' => $target->getUser()?->getAvatar()],
+            $target instanceof Session => ['type' => 'seance', 'id' => $target->getId(), 'nom' => $target->getTitle(), 'image' => $target->getActivity()?->getIcon(), 'dateDebut' => $target->getStartAt()?->format(\DATE_ATOM)],
+            default => null,
+        };
     }
 
     /** @param list<Session> $sessions */

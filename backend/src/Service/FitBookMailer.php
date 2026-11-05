@@ -93,17 +93,41 @@ final class FitBookMailer
         );
     }
 
+    /** La séance a été annulée par son coach ou son gestionnaire (RG-12). */
+    public function sendSessionCancelled(Reservation $reservation): EmailDeliveryStatus
+    {
+        return $this->sendReservationNotice(
+            $reservation,
+            'Séance annulée sur FitBook',
+            'Votre séance est annulée',
+            'L’organisateur a annulé cette séance. Votre réservation est annulée et aucun montant ne vous sera demandé. Découvrez les autres séances disponibles sur FitBook.',
+        );
+    }
+
+    /** Rappel envoyé environ 24 h avant la séance (commande app:send-reminders, US-S08). */
+    public function sendReminder(Reservation $reservation): EmailDeliveryStatus
+    {
+        return $this->sendReservationNotice(
+            $reservation,
+            'Rappel : votre séance FitBook a lieu demain',
+            'C’est bientôt l’heure de votre séance',
+            'Votre séance approche. Pensez à votre tenue et présentez le QR code de votre réservation à l’accueil.',
+        );
+    }
+
     /** E-mail de réservation avec le récapitulatif de la séance. */
     private function sendReservationNotice(Reservation $reservation, string $subject, string $title, string $message): EmailDeliveryStatus
     {
         $session = $reservation->getSession();
+        $timezone = new \DateTimeZone(CataloguePresenter::LOCAL_TIMEZONE);
         $details = [];
 
         if ($session !== null) {
             $details = [
                 'Séance' => (string) $session->getTitle(),
-                'Date' => $session->getStartAt()?->format('d/m/Y') ?? '',
-                'Horaire' => sprintf('%s – %s', $session->getStartAt()?->format('H:i'), $session->getEndAt()?->format('H:i')),
+                // Dates stockées en UTC : affichées à l'heure de Bruxelles, où sont les salles.
+                'Date' => $session->getStartAt()?->setTimezone($timezone)->format('d/m/Y') ?? '',
+                'Horaire' => sprintf('%s – %s', $session->getStartAt()?->setTimezone($timezone)->format('H:i'), $session->getEndAt()?->setTimezone($timezone)->format('H:i')),
                 'Lieu' => $session->getGym()?->getName() ?? 'À préciser par le coach',
                 'Prix' => $session->getPrice() . ' €',
             ];

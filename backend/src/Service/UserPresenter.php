@@ -9,9 +9,9 @@ use App\Entity\User;
 /**
  * Représentation JSON d'un compte, partagée par la connexion, /api/me et le profil.
  *
- * Les clés restent en français (nom, prenom, telephone) : c'est le contrat attendu par le
- * front Angular actuel, qui sera revu avec la refonte du frontend (Phase 5).
- * Le mot de passe n'est jamais exposé.
+ * Clés en français (nom, prenom, telephone), comme le reste de l'API.
+ * `role` est le rôle principal (sportif, coach, gestionnaire, admin) utilisé par le front
+ * pour choisir l'espace à afficher. Le mot de passe n'est jamais exposé.
  */
 final class UserPresenter
 {
@@ -24,7 +24,20 @@ final class UserPresenter
             'prenom' => $user->getFirstName(),
             'email' => $user->getEmail(),
             'telephone' => $user->getPhone(),
+            'avatar' => $user->getAvatar(),
             'roles' => $user->getRoles(),
+            'role' => $this->mainRole($user),
+            'coachId' => $user->getCoachProfile()?->getId(),
         ];
+    }
+
+    public function mainRole(User $user): string
+    {
+        return match (true) {
+            $user->hasRole(User::ROLE_ADMIN) => 'admin',
+            $user->hasRole(User::ROLE_GESTIONNAIRE) => 'gestionnaire',
+            $user->hasRole(User::ROLE_COACH) => 'coach',
+            default => 'sportif',
+        };
     }
 }
