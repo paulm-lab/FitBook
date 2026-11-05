@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,9 +12,11 @@ export class ActivitesComponent implements OnInit {
   recherche = '';
   erreur = '';
   loading = true;
+  // Application zoneless : la vue doit être notifiée quand une réponse HTTP modifie l'état.
+  private readonly cdr = inject(ChangeDetectorRef);
   constructor(private readonly catalogue: CatalogueService) {}
   ngOnInit(): void {
-    this.catalogue.getActivites().subscribe({next: data => { this.activites = data; this.loading = false; }, error: () => { this.erreur = 'Impossible de charger les activités.'; this.loading = false; }});
+    this.catalogue.getActivites().subscribe({next: data => { this.activites = data; this.loading = false; this.cdr.markForCheck(); }, error: () => { this.erreur = 'Impossible de charger les activités.'; this.loading = false; this.cdr.markForCheck(); }});
   }
   get activitesFiltrees(): Activite[] {
     const terme = this.recherche.trim().toLocaleLowerCase('fr');

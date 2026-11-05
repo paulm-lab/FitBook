@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProfilService } from '../../services/profil-service';
@@ -21,6 +21,8 @@ export class ProfilComponent implements OnInit {
   confirmation = '';
   readonly formulaire;
 
+  // Application zoneless : la vue doit être notifiée quand une réponse HTTP modifie l'état.
+  private readonly cdr = inject(ChangeDetectorRef);
   constructor(private readonly fb: FormBuilder, private readonly profils: ProfilService, private readonly router: Router) {
     this.formulaire = this.fb.nonNullable.group({
       nom: ['', [Validators.required, Validators.maxLength(50)]],
@@ -35,6 +37,7 @@ export class ProfilComponent implements OnInit {
         this.profil = profil;
         this.formulaire.setValue({ nom: profil.nom, prenom: profil.prenom, telephone: profil.telephone ?? '' });
         this.chargement = false;
+        this.cdr.markForCheck();
       },
       error: (error: HttpErrorResponse) => {
         this.chargement = false;
@@ -43,6 +46,7 @@ export class ProfilComponent implements OnInit {
         } else {
           this.erreur = 'Impossible de charger votre profil. Réessayez plus tard.';
         }
+        this.cdr.markForCheck();
       }
     });
   }
@@ -63,6 +67,7 @@ export class ProfilComponent implements OnInit {
         this.formulaire.setValue({ nom: updated.nom, prenom: updated.prenom, telephone: updated.telephone ?? '' });
         this.confirmation = 'Votre profil a été mis à jour.';
         this.envoi = false;
+        this.cdr.markForCheck();
       },
       error: (error: HttpErrorResponse) => {
         this.envoi = false;
@@ -74,6 +79,7 @@ export class ProfilComponent implements OnInit {
         } else {
           this.erreur = 'Impossible d’enregistrer votre profil. Vérifiez les champs puis réessayez.';
         }
+        this.cdr.markForCheck();
       }
     });
   }

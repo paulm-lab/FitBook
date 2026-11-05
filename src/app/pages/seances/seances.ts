@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,6 +15,8 @@ export class Seances implements OnInit {
   activite = '';
   lieu = '';
   date = '';
+  // Application zoneless : la vue doit être notifiée quand une réponse HTTP modifie l'état.
+  private readonly cdr = inject(ChangeDetectorRef);
   constructor(private readonly seanceService: SeanceService, private readonly route: ActivatedRoute, private readonly router: Router) {}
 
   ngOnInit(): void {
@@ -25,8 +27,8 @@ export class Seances implements OnInit {
       this.erreur = '';
       return this.seanceService.rechercherSeances(this.activite, this.lieu, this.date);
     })).subscribe({
-      next: data => { this.seances = data; this.erreur = ''; this.chargement = false; },
-      error: () => { this.seances = []; this.erreur = 'Impossible de charger les séances.'; this.chargement = false; }
+      next: data => { this.seances = data; this.erreur = ''; this.chargement = false; this.cdr.markForCheck(); },
+      error: () => { this.seances = []; this.erreur = 'Impossible de charger les séances.'; this.chargement = false; this.cdr.markForCheck(); }
     });
   }
 
