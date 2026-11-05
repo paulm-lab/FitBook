@@ -1,0 +1,15 @@
+# Serveur de développement Symfony CLI (symfony serve), utilisé par demarrer.ps1.
+#   - HTTP sur 127.0.0.1:8000, sans TLS : le proxy du front Angular (proxy.conf.json) ne suit pas
+#     une redirection vers https://.
+#   - Worker Messenger lancé et relancé automatiquement avec le serveur (envoi des e-mails),
+#     arrêté par « symfony server:stop ».
+http:
+    port: 8000
+    no_tls: true
+    allow_http: true
+
+workers:
+    messenger_consume_async:
+        cmd: ['symfony', 'console', 'messenger:consume', 'async']
+        # Redémarré quand le code ou la configuration change.
+        watch: ['config', 'src', 'templates', 'vendor/composer']

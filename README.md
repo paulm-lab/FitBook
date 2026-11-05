@@ -65,6 +65,23 @@ fitbook-mi08/
 └── README.md
 ```
 
+## Démarrage rapide (Windows)
+
+Une fois l'installation ci-dessous faite et WampServer lancé, **double-cliquer sur `demarrer.cmd`**
+(ou `.\demarrer.ps1` dans PowerShell) démarre tout :
+
+| Service | Adresse |
+|---------|---------|
+| Site (Angular, fenêtre dédiée) | http://localhost:4200 |
+| API Symfony + worker d'e-mails (`backend/.symfony.local.yaml`) | http://127.0.0.1:8000 — Swagger : `/api/doc` |
+| Mailpit (e-mails de test) | http://127.0.0.1:8025 |
+
+Le script vérifie MySQL, ne relance pas ce qui tourne déjà et remplace un ancien serveur HTTPS
+sur le port 8000 (le proxy du front exige HTTP). Options : `-SansFront`, `-SansNavigateur`.
+Arrêt : `arreter.cmd` (`-GarderMailpit` pour garder les e-mails consultables).
+Mailpit est attendu dans `%LOCALAPPDATA%\Programs\mailpit\mailpit.exe`
+([téléchargement](https://github.com/axllent/mailpit/releases), archive `mailpit-windows-amd64.zip`).
+
 ## Installation
 
 ### Backend
@@ -108,8 +125,8 @@ symfony composer install
 symfony console lexik:jwt:generate-keypair      # clés RSA dans config/jwt/ (jamais versionnées)
 symfony console doctrine:migrations:migrate     # tables, contraintes CHECK, procédures stockées
 symfony console doctrine:fixtures:load          # jeu de démonstration (Bruxelles)
-symfony serve --port=8000 --no-tls              # API sur http://127.0.0.1:8000
-symfony console messenger:consume async -vv     # dans un 2e terminal : envoi des e-mails
+symfony serve                                   # API sur http://127.0.0.1:8000 (HTTP, voir .symfony.local.yaml)
+# Le worker d'e-mails (messenger:consume async) démarre avec le serveur.
 ```
 
 > **Windows** : si `lexik:jwt:generate-keypair` échoue avec `error:80000003:system library`,
