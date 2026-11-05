@@ -220,11 +220,14 @@ Détail et recette des parcours : [`docs/liste-des-tests.md`](docs/liste-des-tes
 
 ```bash
 bash database/scripts/backup.sh              # database/backups/fitbook_AAAA-MM-JJ_HHMMSS.sql
-bash database/scripts/backup.sh 02_milieu    # dump jalon nommé (01_debut, 02_milieu, 03_fin)
+bash database/scripts/backup.sh 02_milieu    # dump jalon nommé
 ```
 
 Le script utilise `fitbook_user` (jamais `root`) et lit ses identifiants dans `backend/.env.local`.
-Restauration : `mysql -u fitbook_user -p fitbook < database/backups/01_debut.sql`.
+Restauration : `mysql -u fitbook_user -p fitbook < database/backups/03_fin.sql`.
+
+Dumps jalons fournis : `01_debut.sql` (base initiale, Phase 2), `02_milieu.sql` (fixtures complètes,
+fin de la Phase 9), `03_fin.sql` (version 1.0, après le parcours Newman sur MySQL).
 
 ## Workflow Git (GitFlow)
 
@@ -267,10 +270,4 @@ de finalisation ; ils ne demandent aucun changement de code.
    `.php-cs-fixer.dist.php`) :
    `composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/extension-installer friendsofphp/php-cs-fixer`,
    puis `vendor/bin/phpstan analyse` et `vendor/bin/php-cs-fixer fix --dry-run --diff`.
-3. **Avec MySQL démarré** (service WAMP) :
-   - `php bin/console doctrine:migrations:migrate` puis `doctrine:fixtures:load` ;
-   - `php bin/phpunit --group mysql` (procédures stockées, contraintes `CHECK`) ;
-   - dumps jalons : `bash database/scripts/backup.sh 02_milieu` puis, sur la version finale,
-     `bash database/scripts/backup.sh 03_fin` ;
-   - relancer Newman sur MySQL (`postman/README.md`).
-4. **Pousser** les branches et le tag : `git push origin main develop --tags`.
+3. **Pousser** les branches et le tag : `git push origin main develop --tags`.

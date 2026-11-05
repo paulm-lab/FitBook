@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { EMPTY, TimeoutError, catchError, defer, finalize, take } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
+import { MESSAGE_INJOIGNABLE, serveurInjoignable } from '../../core/http';
 import {
   AuthService,
   InscriptionResponse,
@@ -136,10 +137,10 @@ export class InscriptionComponent {
             );
           } else {
             this.erreur.set(
-              typeof error.error?.message === 'string'
-                ? error.error.message
-                : error.status === 0
-                  ? 'Le serveur FitBook est injoignable. Vérifiez votre connexion et réessayez.'
+              serveurInjoignable(error)
+                ? MESSAGE_INJOIGNABLE
+                : typeof error.error?.message === 'string'
+                  ? error.error.message
                   : 'Le lien de vérification n’a pas pu être envoyé. Réessayez plus tard.',
             );
           }
@@ -188,10 +189,10 @@ export class InscriptionComponent {
     if (error.status === 409) parChamp.email = 'Cette adresse e-mail est déjà utilisée.';
     this.erreursServeur.set(parChamp);
     this.erreur.set(
-      typeof error.error?.message === 'string'
-        ? error.error.message
-        : error.status === 0
-          ? 'Le serveur FitBook est injoignable. Si le compte a été créé, utilisez le lien reçu par e-mail ou demandez-en un nouveau.'
+      serveurInjoignable(error)
+        ? `${MESSAGE_INJOIGNABLE} Si le compte a été créé, utilisez le lien reçu par e-mail ou demandez-en un nouveau.`
+        : typeof error.error?.message === 'string'
+          ? error.error.message
           : 'Une erreur technique empêche la création du compte. Réessayez plus tard.',
     );
   }
