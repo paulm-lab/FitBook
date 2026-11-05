@@ -1,4 +1,4 @@
-<main>
+<main id="contenu">
   <section class="hero">
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
@@ -7,21 +7,21 @@
       <p>Réservez les meilleures activités sportives près de chez vous, en quelques secondes.</p>
       <form class="search-bar" (submit)="rechercher($event)">
         <label class="search-field">
-          <span>ACTIVITÉ</span>
-          <input type="text" placeholder="Que voulez-vous pratiquer ?" [(ngModel)]="activite" name="activite" autocomplete="off">
+          <span>QUOI</span>
+          <input type="text" placeholder="Activité, salle, coach…" [(ngModel)]="quoi" name="q" autocomplete="off" aria-label="Que voulez-vous pratiquer ?">
         </label>
         <label class="search-field icon-field">
-          <span>LIEU</span>
+          <span>OÙ</span>
           <span class="input-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-            <input type="text" placeholder="Votre ville" [(ngModel)]="lieu" name="lieu" autocomplete="address-level2">
+            <input type="text" placeholder="Commune ou code postal" [(ngModel)]="lieu" name="ville" autocomplete="address-level2" aria-label="Où ?">
           </span>
         </label>
         <label class="search-field icon-field">
           <span>QUAND</span>
           <span class="input-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
-            <select [(ngModel)]="quand" name="quand">
+            <select [(ngModel)]="quand" name="quand" aria-label="Quand ?">
               <option value="Cette semaine">Cette semaine</option>
               <option value="Ce week-end">Ce week-end</option>
               <option value="La semaine prochaine">La semaine prochaine</option>
@@ -45,13 +45,12 @@
   <section class="content-section popular-section" id="activites-populaires">
     <div class="section-heading"><div><span class="section-kicker">À VOUS DE JOUER</span><h2>Les activités populaires</h2></div><a routerLink="/activites" class="text-link">Toutes les activités →</a></div>
     <div class="activity-showcase">
-      <a class="showcase-card" routerLink="/seances" [queryParams]="{activite:'Yoga'}"><img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=75" alt="Cours de yoga" loading="lazy" decoding="async" (error)="imageError($event)"><span>Yoga</span></a>
-      <a class="showcase-card" routerLink="/seances" [queryParams]="{activite:'Fitness'}"><img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=75" alt="Salle de fitness" loading="lazy" decoding="async" (error)="imageError($event)"><span>Fitness</span></a>
-      <a class="showcase-card" routerLink="/seances" [queryParams]="{activite:'Boxe'}"><img src="https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=800&q=75" alt="Entraînement de boxe" loading="lazy" decoding="async" (error)="imageError($event)"><span>Boxe</span></a>
+      <a class="showcase-card" routerLink="/recherche" [queryParams]="{activite:'Yoga'}"><img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=75" alt="Cours de yoga" loading="lazy" decoding="async" (error)="imageError($event)"><span>Yoga</span></a>
+      <a class="showcase-card" routerLink="/recherche" [queryParams]="{activite:'Cardio'}"><img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=75" alt="Salle de fitness" loading="lazy" decoding="async" (error)="imageError($event)"><span>Cardio</span></a>
+      <a class="showcase-card" routerLink="/recherche" [queryParams]="{activite:'Boxe'}"><img src="https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=800&q=75" alt="Entraînement de boxe" loading="lazy" decoding="async" (error)="imageError($event)"><span>Boxe</span></a>
     </div>
   </section>
   <section class="content-section how-section"><div class="section-heading"><div><span class="section-kicker">SIMPLE COMME BONJOUR</span><h2>Votre prochaine séance en 3 étapes</h2></div></div><div class="steps-grid"><article><b>01</b><h3>Trouvez votre activité</h3><p>Parcourez les cours près de chez vous et choisissez votre créneau.</p></article><article><b>02</b><h3>Choisissez votre coach</h3><p>Découvrez les professionnels et les espaces qui vous correspondent.</p></article><article><b>03</b><h3>Réservez en quelques clics</h3><p>Gardez votre place et préparez-vous à bouger à votre rythme.</p></article></div></section>
-  <section class="content-section story-section"><div class="story-image"><video controls playsinline preload="none" aria-label="Vidéo de présentation FitBook" poster="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1000&q=75"><source src="https://videos.pexels.com/video-files/3195394/3195394-hd_1920_1080_25fps.mp4" type="video/mp4"></video></div><div class="story-copy"><span class="section-kicker">LE SPORT À VOTRE RYTHME</span><h2>Un espace. Tous vos possibles.</h2><p>Yoga, renforcement, cardio ou sports de combat : trouvez une séance qui vous ressemble, guidée par des professionnels passionnés.</p><a routerLink="/seances" class="signup-button">Trouver une séance</a></div></section>
+  <section class="content-section story-section"><div class="story-image"><video controls playsinline preload="none" aria-label="Vidéo de présentation FitBook" poster="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1000&q=75"><source src="https://videos.pexels.com/video-files/3195394/3195394-hd_1920_1080_25fps.mp4" type="video/mp4"></video></div><div class="story-copy"><span class="section-kicker">LE SPORT À VOTRE RYTHME</span><h2>Un espace. Tous vos possibles.</h2><p>Yoga, renforcement, cardio ou sports de combat : trouvez une séance qui vous ressemble, guidée par des professionnels passionnés.</p><a routerLink="/recherche" class="btn">Trouver une séance</a></div></section>
   <section class="content-section testimonial-section"><span class="section-kicker">ILS BOUGENT AVEC FITBOOK</span><h2>Leurs mots, leur expérience</h2><blockquote>« J’ai trouvé un cours près de chez moi en quelques minutes. Depuis, le sport fait vraiment partie de ma semaine. »</blockquote><p class="testimonial-author">Camille · membre FitBook</p></section>
 </main>
-<footer class="site-footer"><a routerLink="/" class="brand"><span class="brand-icon">F</span><span>FitBook</span></a><span>Le sport à votre rythme.</span><div><a routerLink="/activites">Activités</a><a routerLink="/coaches-salles">Coachs &amp; salles</a></div></footer>

@@ -1,38 +1,49 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CatalogueService } from '../../services/catalogue-service';
-import { Activite } from '../../models/activite';
+import { catchError, map, of, startWith } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
+import { Activite } from '../../core/models';
+import { CatalogueService } from '../../core/services/catalogue.service';
+import { EtatVideComponent, ImageSecoursDirective, LoaderComponent } from '../../shared/ui';
 
-@Component({ selector: 'app-activites', standalone: true, imports: [CommonModule, FormsModule, RouterLink, VisualShowcaseComponent], templateUrl: './activites.html', styleUrl: './activites.css' })
-export class ActivitesComponent implements OnInit {
-  activites: Activite[] = [];
-  recherche = '';
-  erreur = '';
-  loading = true;
-  // Application zoneless : la vue doit être notifiée quand une réponse HTTP modifie l'état.
-  private readonly cdr = inject(ChangeDetectorRef);
-  constructor(private readonly catalogue: CatalogueService) {}
-  ngOnInit(): void {
-    this.catalogue.getActivites().subscribe({next: data => { this.activites = data; this.loading = false; this.cdr.markForCheck(); }, error: () => { this.erreur = 'Impossible de charger les activités.'; this.loading = false; this.cdr.markForCheck(); }});
-  }
-  get activitesFiltrees(): Activite[] {
-    const terme = this.recherche.trim().toLocaleLowerCase('fr');
-    return this.activites.filter(item => `${item.nom} ${item.description} ${item.niveau}`.toLocaleLowerCase('fr').includes(terme));
-  }
+interface EtatActivites {
+  chargement: boolean;
+  activites: Activite[];
+  erreur: boolean;
+}
 
-  imageActivite(activite: Activite): string {
-    if (activite.image) return activite.image;
-    const name = activite.nom.toLocaleLowerCase('fr');
-    if (name.includes('yoga') || name.includes('pilates')) return 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=900&q=72';
-    if (name.includes('box')) return 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=900&q=72';
-    return 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=900&q=72';
-  }
+/** Catalogue des disciplines, filtrable par catégorie ; chaque carte ouvre la recherche. */
+@Component({
+  selector: 'app-activites',
+  imports: [FormsModule, RouterLink, VisualShowcaseComponent, LoaderComponent, EtatVideComponent, ImageSecoursDirective],
+  templateUrl: './activites.html',
+  styleUrl: './activites.css',
+})
+export class ActivitesComponent {
+  private readonly catalogue = inject(CatalogueService);
 
-  imageError(event: Event): void {
-    const image = event.currentTarget as HTMLImageElement;
-    if (!image.dataset['fallbackApplied']) { image.dataset['fallbackApplied'] = 'true'; image.src = '/assets/fitbook-media-fallback.svg'; }
-  }
+  private readonly etat = toSignal(
+    this.catalogue.activites().pipe(
+      map((activites): EtatActivites => ({ chargement: false, activites, erreur: false })),
+      catchError(() => of<EtatActivites>({ chargement: false, activites: [], erreur: true })),
+      startWith<EtatActivites>({ chargement: true, activites: [], erreur: false }),
+    ),
+    { initialValue: { chargement: true, activites: [], erreur: false } as EtatActivites },
+  );
+
+  readonly chargement = computed(() => this.etat().chargement);
+  readonly erreur = computed(() => this.etat().erreur);
+  readonly categorie = signal('');
+  readonly texte = signal('');
+
+  readonly categories = computed(() => [...new Set(this.etat().activites.map(a => a.categorie))].sort((a, b) => a.localeCompare(b, 'fr')));
+
+  readonly activites = computed(() => {
+    const terme = this.texte().trim().toLocaleLowerCase('fr');
+    return this.etat().activites.filter(a =>
+      (!this.categorie() || a.categorie === this.categorie())
+      && (!terme || `${a.nom} ${a.description ?? ''} ${a.categorie}`.toLocaleLowerCase('fr').includes(terme)));
+  });
 }

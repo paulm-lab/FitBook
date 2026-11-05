@@ -78,6 +78,29 @@ final class FavoritesAndReviewsTest extends ApiTestCase
         self::assertEquals(2.0, $this->json()['note']['note']);
     }
 
+    /**
+     * Régression : le coach d'une séance chargée à froid est un proxy Doctrine
+     * (Proxies\__CG__\…) ; la note de l'organisateur doit quand même être calculée.
+     */
+    public function testSessionDetailWorksWithLazyLoadedCoachProxy(): void
+    {
+        $coach = $this->reload($this->user('coach@example.test', User::ROLE_COACH))->getCoachProfile();
+        $session = $this->session($this->activity(), null, $coach);
+        $this->review($this->user('a@example.test'), $coach, 4);
+        $sessionId = $session->getId();
+        $this->em()->clear();
+
+        $this->client->request('GET', '/api/seances/' . $sessionId);
+
+        self::assertResponseIsSuccessful();
+        self::assertEquals(['note' => 4.0, 'nbAvis' => 1], $this->json()['noteOrganisateur']);
+
+        $this->em()->clear();
+        $this->login($this->user('b@example.test'));
+        $this->send('POST', '/api/favoris', ['type' => 'coach', 'cibleId' => $coach->getId()]);
+        self::assertResponseStatusCodeSame(201);
+    }
+
     public function testHiddenReviewDisappearsFromRatingAndOnlyAdminModerates(): void
     {
         $manager = $this->user('g@example.test', User::ROLE_GESTIONNAIRE);
