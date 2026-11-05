@@ -3,14 +3,15 @@ framework:
         failure_transport: failed
 
         transports:
-            # https://symfony.com/doc/current/messenger.html#transport-configuration
             async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                rate_limiter: mailtrap_sandbox
                 retry_strategy:
-                    max_retries: 3
+                    max_retries: 5
+                    delay: 10000
                     multiplier: 2
+                    max_delay: 60000
             failed: 'doctrine://default?queue_name=failed'
-            # sync: 'sync://'
 
         default_bus: messenger.bus.default
 

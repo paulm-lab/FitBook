@@ -19,5 +19,13 @@ services:
     App\:
         resource: '../src/'
 
+    App\Controller\Api\InscriptionController:
+        arguments:
+            $frontendUrl: '%env(resolve:FRONTEND_URL)%'
+
+    App\Service\FitBookMailer:
+        arguments:
+            $senderAddress: '%env(MAILER_FROM)%'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

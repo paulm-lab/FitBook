@@ -1,0 +1,6 @@
+framework:
+    rate_limiter:
+        mailtrap_sandbox:
+            policy: 'sliding_window'
+            limit: 1
+            interval: '10 seconds'
