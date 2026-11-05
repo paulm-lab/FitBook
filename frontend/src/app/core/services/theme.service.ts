@@ -28,7 +28,7 @@ export class ThemeService {
   }
 
   basculer(): void {
-    this.theme.update(theme => (theme === 'sombre' ? 'clair' : 'sombre'));
+    this.theme.update((theme) => (theme === 'sombre' ? 'clair' : 'sombre'));
   }
 
   private initial(): Theme {
@@ -38,6 +38,8 @@ export class ThemeService {
     } catch {
       // Ignoré : on suit la préférence du système.
     }
-    return this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair';
+    return this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'sombre'
+      : 'clair';
   }
 }

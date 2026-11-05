@@ -43,13 +43,15 @@ export class ConnexionComponent {
 
     this.envoi.set(true);
     const valeurs = this.formulaire.getRawValue();
-    defer(() => this.auth.connexion(valeurs.email.trim(), valeurs.password)).pipe(
-      take(1),
-      finalize(() => this.envoi.set(false)),
-    ).subscribe({
-      next: () => void this.router.navigateByUrl(this.destination()),
-      error: (error: unknown) => this.erreur.set(this.messageErreur(error)),
-    });
+    defer(() => this.auth.connexion(valeurs.email.trim(), valeurs.password))
+      .pipe(
+        take(1),
+        finalize(() => this.envoi.set(false)),
+      )
+      .subscribe({
+        next: () => void this.router.navigateByUrl(this.destination()),
+        error: (error: unknown) => this.erreur.set(this.messageErreur(error)),
+      });
   }
 
   /** Renvoie le lien de confirmation à l'adresse saisie (compte non vérifié). */
@@ -57,16 +59,24 @@ export class ConnexionComponent {
     const email = this.formulaire.controls.email.value.trim();
     if (this.renvoiEnCours() || !email) return;
     this.renvoiEnCours.set(true);
-    this.auth.renvoyerVerification(email).pipe(finalize(() => this.renvoiEnCours.set(false))).subscribe({
-      next: response => this.renvoiMessage.set(response.message),
-      error: () => this.renvoiMessage.set('Le lien n’a pas pu être renvoyé. Réessayez dans quelques minutes.'),
-    });
+    this.auth
+      .renvoyerVerification(email)
+      .pipe(finalize(() => this.renvoiEnCours.set(false)))
+      .subscribe({
+        next: (response) => this.renvoiMessage.set(response.message),
+        error: () =>
+          this.renvoiMessage.set(
+            'Le lien n’a pas pu être renvoyé. Réessayez dans quelques minutes.',
+          ),
+      });
   }
 
   /** Page demandée avant la connexion, uniquement si c'est une adresse interne au site. */
   private destination(): string {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    return returnUrl?.startsWith('/') && !returnUrl.startsWith('//') && !returnUrl.startsWith('/connexion')
+    return returnUrl?.startsWith('/') &&
+      !returnUrl.startsWith('//') &&
+      !returnUrl.startsWith('/connexion')
       ? returnUrl
       : this.auth.espace();
   }
@@ -81,7 +91,10 @@ export class ConnexionComponent {
         this.nonVerifie.set(/confirm|vérifi/i.test(message));
         return message || 'Ce compte ne peut pas se connecter.';
       case 429:
-        return message || 'Trop de tentatives de connexion. Patientez quelques minutes avant de réessayer.';
+        return (
+          message ||
+          'Trop de tentatives de connexion. Patientez quelques minutes avant de réessayer.'
+        );
       case 0:
         return 'Le serveur FitBook est injoignable. Vérifiez votre connexion et réessayez.';
       default:

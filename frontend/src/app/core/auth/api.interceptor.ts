@@ -39,7 +39,11 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
           toasts.info('Votre session a expiré. Reconnectez-vous pour continuer.');
           void router.navigate(['/connexion'], { queryParams: { returnUrl: router.url } });
         } else if (error.status === 429) {
-          toasts.erreur(typeof error.error?.message === 'string' ? error.error.message : 'Trop de tentatives. Patientez un instant.');
+          toasts.erreur(
+            typeof error.error?.message === 'string'
+              ? error.error.message
+              : 'Trop de tentatives. Patientez un instant.',
+          );
         }
       }
       return throwError(() => error);

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 interface TarifPlan {
@@ -42,7 +42,7 @@ export class TarifsComponent {
     },
   ];
 
-  constructor(private readonly router: Router) {}
+  private readonly router = inject(Router);
 
   choisirFormule(formule: string): void {
     void this.router.navigate(['/inscription'], { queryParams: { formule } });

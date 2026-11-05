@@ -1,11 +1,39 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, effect, input, viewChild } from '@angular/core';
 import {
-  BarController, BarElement, CategoryScale, Chart, Filler, Legend, LineController, LineElement, LinearScale,
-  PointElement, Tooltip,
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  effect,
+  input,
+  viewChild,
+} from '@angular/core';
+import {
+  BarController,
+  BarElement,
+  CategoryScale,
+  Chart,
+  Filler,
+  Legend,
+  LineController,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
 } from 'chart.js';
 import { Evolution } from '../core/models';
 
-Chart.register(LineController, LineElement, PointElement, BarController, BarElement, CategoryScale, LinearScale, Filler, Tooltip, Legend);
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  BarController,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  Filler,
+  Tooltip,
+  Legend,
+);
 
 /**
  * Évolution hebdomadaire des réservations (Chart.js), pour les tableaux de bord (US-G05).
@@ -15,7 +43,9 @@ Chart.register(LineController, LineElement, PointElement, BarController, BarElem
   selector: 'app-graphique-evolution',
   template: `
     <figure class="chart">
-      <div class="chart-canvas"><canvas #canvas role="img" [attr.aria-label]="description()"></canvas></div>
+      <div class="chart-canvas">
+        <canvas #canvas role="img" [attr.aria-label]="description()"></canvas>
+      </div>
       <figcaption class="sr-only">{{ description() }}</figcaption>
     </figure>
   `,
@@ -31,8 +61,8 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
     effect(() => {
       const donnees = this.donnees();
       if (this.chart) {
-        this.chart.data.labels = donnees.map(d => this.semaine(d.semaine));
-        this.chart.data.datasets[0].data = donnees.map(d => d.reservations);
+        this.chart.data.labels = donnees.map((d) => this.semaine(d.semaine));
+        this.chart.data.datasets[0].data = donnees.map((d) => d.reservations);
         this.chart.update();
       }
     });
@@ -51,20 +81,25 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
     this.chart = new Chart(this.canvas().nativeElement, {
       type: 'bar',
       data: {
-        labels: this.donnees().map(d => this.semaine(d.semaine)),
-        datasets: [{
-          label: this.libelle(),
-          data: this.donnees().map(d => d.reservations),
-          backgroundColor: '#ff642d',
-          hoverBackgroundColor: '#e84e1e',
-          borderRadius: 6,
-          maxBarThickness: 36,
-        }],
+        labels: this.donnees().map((d) => this.semaine(d.semaine)),
+        datasets: [
+          {
+            label: this.libelle(),
+            data: this.donnees().map((d) => d.reservations),
+            backgroundColor: '#ff642d',
+            hoverBackgroundColor: '#e84e1e',
+            borderRadius: 6,
+            maxBarThickness: 36,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => `Semaine du ${items[0].label}` } } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: (items) => `Semaine du ${items[0].label}` } },
+        },
         scales: {
           x: { ticks: { color: texte }, grid: { display: false } },
           y: { beginAtZero: true, ticks: { color: texte, precision: 0 }, grid: { color: grille } },

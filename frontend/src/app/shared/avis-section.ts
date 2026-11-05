@@ -19,7 +19,14 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
  */
 @Component({
   selector: 'app-avis-section',
-  imports: [DatePipe, FormsModule, RouterLink, EtoilesComponent, SaisieNoteComponent, EtatVideComponent],
+  imports: [
+    DatePipe,
+    FormsModule,
+    RouterLink,
+    EtoilesComponent,
+    SaisieNoteComponent,
+    EtatVideComponent,
+  ],
   template: `
     <section class="panel avis-section" aria-labelledby="avis-titre">
       <div class="row row--between">
@@ -33,22 +40,47 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
           <app-saisie-note [(valeur)]="saisieNote" [nom]="'note-' + type() + '-' + cibleId()" />
           <label class="field">
             <span>Commentaire (facultatif)</span>
-            <textarea name="commentaire" [ngModel]="commentaire()" (ngModelChange)="commentaire.set($event)" maxlength="1000" rows="3"
-              placeholder="Partagez votre expérience"></textarea>
+            <textarea
+              name="commentaire"
+              [ngModel]="commentaire()"
+              (ngModelChange)="commentaire.set($event)"
+              maxlength="1000"
+              rows="3"
+              placeholder="Partagez votre expérience"
+            ></textarea>
             <span class="field-hint">{{ commentaire().length }} / 1000</span>
           </label>
-          @if (erreur()) { <p class="alert alert--error" role="alert">{{ erreur() }}</p> }
+          @if (erreur()) {
+            <p class="alert alert--error" role="alert">{{ erreur() }}</p>
+          }
           <div class="row">
-            <button class="btn" type="submit" [disabled]="envoi() || saisieNote() < 1" [attr.aria-busy]="envoi()">
+            <button
+              class="btn"
+              type="submit"
+              [disabled]="envoi() || saisieNote() < 1"
+              [attr.aria-busy]="envoi()"
+            >
               {{ monAvis() ? 'Enregistrer' : 'Publier mon avis' }}
             </button>
             @if (monAvis()) {
-              <button class="btn btn--ghost" type="button" [disabled]="envoi()" (click)="supprimer()">Supprimer mon avis</button>
+              <button
+                class="btn btn--ghost"
+                type="button"
+                [disabled]="envoi()"
+                (click)="supprimer()"
+              >
+                Supprimer mon avis
+              </button>
             }
           </div>
         </form>
       } @else {
-        <p class="text"><a [routerLink]="['/connexion']" [queryParams]="{ returnUrl: router.url }">Connectez-vous</a> pour donner votre avis.</p>
+        <p class="text">
+          <a [routerLink]="['/connexion']" [queryParams]="{ returnUrl: router.url }"
+            >Connectez-vous</a
+          >
+          pour donner votre avis.
+        </p>
       }
 
       @for (a of avis(); track a.id) {
@@ -58,19 +90,43 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
             <time class="muted" [attr.datetime]="a.date">{{ a.date | date: 'd MMMM y' }}</time>
           </div>
           <app-etoiles [note]="a.note" [avecTexte]="false" />
-          @if (a.commentaire) { <p class="avis-texte">{{ a.commentaire }}</p> }
+          @if (a.commentaire) {
+            <p class="avis-texte">{{ a.commentaire }}</p>
+          }
         </article>
       } @empty {
-        <app-etat-vide titre="Pas encore d’avis" message="Les participants pourront bientôt partager leur expérience." icone="★" />
+        <app-etat-vide
+          titre="Pas encore d’avis"
+          message="Les participants pourront bientôt partager leur expérience."
+          icone="★"
+        />
       }
     </section>
   `,
   styles: `
-    .avis-section h2 { margin: 0; }
-    .avis-form { margin: 18px 0 8px; padding: 18px; border-radius: 14px; background: var(--surface-alt); }
-    .avis-form h3 { margin: 0; font-size: 17px; }
-    .avis-item { padding: 16px 0; border-top: 1px solid var(--border); }
-    .avis-texte { margin: 6px 0 0; color: var(--text); white-space: pre-line; overflow-wrap: anywhere; }
+    .avis-section h2 {
+      margin: 0;
+    }
+    .avis-form {
+      margin: 18px 0 8px;
+      padding: 18px;
+      border-radius: 14px;
+      background: var(--surface-alt);
+    }
+    .avis-form h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+    .avis-item {
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+    .avis-texte {
+      margin: 6px 0 0;
+      color: var(--text);
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
   `,
 })
 export class AvisSectionComponent {
@@ -79,7 +135,7 @@ export class AvisSectionComponent {
   readonly note = input<Note | null>(null);
   readonly avis = input<Avis[]>([]);
   /** Un avis a été publié, modifié ou supprimé : le parent recharge la fiche. */
-  readonly change = output<void>();
+  readonly avisModifie = output<void>();
 
   readonly auth = inject(AuthService);
   readonly router = inject(Router);
@@ -88,7 +144,9 @@ export class AvisSectionComponent {
   private readonly confirm = inject(ConfirmService);
 
   readonly mesAvis = signal<Avis[]>([]);
-  readonly monAvis = computed(() => this.mesAvis().find(a => a.cible?.type === this.type() && a.cible?.id === this.cibleId()));
+  readonly monAvis = computed(() =>
+    this.mesAvis().find((a) => a.cible?.type === this.type() && a.cible?.id === this.cibleId()),
+  );
   readonly saisieNote = signal(0);
   readonly envoi = signal(false);
   readonly erreur = signal('');
@@ -109,14 +167,21 @@ export class AvisSectionComponent {
     const existant = this.monAvis();
     const requete: Observable<Avis> = existant
       ? this.compte.modifierAvis(existant.id, this.saisieNote(), this.commentaire().trim())
-      : this.compte.donnerAvis(this.type(), this.cibleId(), this.saisieNote(), this.commentaire().trim());
+      : this.compte.donnerAvis(
+          this.type(),
+          this.cibleId(),
+          this.saisieNote(),
+          this.commentaire().trim(),
+        );
 
     requete.subscribe({
       next: () => {
         this.envoi.set(false);
-        this.toasts.succes(existant ? 'Votre avis a été modifié.' : 'Merci, votre avis est publié.');
+        this.toasts.succes(
+          existant ? 'Votre avis a été modifié.' : 'Merci, votre avis est publié.',
+        );
         this.chargerMesAvis();
-        this.change.emit();
+        this.avisModifie.emit();
       },
       error: (error: unknown) => {
         this.envoi.set(false);
@@ -137,7 +202,12 @@ export class AvisSectionComponent {
   async supprimer(): Promise<void> {
     const existant = this.monAvis();
     if (!existant) return;
-    const ok = await this.confirm.demander({ titre: 'Supprimer votre avis ?', message: 'Votre note et votre commentaire seront retirés.', confirmer: 'Supprimer', danger: true });
+    const ok = await this.confirm.demander({
+      titre: 'Supprimer votre avis ?',
+      message: 'Votre note et votre commentaire seront retirés.',
+      confirmer: 'Supprimer',
+      danger: true,
+    });
     if (!ok) return;
     this.envoi.set(true);
     this.compte.supprimerAvis(existant.id).subscribe({
@@ -145,9 +215,9 @@ export class AvisSectionComponent {
         this.envoi.set(false);
         this.saisieNote.set(0);
         this.commentaire.set('');
-        this.mesAvis.update(liste => liste.filter(a => a.id !== existant.id));
+        this.mesAvis.update((liste) => liste.filter((a) => a.id !== existant.id));
         this.toasts.succes('Votre avis a été supprimé.');
-        this.change.emit();
+        this.avisModifie.emit();
       },
       error: (error: unknown) => {
         this.envoi.set(false);
@@ -159,7 +229,7 @@ export class AvisSectionComponent {
   /** @param preremplir recopie la note et le commentaire existants dans le formulaire */
   private chargerMesAvis(preremplir = true): void {
     this.compte.mesAvis().subscribe({
-      next: liste => {
+      next: (liste) => {
         this.mesAvis.set(liste);
         const existant = this.monAvis();
         if (existant && (preremplir || this.saisieNote() === 0)) {

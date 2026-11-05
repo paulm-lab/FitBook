@@ -1,10 +1,18 @@
 <a class="skip-link" href="#contenu">Aller au contenu</a>
 
 <header class="navbar" [class.menu-open]="menuOuvert()">
-  <a routerLink="/" class="brand" aria-label="FitBook, accueil"><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a>
+  <a routerLink="/" class="brand" aria-label="FitBook, accueil"
+    ><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a
+  >
 
-  <button class="menu-toggle" type="button" (click)="menuOuvert.set(!menuOuvert())" [attr.aria-expanded]="menuOuvert()"
-    aria-controls="site-navigation" [attr.aria-label]="menuOuvert() ? 'Fermer le menu' : 'Ouvrir le menu'">
+  <button
+    class="menu-toggle"
+    type="button"
+    (click)="menuOuvert.set(!menuOuvert())"
+    [attr.aria-expanded]="menuOuvert()"
+    aria-controls="site-navigation"
+    [attr.aria-label]="menuOuvert() ? 'Fermer le menu' : 'Ouvrir le menu'"
+  >
     <span></span><span></span><span></span>
   </button>
 
@@ -17,27 +25,51 @@
   </nav>
 
   <div class="nav-actions">
-    <button type="button" class="icon-btn" (click)="theme.basculer()"
-      [attr.aria-label]="theme.theme() === 'sombre' ? 'Activer le mode clair' : 'Activer le mode sombre'"
-      [title]="theme.theme() === 'sombre' ? 'Mode clair' : 'Mode sombre'">
+    <button
+      type="button"
+      class="icon-btn"
+      (click)="theme.basculer()"
+      [attr.aria-label]="
+        theme.theme() === 'sombre' ? 'Activer le mode clair' : 'Activer le mode sombre'
+      "
+      [title]="theme.theme() === 'sombre' ? 'Mode clair' : 'Mode sombre'"
+    >
       <span aria-hidden="true">{{ theme.theme() === 'sombre' ? '☀' : '☾' }}</span>
     </button>
 
     @if (auth.utilisateur(); as utilisateur) {
-      <a routerLink="/mon-espace/notifications" class="icon-btn notif-btn"
-        [attr.aria-label]="nonLues() > 0 ? nonLues() + ' notification(s) non lue(s)' : 'Notifications'" title="Notifications">
+      <a
+        routerLink="/mon-espace/notifications"
+        class="icon-btn notif-btn"
+        [attr.aria-label]="
+          nonLues() > 0 ? nonLues() + ' notification(s) non lue(s)' : 'Notifications'
+        "
+        title="Notifications"
+      >
         <span aria-hidden="true">🔔</span>
-        @if (nonLues() > 0) { <span class="notif-count" aria-hidden="true">{{ nonLues() > 9 ? '9+' : nonLues() }}</span> }
+        @if (nonLues() > 0) {
+          <span class="notif-count" aria-hidden="true">{{ nonLues() > 9 ? '9+' : nonLues() }}</span>
+        }
       </a>
       <a [routerLink]="auth.espace()" class="user-link">
         @if (utilisateur.avatar) {
-          <img class="avatar avatar--sm" [src]="utilisateur.avatar" alt="" appSecours>
+          <img class="avatar avatar--sm" [src]="utilisateur.avatar" alt="" appSecours />
         } @else {
-          <span class="avatar avatar--sm avatar--initiales" aria-hidden="true">{{ initiales() }}</span>
+          <span class="avatar avatar--sm avatar--initiales" aria-hidden="true">{{
+            initiales()
+          }}</span>
         }
-        <span>{{ auth.role() === 'sportif' ? 'Mon espace' : auth.role() === 'admin' ? 'Administration' : 'Mon espace pro' }}</span>
+        <span>{{
+          auth.role() === 'sportif'
+            ? 'Mon espace'
+            : auth.role() === 'admin'
+              ? 'Administration'
+              : 'Mon espace pro'
+        }}</span>
       </a>
-      <button class="btn btn--sm btn--ghost" type="button" (click)="deconnecter()">Déconnexion</button>
+      <button class="btn btn--sm btn--ghost" type="button" (click)="deconnecter()">
+        Déconnexion
+      </button>
     } @else {
       <a routerLink="/connexion" class="login-link">Connexion</a>
       <a routerLink="/inscription" class="btn btn--sm">S'inscrire</a>
@@ -51,7 +83,9 @@
 
 <footer class="site-footer">
   <div class="footer-brand">
-    <a routerLink="/" class="brand"><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a>
+    <a routerLink="/" class="brand"
+      ><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a
+    >
     <p>Le sport à votre rythme. Salles, cours et coachs à Bruxelles.</p>
   </div>
   <nav class="footer-links" aria-label="Liens du pied de page">

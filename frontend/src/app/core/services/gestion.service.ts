@@ -3,7 +3,17 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL, params } from '../http';
 import {
-  Activite, Avis, CoachDetail, Disponibilite, Evolution, Note, Page, Reservation, Salle, SeanceResume, StatsSalle,
+  Activite,
+  Avis,
+  CoachDetail,
+  Disponibilite,
+  Evolution,
+  Note,
+  Page,
+  Reservation,
+  Salle,
+  SeanceResume,
+  StatsSalle,
   UtilisateurAdmin,
 } from '../models';
 
@@ -93,7 +103,10 @@ export class GestionService {
   }
 
   annulerSeance(id: number): Observable<SeanceResume & { sportifsPrevenus: number }> {
-    return this.http.post<SeanceResume & { sportifsPrevenus: number }>(`${API_URL}/seances/${id}/annuler`, {});
+    return this.http.post<SeanceResume & { sportifsPrevenus: number }>(
+      `${API_URL}/seances/${id}/annuler`,
+      {},
+    );
   }
 
   inscrits(id: number): Observable<Inscrits> {
@@ -101,8 +114,13 @@ export class GestionService {
   }
 
   /** Séances d'un espace : liste paginée (periode) ou tableau (fenêtre debut/fin du calendrier). */
-  seances(espace: 'coach' | 'gestionnaire' | 'admin', filtre: FiltreSeances): Observable<Page<SeanceResume> | SeanceResume[]> {
-    return this.http.get<Page<SeanceResume> | SeanceResume[]>(`${API_URL}/${espace}/seances`, { params: params(filtre) });
+  seances(
+    espace: 'coach' | 'gestionnaire' | 'admin',
+    filtre: FiltreSeances,
+  ): Observable<Page<SeanceResume> | SeanceResume[]> {
+    return this.http.get<Page<SeanceResume> | SeanceResume[]>(`${API_URL}/${espace}/seances`, {
+      params: params(filtre),
+    });
   }
 
   // --- Disponibilités -----------------------------------------------------
@@ -129,8 +147,20 @@ export class GestionService {
     return this.http.put<CoachDetail>(`${API_URL}/coach/profil`, data);
   }
 
-  statsCoach(): Observable<{ nbSeancesAVenir: number; nbInscritsAVenir: number; tauxRemplissage: number | null; note: Note; evolution: Evolution[] }> {
-    return this.http.get<{ nbSeancesAVenir: number; nbInscritsAVenir: number; tauxRemplissage: number | null; note: Note; evolution: Evolution[] }>(`${API_URL}/coach/stats`);
+  statsCoach(): Observable<{
+    nbSeancesAVenir: number;
+    nbInscritsAVenir: number;
+    tauxRemplissage: number | null;
+    note: Note;
+    evolution: Evolution[];
+  }> {
+    return this.http.get<{
+      nbSeancesAVenir: number;
+      nbInscritsAVenir: number;
+      tauxRemplissage: number | null;
+      note: Note;
+      evolution: Evolution[];
+    }>(`${API_URL}/coach/stats`);
   }
 
   avisRecus(espace: 'coach' | 'gestionnaire', page = 1): Observable<Page<Avis>> {
@@ -143,16 +173,40 @@ export class GestionService {
     return this.http.get<(Salle & { stats: StatsSalle })[]>(`${API_URL}/gestionnaire/salles`);
   }
 
-  statsGestionnaire(): Observable<{ nbSalles: number; nbSeances: number; nbReservations: number; tauxRemplissage: number | null; parSalle: (StatsSalle & { salle: { id: number; nom: string } })[]; evolution: Evolution[] }> {
-    return this.http.get<{ nbSalles: number; nbSeances: number; nbReservations: number; tauxRemplissage: number | null; parSalle: (StatsSalle & { salle: { id: number; nom: string } })[]; evolution: Evolution[] }>(`${API_URL}/gestionnaire/stats`);
+  statsGestionnaire(): Observable<{
+    nbSalles: number;
+    nbSeances: number;
+    nbReservations: number;
+    tauxRemplissage: number | null;
+    parSalle: (StatsSalle & { salle: { id: number; nom: string } })[];
+    evolution: Evolution[];
+  }> {
+    return this.http.get<{
+      nbSalles: number;
+      nbSeances: number;
+      nbReservations: number;
+      tauxRemplissage: number | null;
+      parSalle: (StatsSalle & { salle: { id: number; nom: string } })[];
+      evolution: Evolution[];
+    }>(`${API_URL}/gestionnaire/stats`);
   }
 
-  statsSalle(id: number): Observable<StatsSalle & { salle: { id: number; nom: string }; evolution: Evolution[] }> {
-    return this.http.get<StatsSalle & { salle: { id: number; nom: string }; evolution: Evolution[] }>(`${API_URL}/salles/${id}/stats`);
+  statsSalle(
+    id: number,
+  ): Observable<StatsSalle & { salle: { id: number; nom: string }; evolution: Evolution[] }> {
+    return this.http.get<
+      StatsSalle & { salle: { id: number; nom: string }; evolution: Evolution[] }
+    >(`${API_URL}/salles/${id}/stats`);
   }
 
-  reservationsGestionnaire(filtre: { periode?: 'a_venir' | 'toutes'; statut?: string; page?: number }): Observable<Page<Reservation>> {
-    return this.http.get<Page<Reservation>>(`${API_URL}/gestionnaire/reservations`, { params: params(filtre) });
+  reservationsGestionnaire(filtre: {
+    periode?: 'a_venir' | 'toutes';
+    statut?: string;
+    page?: number;
+  }): Observable<Page<Reservation>> {
+    return this.http.get<Page<Reservation>>(`${API_URL}/gestionnaire/reservations`, {
+      params: params(filtre),
+    });
   }
 
   creerSalle(data: SalleSaisie): Observable<Salle> {
@@ -170,20 +224,43 @@ export class GestionService {
   // --- Administrateur -----------------------------------------------------
 
   statsAdmin(): Observable<{
-    utilisateursParRole: Record<string, number>; nbUtilisateurs: number; nbSalles: number; nbActivites: number;
-    nbSeances: number; nbSeancesAVenir: number; reservationsParStatut: Record<string, number>; avisEnAttente: number; evolution: Evolution[];
+    utilisateursParRole: Record<string, number>;
+    nbUtilisateurs: number;
+    nbSalles: number;
+    nbActivites: number;
+    nbSeances: number;
+    nbSeancesAVenir: number;
+    reservationsParStatut: Record<string, number>;
+    avisEnAttente: number;
+    evolution: Evolution[];
   }> {
     return this.http.get<{
-      utilisateursParRole: Record<string, number>; nbUtilisateurs: number; nbSalles: number; nbActivites: number;
-      nbSeances: number; nbSeancesAVenir: number; reservationsParStatut: Record<string, number>; avisEnAttente: number; evolution: Evolution[];
+      utilisateursParRole: Record<string, number>;
+      nbUtilisateurs: number;
+      nbSalles: number;
+      nbActivites: number;
+      nbSeances: number;
+      nbSeancesAVenir: number;
+      reservationsParStatut: Record<string, number>;
+      avisEnAttente: number;
+      evolution: Evolution[];
     }>(`${API_URL}/admin/stats`);
   }
 
-  utilisateurs(filtre: { q?: string; role?: string; page?: number }): Observable<Page<UtilisateurAdmin>> {
-    return this.http.get<Page<UtilisateurAdmin>>(`${API_URL}/admin/utilisateurs`, { params: params(filtre) });
+  utilisateurs(filtre: {
+    q?: string;
+    role?: string;
+    page?: number;
+  }): Observable<Page<UtilisateurAdmin>> {
+    return this.http.get<Page<UtilisateurAdmin>>(`${API_URL}/admin/utilisateurs`, {
+      params: params(filtre),
+    });
   }
 
-  modifierUtilisateur(id: number, data: { role?: string; estBloque?: boolean; estVerifie?: boolean }): Observable<UtilisateurAdmin> {
+  modifierUtilisateur(
+    id: number,
+    data: { role?: string; estBloque?: boolean; estVerifie?: boolean },
+  ): Observable<UtilisateurAdmin> {
     return this.http.patch<UtilisateurAdmin>(`${API_URL}/admin/utilisateurs/${id}`, data);
   }
 
@@ -191,8 +268,14 @@ export class GestionService {
     return this.http.delete<void>(`${API_URL}/admin/utilisateurs/${id}`);
   }
 
-  reservationsAdmin(filtre: { statut?: string; periode?: string; page?: number }): Observable<Page<Reservation>> {
-    return this.http.get<Page<Reservation>>(`${API_URL}/admin/reservations`, { params: params(filtre) });
+  reservationsAdmin(filtre: {
+    statut?: string;
+    periode?: string;
+    page?: number;
+  }): Observable<Page<Reservation>> {
+    return this.http.get<Page<Reservation>>(`${API_URL}/admin/reservations`, {
+      params: params(filtre),
+    });
   }
 
   annulerReservation(id: number): Observable<Reservation> {
@@ -207,11 +290,19 @@ export class GestionService {
     return this.http.patch<Avis>(`${API_URL}/admin/avis/${id}`, { action });
   }
 
-  creerActivite(data: { nom: string; categorie: string; description?: string | null; image?: string | null }): Observable<Activite> {
+  creerActivite(data: {
+    nom: string;
+    categorie: string;
+    description?: string | null;
+    image?: string | null;
+  }): Observable<Activite> {
     return this.http.post<Activite>(`${API_URL}/activites`, data);
   }
 
-  modifierActivite(id: number, data: { nom: string; categorie: string; description?: string | null; image?: string | null }): Observable<Activite> {
+  modifierActivite(
+    id: number,
+    data: { nom: string; categorie: string; description?: string | null; image?: string | null },
+  ): Observable<Activite> {
     return this.http.put<Activite>(`${API_URL}/activites/${id}`, data);
   }
 

@@ -4,7 +4,15 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Subject, catchError, debounceTime, map, of, startWith, switchMap } from 'rxjs';
 import { messageErreur } from '../../core/http';
-import { Coach, CriteresRecherche, NIVEAUX, Niveau, Page, Salle, SeanceResume } from '../../core/models';
+import {
+  Coach,
+  CriteresRecherche,
+  NIVEAUX,
+  Niveau,
+  Page,
+  Salle,
+  SeanceResume,
+} from '../../core/models';
 import { CatalogueService } from '../../core/services/catalogue.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CarteComponent, PointCarte } from '../../shared/carte';
@@ -16,13 +24,40 @@ import { EtatVideComponent, LoaderComponent, PaginationComponent } from '../../s
 type TypeRecherche = 'seances' | 'salles' | 'coachs';
 
 /** Paramètres d'URL transmis tels quels à /api/recherche. */
-const CLES_API = ['type', 'q', 'ville', 'activite', 'activiteId', 'du', 'au', 'prixMax', 'niveau', 'noteMin', 'lat', 'lng', 'rayon', 'tri', 'page'] as const;
+const CLES_API = [
+  'type',
+  'q',
+  'ville',
+  'activite',
+  'activiteId',
+  'du',
+  'au',
+  'prixMax',
+  'niveau',
+  'noteMin',
+  'lat',
+  'lng',
+  'rayon',
+  'tri',
+  'page',
+] as const;
 
 /** Tris proposés selon le type de résultats. */
 const TRIS: Record<TypeRecherche, { valeur: string; libelle: string }[]> = {
-  seances: [{ valeur: 'date', libelle: 'Date' }, { valeur: 'prix', libelle: 'Prix croissant' }, { valeur: 'note', libelle: 'Mieux notées' }],
-  salles: [{ valeur: 'nom', libelle: 'Nom' }, { valeur: 'note', libelle: 'Mieux notées' }],
-  coachs: [{ valeur: 'nom', libelle: 'Nom' }, { valeur: 'note', libelle: 'Mieux notés' }, { valeur: 'prix', libelle: 'Tarif croissant' }],
+  seances: [
+    { valeur: 'date', libelle: 'Date' },
+    { valeur: 'prix', libelle: 'Prix croissant' },
+    { valeur: 'note', libelle: 'Mieux notées' },
+  ],
+  salles: [
+    { valeur: 'nom', libelle: 'Nom' },
+    { valeur: 'note', libelle: 'Mieux notées' },
+  ],
+  coachs: [
+    { valeur: 'nom', libelle: 'Nom' },
+    { valeur: 'note', libelle: 'Mieux notés' },
+    { valeur: 'prix', libelle: 'Tarif croissant' },
+  ],
 };
 
 interface Resultats {
@@ -38,7 +73,16 @@ interface Resultats {
  */
 @Component({
   selector: 'app-recherche',
-  imports: [FormsModule, LoaderComponent, EtatVideComponent, PaginationComponent, SeanceCardComponent, SalleCardComponent, CoachCardComponent, CarteComponent],
+  imports: [
+    FormsModule,
+    LoaderComponent,
+    EtatVideComponent,
+    PaginationComponent,
+    SeanceCardComponent,
+    SalleCardComponent,
+    CoachCardComponent,
+    CarteComponent,
+  ],
   templateUrl: './recherche.html',
   styleUrl: './recherche.css',
 })
@@ -50,7 +94,9 @@ export class RechercheComponent {
 
   readonly niveaux = Object.entries(NIVEAUX) as [Niveau, string][];
   readonly rayons = [2, 5, 10, 20, 50];
-  readonly activites = toSignal(this.catalogue.activites().pipe(catchError(() => of([]))), { initialValue: [] });
+  readonly activites = toSignal(this.catalogue.activites().pipe(catchError(() => of([]))), {
+    initialValue: [],
+  });
 
   /** Paramètres de l'URL, source de vérité des filtres. */
   readonly params = toSignal(this.route.queryParams, { initialValue: {} as Params });
@@ -58,16 +104,21 @@ export class RechercheComponent {
     const type = this.params()['type'];
     return type === 'salles' || type === 'coachs' ? type : 'seances';
   });
-  readonly vue = computed<'liste' | 'carte'>(() => (this.params()['vue'] === 'carte' && this.type() !== 'coachs' ? 'carte' : 'liste'));
+  readonly vue = computed<'liste' | 'carte'>(() =>
+    this.params()['vue'] === 'carte' && this.type() !== 'coachs' ? 'carte' : 'liste',
+  );
   readonly tris = computed(() => {
     const tris = [...TRIS[this.type()]];
-    if (this.position() && this.type() !== 'coachs') tris.push({ valeur: 'distance', libelle: 'Distance' });
+    if (this.position() && this.type() !== 'coachs')
+      tris.push({ valeur: 'distance', libelle: 'Distance' });
     return tris;
   });
   readonly position = computed(() => {
     const lat = Number(this.params()['lat']);
     const lng = Number(this.params()['lng']);
-    return this.params()['lat'] && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    return this.params()['lat'] && Number.isFinite(lat) && Number.isFinite(lng)
+      ? { lat, lng }
+      : null;
   });
 
   // Champs texte : saisie locale, URL mise à jour après une courte pause (debounce).
@@ -83,16 +134,28 @@ export class RechercheComponent {
       if (p[cle] !== undefined && p[cle] !== '') criteres[cle] = p[cle];
     }
     // Vue carte : plus de résultats d'un coup pour remplir la carte.
-    return { ...criteres, type: this.type(), parPage: this.vue() === 'carte' ? 50 : 12 } as CriteresRecherche;
+    return {
+      ...criteres,
+      type: this.type(),
+      parPage: this.vue() === 'carte' ? 50 : 12,
+    } as CriteresRecherche;
   });
 
   private readonly resultats = toSignal(
     toObservable(this.criteres).pipe(
-      switchMap(criteres => this.catalogue.rechercher(criteres).pipe(
-        map((page): Resultats => ({ chargement: false, page, erreur: '' })),
-        catchError(error => of<Resultats>({ chargement: false, page: null, erreur: messageErreur(error, 'La recherche n’a pas pu aboutir.') })),
-        startWith<Resultats>({ chargement: true, page: null, erreur: '' }),
-      )),
+      switchMap((criteres) =>
+        this.catalogue.rechercher(criteres).pipe(
+          map((page): Resultats => ({ chargement: false, page, erreur: '' })),
+          catchError((error) =>
+            of<Resultats>({
+              chargement: false,
+              page: null,
+              erreur: messageErreur(error, 'La recherche n’a pas pu aboutir.'),
+            }),
+          ),
+          startWith<Resultats>({ chargement: true, page: null, erreur: '' }),
+        ),
+      ),
     ),
     { initialValue: { chargement: true, page: null, erreur: '' } as Resultats },
   );
@@ -100,9 +163,15 @@ export class RechercheComponent {
   readonly chargement = computed(() => this.resultats().chargement);
   readonly erreur = computed(() => this.resultats().erreur);
   readonly page = computed(() => this.resultats().page);
-  readonly seances = computed(() => (this.type() === 'seances' ? (this.page()?.items ?? []) as SeanceResume[] : []));
-  readonly salles = computed(() => (this.type() === 'salles' ? (this.page()?.items ?? []) as Salle[] : []));
-  readonly coachs = computed(() => (this.type() === 'coachs' ? (this.page()?.items ?? []) as Coach[] : []));
+  readonly seances = computed(() =>
+    this.type() === 'seances' ? ((this.page()?.items ?? []) as SeanceResume[]) : [],
+  );
+  readonly salles = computed(() =>
+    this.type() === 'salles' ? ((this.page()?.items ?? []) as Salle[]) : [],
+  );
+  readonly coachs = computed(() =>
+    this.type() === 'coachs' ? ((this.page()?.items ?? []) as Coach[]) : [],
+  );
 
   /** Filtres actifs affichés en chips, retirables un à un. */
   readonly filtresActifs = computed(() => {
@@ -112,15 +181,26 @@ export class RechercheComponent {
     if (p['ville']) chips.push({ cle: ['ville'], libelle: `Lieu : ${p['ville']}` });
     if (p['activite']) chips.push({ cle: ['activite'], libelle: `Activité : ${p['activite']}` });
     if (p['activiteId']) {
-      const nom = this.activites().find(a => a.id === Number(p['activiteId']))?.nom ?? `n° ${p['activiteId']}`;
+      const nom =
+        this.activites().find((a) => a.id === Number(p['activiteId']))?.nom ??
+        `n° ${p['activiteId']}`;
       chips.push({ cle: ['activiteId'], libelle: `Activité : ${nom}` });
     }
     if (p['du']) chips.push({ cle: ['du'], libelle: `À partir du ${this.dateCourte(p['du'])}` });
     if (p['au']) chips.push({ cle: ['au'], libelle: `Jusqu’au ${this.dateCourte(p['au'])}` });
-    if (p['prixMax']) chips.push({ cle: ['prixMax'], libelle: `${this.type() === 'coachs' ? 'Tarif' : 'Prix'} ≤ ${p['prixMax']} €` });
-    if (p['niveau']) chips.push({ cle: ['niveau'], libelle: NIVEAUX[p['niveau'] as Niveau] ?? p['niveau'] });
+    if (p['prixMax'])
+      chips.push({
+        cle: ['prixMax'],
+        libelle: `${this.type() === 'coachs' ? 'Tarif' : 'Prix'} ≤ ${p['prixMax']} €`,
+      });
+    if (p['niveau'])
+      chips.push({ cle: ['niveau'], libelle: NIVEAUX[p['niveau'] as Niveau] ?? p['niveau'] });
     if (p['noteMin']) chips.push({ cle: ['noteMin'], libelle: `Note ≥ ${p['noteMin']} ★` });
-    if (this.position()) chips.push({ cle: ['lat', 'lng', 'rayon'], libelle: `Autour de moi${p['rayon'] ? ' · ' + p['rayon'] + ' km' : ''}` });
+    if (this.position())
+      chips.push({
+        cle: ['lat', 'lng', 'rayon'],
+        libelle: `Autour de moi${p['rayon'] ? ' · ' + p['rayon'] + ' km' : ''}`,
+      });
     return chips;
   });
 
@@ -128,8 +208,15 @@ export class RechercheComponent {
   readonly points = computed<PointCarte[]>(() => {
     if (this.type() === 'salles') {
       return this.salles()
-        .filter(s => s.latitude && s.longitude)
-        .map(s => ({ id: s.id, latitude: +s.latitude!, longitude: +s.longitude!, titre: s.nom, sousTitre: s.adresse, lien: `/salles/${s.id}` }));
+        .filter((s) => s.latitude && s.longitude)
+        .map((s) => ({
+          id: s.id,
+          latitude: +s.latitude!,
+          longitude: +s.longitude!,
+          titre: s.nom,
+          sousTitre: s.adresse,
+          lien: `/salles/${s.id}`,
+        }));
     }
     const parSalle = new Map<number, PointCarte & { n: number }>();
     for (const s of this.seances()) {
@@ -141,7 +228,15 @@ export class RechercheComponent {
         point.sousTitre = `${point.n} séances trouvées`;
         point.lien = `/salles/${salle.id}`;
       } else {
-        parSalle.set(salle.id, { id: salle.id, latitude: +salle.latitude, longitude: +salle.longitude, titre: salle.nom, sousTitre: s.titre, lien: `/seances/${s.id}`, n: 1 });
+        parSalle.set(salle.id, {
+          id: salle.id,
+          latitude: +salle.latitude,
+          longitude: +salle.longitude,
+          titre: salle.nom,
+          sousTitre: s.titre,
+          lien: `/seances/${s.id}`,
+          n: 1,
+        });
       }
     }
     return [...parSalle.values()];
@@ -154,7 +249,11 @@ export class RechercheComponent {
       this.q.set(p['q'] ?? '');
       this.ville.set(p['ville'] ?? '');
     });
-    this.saisie.pipe(debounceTime(400)).subscribe(() => this.appliquer({ q: this.q().trim() || null, ville: this.ville().trim() || null }, true));
+    this.saisie
+      .pipe(debounceTime(400))
+      .subscribe(() =>
+        this.appliquer({ q: this.q().trim() || null, ville: this.ville().trim() || null }, true),
+      );
   }
 
   saisir(champ: 'q' | 'ville', valeur: string): void {
@@ -169,10 +268,10 @@ export class RechercheComponent {
       type: type === 'seances' ? null : type,
       tri: null,
       niveau: null,
-      du: type === 'seances' ? this.params()['du'] ?? null : null,
-      au: type === 'seances' ? this.params()['au'] ?? null : null,
-      prixMax: type === 'salles' ? null : this.params()['prixMax'] ?? null,
-      vue: type === 'coachs' ? null : this.params()['vue'] ?? null,
+      du: type === 'seances' ? (this.params()['du'] ?? null) : null,
+      au: type === 'seances' ? (this.params()['au'] ?? null) : null,
+      prixMax: type === 'salles' ? null : (this.params()['prixMax'] ?? null),
+      vue: type === 'coachs' ? null : (this.params()['vue'] ?? null),
     });
   }
 
@@ -186,13 +285,18 @@ export class RechercheComponent {
   }
 
   retirer(cles: string[]): void {
-    const changements: Params = Object.fromEntries(cles.map(c => [c, null]));
+    const changements: Params = Object.fromEntries(cles.map((c) => [c, null]));
     if (cles.includes('lat') && this.params()['tri'] === 'distance') changements['tri'] = null;
     this.appliquer(changements);
   }
 
   reinitialiser(): void {
-    void this.router.navigate([], { queryParams: { type: this.type() === 'seances' ? null : this.type(), vue: this.params()['vue'] ?? null } });
+    void this.router.navigate([], {
+      queryParams: {
+        type: this.type() === 'seances' ? null : this.type(),
+        vue: this.params()['vue'] ?? null,
+      },
+    });
   }
 
   changerPage(page: number): void {
@@ -201,7 +305,10 @@ export class RechercheComponent {
   }
 
   basculerVue(vue: 'liste' | 'carte'): void {
-    void this.router.navigate([], { queryParams: { vue: vue === 'carte' ? 'carte' : null, page: null }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      queryParams: { vue: vue === 'carte' ? 'carte' : null, page: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   /** « Autour de moi » : position du navigateur, rayon de 10 km et tri par distance. */
@@ -221,11 +328,13 @@ export class RechercheComponent {
           tri: this.type() === 'coachs' ? null : 'distance',
         });
       },
-      error => {
+      (error) => {
         this.localisation.set(false);
-        this.toasts.erreur(error.code === error.PERMISSION_DENIED
-          ? 'Position refusée : autorisez la géolocalisation pour chercher autour de vous.'
-          : 'Votre position n’a pas pu être déterminée.');
+        this.toasts.erreur(
+          error.code === error.PERMISSION_DENIED
+            ? 'Position refusée : autorisez la géolocalisation pour chercher autour de vous.'
+            : 'Votre position n’a pas pu être déterminée.',
+        );
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );

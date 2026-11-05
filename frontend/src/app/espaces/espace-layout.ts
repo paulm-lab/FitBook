@@ -25,7 +25,7 @@ export interface LienEspace {
       <aside class="space-nav" [attr.aria-label]="titre()">
         <div class="space-user">
           @if (auth.utilisateur()?.avatar) {
-            <img class="avatar" [src]="auth.utilisateur()!.avatar" alt="" appSecours>
+            <img class="avatar" [src]="auth.utilisateur()!.avatar" alt="" appSecours />
           } @else {
             <span class="avatar avatar--initiales" aria-hidden="true">{{ initiales() }}</span>
           }
@@ -37,7 +37,12 @@ export interface LienEspace {
         <p class="space-title">{{ titre() }}</p>
         <nav>
           @for (lien of liens(); track lien.chemin) {
-            <a [routerLink]="lien.chemin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: !!lien.exact }">{{ lien.libelle }}</a>
+            <a
+              [routerLink]="lien.chemin"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: !!lien.exact }"
+              >{{ lien.libelle }}</a
+            >
           }
         </nav>
       </aside>
@@ -51,8 +56,13 @@ export class EspaceLayoutComponent {
   readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly titre = toSignal(this.route.data.pipe(map(d => (d['titre'] as string) ?? 'Mon espace')), { initialValue: '' });
-  readonly liens = toSignal(this.route.data.pipe(map(d => (d['liens'] as LienEspace[]) ?? [])), { initialValue: [] });
+  readonly titre = toSignal(
+    this.route.data.pipe(map((d) => (d['titre'] as string) ?? 'Mon espace')),
+    { initialValue: '' },
+  );
+  readonly liens = toSignal(this.route.data.pipe(map((d) => (d['liens'] as LienEspace[]) ?? [])), {
+    initialValue: [],
+  });
 
   initiales(): string {
     const u = this.auth.utilisateur();

@@ -1,5 +1,17 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, Directive, ElementRef, HostListener, Injectable, computed, inject, input, model, output, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ElementRef,
+  HostListener,
+  Injectable,
+  computed,
+  inject,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import { ToastService } from '../core/services/toast.service';
 
 /*
@@ -36,9 +48,19 @@ export class ImageSecoursDirective {
   template: `
     <div class="toasts" aria-live="polite" aria-atomic="false">
       @for (toast of toasts.toasts(); track toast.id) {
-        <div class="toast toast--{{ toast.type }}" [attr.role]="toast.type === 'erreur' ? 'alert' : 'status'">
+        <div
+          class="toast toast--{{ toast.type }}"
+          [attr.role]="toast.type === 'erreur' ? 'alert' : 'status'"
+        >
           <span>{{ toast.message }}</span>
-          <button type="button" class="toast-close" (click)="toasts.fermer(toast.id)" aria-label="Fermer le message">×</button>
+          <button
+            type="button"
+            class="toast-close"
+            (click)="toasts.fermer(toast.id)"
+            aria-label="Fermer le message"
+          >
+            ×
+          </button>
         </div>
       }
     </div>
@@ -58,13 +80,15 @@ export interface DemandeConfirmation {
 /** Fenêtre de confirmation avant une action irréversible (annulation, suppression). */
 @Injectable({ providedIn: 'root' })
 export class ConfirmService {
-  readonly demande = signal<(DemandeConfirmation & { repondre: (ok: boolean) => void }) | null>(null);
+  readonly demande = signal<(DemandeConfirmation & { repondre: (ok: boolean) => void }) | null>(
+    null,
+  );
 
   demander(demande: DemandeConfirmation): Promise<boolean> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.demande.set({
         ...demande,
-        repondre: ok => {
+        repondre: (ok) => {
           this.demande.set(null);
           resolve(ok);
         },
@@ -77,13 +101,27 @@ export class ConfirmService {
   selector: 'app-confirm-dialog',
   template: `
     @if (confirm.demande(); as d) {
+      <!-- Fond cliquable à la souris ; au clavier, Échap ferme la fenêtre (HostListener ci-dessous). -->
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
       <div class="modal-backdrop" (click)="d.repondre(false)"></div>
-      <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <div
+        class="modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-message"
+      >
         <h2 id="confirm-title">{{ d.titre }}</h2>
         <p id="confirm-message">{{ d.message }}</p>
         <div class="modal-actions">
           <button type="button" class="btn btn--ghost" (click)="d.repondre(false)">Retour</button>
-          <button type="button" class="btn" [class.btn--danger]="d.danger" (click)="d.repondre(true)" appAutoFocus>
+          <button
+            type="button"
+            class="btn"
+            [class.btn--danger]="d.danger"
+            (click)="d.repondre(true)"
+            appAutoFocus
+          >
             {{ d.confirmer ?? 'Confirmer' }}
           </button>
         </div>
@@ -103,7 +141,9 @@ export class ConfirmDialogComponent {
 
 @Component({
   selector: 'app-loader',
-  template: `<div class="loader" role="status"><span class="loader-spinner" aria-hidden="true"></span><span>{{ texte() }}</span></div>`,
+  template: `<div class="loader" role="status">
+    <span class="loader-spinner" aria-hidden="true"></span><span>{{ texte() }}</span>
+  </div>`,
 })
 export class LoaderComponent {
   readonly texte = input('Chargement…');
@@ -115,7 +155,9 @@ export class LoaderComponent {
     <div class="empty-state">
       <span class="empty-state-icon" aria-hidden="true">{{ icone() }}</span>
       <h3>{{ titre() }}</h3>
-      @if (message()) { <p>{{ message() }}</p> }
+      @if (message()) {
+        <p>{{ message() }}</p>
+      }
       <ng-content />
     </div>
   `,
@@ -132,11 +174,33 @@ export class EtatVideComponent {
   template: `
     @if (pages() > 1) {
       <nav class="pagination" aria-label="Pagination">
-        <button type="button" class="pagination-btn" [disabled]="page() <= 1" (click)="aller(page() - 1)">← Précédent</button>
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="page() <= 1"
+          (click)="aller(page() - 1)"
+        >
+          ← Précédent
+        </button>
         @for (p of numeros(); track p) {
-          <button type="button" class="pagination-btn" [class.active]="p === page()" [attr.aria-current]="p === page() ? 'page' : null" (click)="aller(p)">{{ p }}</button>
+          <button
+            type="button"
+            class="pagination-btn"
+            [class.active]="p === page()"
+            [attr.aria-current]="p === page() ? 'page' : null"
+            (click)="aller(p)"
+          >
+            {{ p }}
+          </button>
         }
-        <button type="button" class="pagination-btn" [disabled]="page() >= pages()" (click)="aller(page() + 1)">Suivant →</button>
+        <button
+          type="button"
+          class="pagination-btn"
+          [disabled]="page() >= pages()"
+          (click)="aller(page() + 1)"
+        >
+          Suivant →
+        </button>
       </nav>
     }
   `,
@@ -169,7 +233,12 @@ export class PaginationComponent {
         }
       </span>
       @if (avecTexte()) {
-        <span class="stars-text">{{ note() !== null ? (note()! | number: '1.1-1') : 'Pas encore d’avis' }}@if (nbAvis() !== null && note() !== null) { · {{ nbAvis() }} avis }</span>
+        <span class="stars-text"
+          >{{ note() !== null ? (note()! | number: '1.1-1') : 'Pas encore d’avis' }}
+          @if (nbAvis() !== null && note() !== null) {
+            · {{ nbAvis() }} avis
+          }
+        </span>
       }
     </span>
   `,
@@ -180,7 +249,9 @@ export class EtoilesComponent {
   readonly nbAvis = input<number | null>(null);
   readonly avecTexte = input(true);
   readonly arrondi = computed(() => Math.round(this.note() ?? 0));
-  readonly libelle = computed(() => (this.note() != null ? `Note moyenne ${this.note()} sur 5` : 'Pas encore noté'));
+  readonly libelle = computed(() =>
+    this.note() != null ? `Note moyenne ${this.note()} sur 5` : 'Pas encore noté',
+  );
 }
 
 /** Saisie d'une note de 1 à 5 (boutons radio stylés en étoiles, utilisables au clavier). */
@@ -191,8 +262,16 @@ export class EtoilesComponent {
       <legend>{{ legende() }}</legend>
       @for (i of [1, 2, 3, 4, 5]; track i) {
         <label [class.on]="i <= (survol() || valeur())">
-          <input type="radio" [name]="nom()" [value]="i" [checked]="valeur() === i" (change)="valeur.set(i)">
-          <span (mouseenter)="survol.set(i)" (mouseleave)="survol.set(0)" aria-hidden="true">★</span>
+          <input
+            type="radio"
+            [name]="nom()"
+            [value]="i"
+            [checked]="valeur() === i"
+            (change)="valeur.set(i)"
+          />
+          <span (mouseenter)="survol.set(i)" (mouseleave)="survol.set(0)" aria-hidden="true"
+            >★</span
+          >
           <span class="sr-only">{{ i }} étoile{{ i > 1 ? 's' : '' }}</span>
         </label>
       }

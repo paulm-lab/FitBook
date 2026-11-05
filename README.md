@@ -3,8 +3,22 @@
 Plateforme web de réservation de **salles de sport**, de **cours** et de **coachs sportifs**.
 Projet de formation **UAA MI08 — Produire un projet Web**.
 
-> 🚧 **Phase 4 — API métier, recherche, réservations, e-mails** terminée.
-> Le guide d'installation complet (frontend compris) sera finalisé en Phase 10.
+> **Version 1.0.0** — les dix phases du plan sont livrées. Les actions restant à faire sur le
+> poste de développement sont listées en fin de document ([À faire](#à-faire-sur-le-poste-de-développement)).
+
+## Fonctionnalités
+
+- **Visiteur** : recherche de séances, salles et coachs (texte, ville, activité, dates, prix,
+  niveau, note, distance), vue carte, fiches détaillées avec avis, inscription avec choix du rôle.
+- **Sportif** : réservation (contrôle de capacité en base), annulation jusqu'à 2 h avant, QR code,
+  calendrier personnel, favoris, avis, notifications, profil et avatar, rappel 24 h avant.
+- **Coach** : profil professionnel, séances (création, modification, annulation avec e-mail aux
+  inscrits), liste des inscrits (export CSV), disponibilités, calendrier, statistiques, avis reçus.
+- **Gestionnaire** : salles (horaires, photos, coordonnées), cours, disponibilités, réservations,
+  tableau de bord (`sp_stats_salle`, graphique Chart.js).
+- **Administrateur** : vue d'ensemble, comptes (rôle, blocage), modération des avis, réservations,
+  séances, salles, activités.
+- Mode sombre, responsive mobile, accessibilité clavier, toasts, états de chargement et vides.
 
 ---
 
@@ -20,16 +34,20 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | [Cas d'utilisation](docs/use-cases.md) | Acteurs, diagramme et scénarios détaillés (à reproduire dans StarUML) |
 | [Diagramme de classes](docs/diagramme-classes.md) | Domaine et architecture backend (à reproduire dans StarUML) |
 | [API](docs/api.md) | Routes REST, codes d'erreur, recherche, commandes planifiées (Swagger : `/api/doc`) |
+| [Sécurité](docs/securite.md) | Protections face à l'OWASP Top 10, secrets, points à surveiller |
+| [Liste des tests](docs/liste-des-tests.md) | Synthèse, couverture des exigences, recette des parcours, inventaire |
+| [Déploiement](docs/deploiement.md) | Mise en production, tâches planifiées, mise à jour |
+| [Postman](postman/README.md) | Collection, environnement et rapport Newman |
 
 ## Stack
 
 | Couche | Technologies |
 |--------|--------------|
-| Frontend | Angular 21 (standalone, signals, lazy loading) |
-| Backend | PHP 8.3, Symfony 7.4 (API REST JSON), Doctrine ORM, Symfony Mailer + Messenger |
+| Frontend | Angular 21 (standalone, signals, zoneless, lazy loading), FullCalendar 6, Chart.js 4, Leaflet 1.9, angularx-qrcode |
+| Backend | PHP 8.3, Symfony 7.4 (API REST JSON), Doctrine ORM, LexikJWT, Mailer + Messenger, NelmioApiDoc, opis/json-schema |
 | Base de données | MySQL 8+ (InnoDB), utilisateur dédié `fitbook_user`, 3 procédures stockées |
 | E-mails (dev) | Mailpit |
-| Tests | PHPUnit (unitaires, fonctionnels, intégration MySQL), tests Angular, Postman + Newman |
+| Tests et qualité | PHPUnit (93 tests), Vitest (50 tests), Postman + Newman (60 requêtes), ESLint + Prettier, PHPStan 6 et PHP-CS-Fixer (configurés) |
 
 ## Arborescence
 
@@ -47,12 +65,14 @@ fitbook-mi08/
 └── README.md
 ```
 
-## Installation du backend (état Phase 3)
+## Installation
+
+### Backend
 
 Prérequis : PHP 8.3, Composer, [Symfony CLI](https://symfony.com/download), MySQL 8+
 (WAMP ou Docker) et [Mailpit](https://mailpit.axllent.org/) pour les e-mails.
 
-### 1. Base de données et utilisateur `fitbook_user`
+#### 1. Base de données et utilisateur `fitbook_user`
 
 **Avec WAMP** — en tant que root, en choisissant un mot de passe fort :
 
@@ -69,7 +89,7 @@ docker compose up -d      # MySQL sur 127.0.0.1:3307, phpMyAdmin sur :8080, Mail
 Le script crée les bases `fitbook` et `fitbook_test` et l'utilisateur `fitbook_user`, dont les droits
 sont limités à ces deux bases. L'application ne se connecte jamais en `root`.
 
-### 2. Configuration locale (`backend/.env.local`, jamais versionné)
+#### 2. Configuration locale (`backend/.env.local`, jamais versionné)
 
 ```dotenv
 DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
@@ -80,7 +100,7 @@ JWT_PASSPHRASE=une-longue-phrase-secrete-aleatoire
 
 (Avec Docker, utiliser le port `3307`.)
 
-### 3. Dépendances, clés JWT, schéma et données de démonstration
+#### 3. Dépendances, clés JWT, schéma et données de démonstration
 
 ```bash
 cd backend
@@ -96,7 +116,36 @@ symfony console messenger:consume async -vv     # dans un 2e terminal : envoi de
 > indiquer à OpenSSL le fichier livré avec PHP, puis relancer la commande :
 > `set OPENSSL_CONF=C:\wamp64\bin\php\php8.3.14\extras\ssl\openssl.cnf`
 
-## Authentification (Phase 3)
+### Frontend
+
+Prérequis : Node.js 22+ et npm.
+
+```bash
+cd frontend
+npm install
+npm start            # http://localhost:4200 — /api et /uploads relayés vers http://127.0.0.1:8000 (proxy.conf.json)
+```
+
+| Commande | Rôle |
+|----------|------|
+| `npm run build` | Build de production dans `dist/fitbook-front/browser` |
+| `npm test -- --watch=false` | Tests Vitest |
+| `npm run lint` | ESLint (TypeScript, Angular, accessibilité des templates) |
+| `npm run format` / `npm run format:check` | Prettier |
+
+Le front et l'API passent par la **même origine** (proxy) : le cookie HttpOnly du jeton JWT est
+envoyé automatiquement. Documentation interactive de l'API : http://127.0.0.1:8000/api/doc.
+
+### Tâches planifiées
+
+```bash
+php bin/console app:reservations:terminer   # séances finies → réservations « terminee » (ouvre les avis)
+php bin/console app:send-reminders          # rappel unique 24 h avant chaque séance
+```
+
+À lancer toutes les heures (Planificateur de tâches Windows ou cron), voir [`docs/deploiement.md`](docs/deploiement.md).
+
+## Authentification
 
 | Route | Méthode | Rôle |
 |-------|---------|------|
@@ -150,7 +199,7 @@ réservations, des favoris et des avis (dont 2 masqués par la modération).
 
 ```bash
 cd backend
-symfony php bin/phpunit                 # toute la suite
+symfony php bin/phpunit --exclude-group mysql   # 85 tests (SQLite en mémoire)
 symfony php bin/phpunit --group mysql   # procédures stockées et contraintes CHECK (MySQL)
 ```
 
@@ -163,11 +212,15 @@ reconstruisent la base `fitbook_test` à partir des migrations ; ils nécessiten
 MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook_test?serverVersion=8.0.32&charset=utf8mb4"
 ```
 
+Frontend : `cd frontend && npm test -- --watch=false` (50 tests).
+API de bout en bout : collection Postman / Newman, voir [`postman/README.md`](postman/README.md).
+Détail et recette des parcours : [`docs/liste-des-tests.md`](docs/liste-des-tests.md).
+
 ## Sauvegardes
 
 ```bash
 bash database/scripts/backup.sh              # database/backups/fitbook_AAAA-MM-JJ_HHMMSS.sql
-bash database/scripts/backup.sh 02_milieu    # dump jalon nommé
+bash database/scripts/backup.sh 02_milieu    # dump jalon nommé (01_debut, 02_milieu, 03_fin)
 ```
 
 Le script utilise `fitbook_user` (jamais `root`) et lit ses identifiants dans `backend/.env.local`.
@@ -194,9 +247,30 @@ types : `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 | 2 | Base de données et socle backend | ✅ Terminée |
 | 3 | Authentification, rôles, voters | ✅ Terminée |
 | 4 | API métier, recherche, réservations, e-mails | ✅ Terminée |
-| 5 | Socle frontend, design system | ⏳ |
-| 6 | Pages publiques et espace sportif | ⏳ |
-| 7 | Espaces coach, gestionnaire, admin | ⏳ |
-| 8 | Bonus : carte, distance, QR code, rappels | ⏳ |
-| 9 | Tests et qualité | ⏳ |
-| 10 | Finalisation et release `v1.0.0` | ⏳ |
+| 5 | Socle frontend, design system | ✅ Terminée |
+| 6 | Pages publiques et espace sportif | ✅ Terminée |
+| 7 | Espaces coach, gestionnaire, admin | ✅ Terminée |
+| 8 | Bonus : carte, distance, QR code, rappels, notifications | ✅ Terminée |
+| 9 | Tests et qualité | ✅ Terminée (voir « À faire ») |
+| 10 | Finalisation et release `v1.0.0` | ✅ Terminée |
+
+## À faire sur le poste de développement
+
+Ces points n'ont pas pu être réalisés depuis l'environnement de développement de la session
+de finalisation ; ils ne demandent aucun changement de code.
+
+1. **Mettre à jour Symfony** (avis de sécurité sur 7.4.x < 7.4.23) :
+   `cd backend && composer update "symfony/*" --with-all-dependencies`, puis relancer les tests.
+   Le fichier `C:\Windows\System32\drivers\etc\hosts` contient `8.8.8.8 codeload.github.com`,
+   qui empêche Composer de télécharger les archives : retirer cette ligne d'abord.
+2. **Installer les outils d'analyse PHP** (configurations fournies : `phpstan.dist.neon`,
+   `.php-cs-fixer.dist.php`) :
+   `composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/extension-installer friendsofphp/php-cs-fixer`,
+   puis `vendor/bin/phpstan analyse` et `vendor/bin/php-cs-fixer fix --dry-run --diff`.
+3. **Avec MySQL démarré** (service WAMP) :
+   - `php bin/console doctrine:migrations:migrate` puis `doctrine:fixtures:load` ;
+   - `php bin/phpunit --group mysql` (procédures stockées, contraintes `CHECK`) ;
+   - dumps jalons : `bash database/scripts/backup.sh 02_milieu` puis, sur la version finale,
+     `bash database/scripts/backup.sh 03_fin` ;
+   - relancer Newman sur MySQL (`postman/README.md`).
+4. **Pousser** les branches et le tag : `git push origin main develop --tags`.

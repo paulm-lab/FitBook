@@ -1,4 +1,15 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, effect, inject, input, output, viewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  effect,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import * as L from 'leaflet';
 
 export interface PointCarte {
@@ -33,7 +44,13 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
   private calque = L.layerGroup();
 
   // Icône dessinée en CSS (évite de dépendre des images du paquet Leaflet).
-  private readonly icone = L.divIcon({ className: 'map-pin', html: '<span></span>', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -26] });
+  private readonly icone = L.divIcon({
+    className: 'map-pin',
+    html: '<span></span>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -26],
+  });
 
   constructor() {
     effect(() => {
@@ -46,7 +63,10 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.element().nativeElement.style.height = this.hauteur();
-    this.carte = L.map(this.element().nativeElement, { scrollWheelZoom: false }).setView([50.8466, 4.3528], 12);
+    this.carte = L.map(this.element().nativeElement, { scrollWheelZoom: false }).setView(
+      [50.8466, 4.3528],
+      12,
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; contributeurs OpenStreetMap',
@@ -77,13 +97,17 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
       const lien = document.createElement('a');
       lien.href = point.lien;
       lien.textContent = 'Voir la fiche →';
-      lien.addEventListener('click', event => {
+      lien.addEventListener('click', (event) => {
         event.preventDefault();
         this.zone.run(() => this.ouvrir.emit(point.lien));
       });
       contenu.append(lien);
 
-      L.marker([point.latitude, point.longitude], { icon: this.icone, title: point.titre, keyboard: true })
+      L.marker([point.latitude, point.longitude], {
+        icon: this.icone,
+        title: point.titre,
+        keyboard: true,
+      })
         .bindPopup(contenu)
         .addTo(this.calque);
       limites.push([point.latitude, point.longitude]);
@@ -91,12 +115,22 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
 
     const position = this.position();
     if (position) {
-      L.circleMarker([position.lat, position.lng], { radius: 8, color: '#10213a', fillColor: '#3b82f6', fillOpacity: 1 })
+      L.circleMarker([position.lat, position.lng], {
+        radius: 8,
+        color: '#10213a',
+        fillColor: '#3b82f6',
+        fillOpacity: 1,
+      })
         .bindTooltip('Vous êtes ici')
         .addTo(this.calque);
       limites.push([position.lat, position.lng]);
       if (this.rayonKm()) {
-        L.circle([position.lat, position.lng], { radius: (this.rayonKm() ?? 0) * 1000, color: '#ff642d', weight: 1, fillOpacity: 0.06 }).addTo(this.calque);
+        L.circle([position.lat, position.lng], {
+          radius: (this.rayonKm() ?? 0) * 1000,
+          color: '#ff642d',
+          weight: 1,
+          fillOpacity: 0.06,
+        }).addTo(this.calque);
       }
     }
 

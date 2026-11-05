@@ -1,14 +1,14 @@
+# CORS : seules les origines du front sont autorisées (expression régulière CORS_ALLOW_ORIGIN,
+# localhost en développement, domaine de production dans .env.local). Cookies autorisés
+# (allow_credentials) pour le cookie HttpOnly du jeton JWT.
 nelmio_cors:
     defaults:
-        allow_origin: ['http://localhost:4200', 'http://127.0.0.1:4200']
+        origin_regex: true
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
         allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
         allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
         allow_credentials: true
         max_age: 3600
 
     paths:
-        '^/api/':
-            allow_origin: ['http://localhost:4200', 'http://127.0.0.1:4200']
-            allow_methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-            allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With']
-            allow_credentials: true
+        '^/api/': ~

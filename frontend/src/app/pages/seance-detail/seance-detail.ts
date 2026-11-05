@@ -10,14 +10,29 @@ import { CompteService } from '../../core/services/compte.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AvisSectionComponent } from '../../shared/avis-section';
 import { FavoriButtonComponent } from '../../shared/favori-button';
-import { EtatVideComponent, EtoilesComponent, ImageSecoursDirective, LoaderComponent } from '../../shared/ui';
+import {
+  EtatVideComponent,
+  EtoilesComponent,
+  ImageSecoursDirective,
+  LoaderComponent,
+} from '../../shared/ui';
 
 type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 
 /** Fiche d'une séance et réservation (US-V04, UC-08). */
 @Component({
   selector: 'app-seance-detail',
-  imports: [DatePipe, DecimalPipe, RouterLink, LoaderComponent, EtatVideComponent, EtoilesComponent, ImageSecoursDirective, FavoriButtonComponent, AvisSectionComponent],
+  imports: [
+    DatePipe,
+    DecimalPipe,
+    RouterLink,
+    LoaderComponent,
+    EtatVideComponent,
+    EtoilesComponent,
+    ImageSecoursDirective,
+    FavoriButtonComponent,
+    AvisSectionComponent,
+  ],
   templateUrl: './seance-detail.html',
   styleUrl: './seance-detail.css',
 })
@@ -45,7 +60,9 @@ export class SeanceDetailComponent {
   });
   readonly duree = computed(() => {
     const s = this.seance();
-    return s ? Math.round((new Date(s.dateFin).getTime() - new Date(s.dateDebut).getTime()) / 60000) : 0;
+    return s
+      ? Math.round((new Date(s.dateFin).getTime() - new Date(s.dateDebut).getTime()) / 60000)
+      : 0;
   });
   /** Espace de gestion selon le rôle de l'organisateur connecté. */
   readonly lienGestion = computed(() => {
@@ -61,7 +78,7 @@ export class SeanceDetailComponent {
   charger(id: string, silencieux = false): void {
     if (!silencieux) this.etat.set('chargement');
     this.catalogue.seance(Number(id)).subscribe({
-      next: seance => {
+      next: (seance) => {
         this.seance.set(seance);
         this.etat.set('ok');
       },
@@ -85,7 +102,9 @@ export class SeanceDetailComponent {
       next: () => {
         this.envoi.set(false);
         this.reservee.set(true);
-        this.seance.update(s => (s ? { ...s, placesDisponibles: Math.max(0, s.placesDisponibles - 1) } : s));
+        this.seance.update((s) =>
+          s ? { ...s, placesDisponibles: Math.max(0, s.placesDisponibles - 1) } : s,
+        );
         this.toasts.succes('Réservation confirmée ! Un e-mail de confirmation vous a été envoyé.');
       },
       error: (error: unknown) => {

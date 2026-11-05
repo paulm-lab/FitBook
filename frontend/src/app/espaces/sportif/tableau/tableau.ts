@@ -27,9 +27,18 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
       <app-loader />
     } @else {
       <section class="stats" aria-label="Mes chiffres">
-        <a class="stat" routerLink="/mon-espace/reservations"><span class="stat-value">{{ total() }}</span><span class="stat-label">Réservation{{ total() > 1 ? 's' : '' }} à venir</span></a>
-        <a class="stat" routerLink="/mon-espace/favoris"><span class="stat-value">{{ favoris.favoris().length }}</span><span class="stat-label">Favoris</span></a>
-        <a class="stat" routerLink="/mon-espace/avis"><span class="stat-value">{{ nbAvis() }}</span><span class="stat-label">Avis donnés</span></a>
+        <a class="stat" routerLink="/mon-espace/reservations"
+          ><span class="stat-value">{{ total() }}</span
+          ><span class="stat-label">Réservation{{ total() > 1 ? 's' : '' }} à venir</span></a
+        >
+        <a class="stat" routerLink="/mon-espace/favoris"
+          ><span class="stat-value">{{ favoris.favoris().length }}</span
+          ><span class="stat-label">Favoris</span></a
+        >
+        <a class="stat" routerLink="/mon-espace/avis"
+          ><span class="stat-value">{{ nbAvis() }}</span
+          ><span class="stat-label">Avis donnés</span></a
+        >
       </section>
 
       <section class="panel" aria-labelledby="prochaines-title">
@@ -38,7 +47,11 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
           <a class="text-link" routerLink="/mon-espace/reservations">Toutes mes réservations →</a>
         </div>
         @if (prochaines().length === 0) {
-          <app-etat-vide titre="Aucune séance réservée" message="Yoga, boxe, running… trouvez la séance qui vous motive." icone="📅">
+          <app-etat-vide
+            titre="Aucune séance réservée"
+            message="Yoga, boxe, running… trouvez la séance qui vous motive."
+            icone="📅"
+          >
             <a class="btn" routerLink="/recherche">Rechercher une séance</a>
           </app-etat-vide>
         } @else {
@@ -47,11 +60,15 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
               @if (r.seance; as s) {
                 <li>
                   <time class="next-date" [attr.datetime]="s.dateDebut">
-                    <strong>{{ s.dateDebut | date: 'd' }}</strong><span>{{ s.dateDebut | date: 'MMM' }}</span>
+                    <strong>{{ s.dateDebut | date: 'd' }}</strong
+                    ><span>{{ s.dateDebut | date: 'MMM' }}</span>
                   </time>
                   <div class="next-info">
                     <a [routerLink]="['/mon-espace/reservations', r.id]">{{ s.titre }}</a>
-                    <span class="muted">{{ s.dateDebut | date: 'EEEE · HH:mm' }} – {{ s.dateFin | date: 'HH:mm' }} · {{ s.salle?.nom ?? 'Lieu précisé par le coach' }}</span>
+                    <span class="muted"
+                      >{{ s.dateDebut | date: 'EEEE · HH:mm' }} – {{ s.dateFin | date: 'HH:mm' }} ·
+                      {{ s.salle?.nom ?? 'Lieu précisé par le coach' }}</span
+                    >
                   </div>
                   <span class="badge badge--confirmee">Confirmée</span>
                 </li>
@@ -63,26 +80,84 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
 
       <section class="calendar-section" aria-labelledby="calendrier-title">
         <h2 id="calendrier-title">Mon calendrier</h2>
-        <app-calendrier [evenements]="evenements()" vue="dayGridMonth" (seanceCliquee)="ouvrir($event)" />
+        <app-calendrier
+          [evenements]="evenements()"
+          vue="dayGridMonth"
+          (seanceCliquee)="ouvrir($event)"
+        />
       </section>
     }
   `,
   styles: `
-    .stats a { text-decoration: none; }
-    .stats a:hover { border-color: var(--primary); }
-    .panel { margin-bottom: 24px; }
-    .panel h2 { margin: 0; }
-    .next-list { display: grid; gap: 10px; margin: 16px 0 0; padding: 0; list-style: none; }
-    .next-list li { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 14px; }
-    .next-date { display: grid; place-items: center; min-width: 56px; padding: 6px; border-radius: 12px; background: var(--primary-soft); color: var(--primary-hover); line-height: 1.1; }
-    .next-date strong { font-size: 22px; }
-    .next-date span { font-size: 12px; text-transform: uppercase; }
-    .next-info { display: grid; flex: 1; gap: 2px; min-width: 0; }
-    .next-info a { color: var(--ink); font-weight: 700; text-decoration: none; }
-    .next-info a:hover { color: var(--primary); }
-    .next-info .muted { font-size: 14px; }
-    .calendar-section h2 { font-size: 21px; }
-    @media (max-width: 520px) { .next-list li { flex-wrap: wrap; } }
+    .stats a {
+      text-decoration: none;
+    }
+    .stats a:hover {
+      border-color: var(--primary);
+    }
+    .panel {
+      margin-bottom: 24px;
+    }
+    .panel h2 {
+      margin: 0;
+    }
+    .next-list {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .next-list li {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .next-date {
+      display: grid;
+      place-items: center;
+      min-width: 56px;
+      padding: 6px;
+      border-radius: 12px;
+      background: var(--primary-soft);
+      color: var(--primary-hover);
+      line-height: 1.1;
+    }
+    .next-date strong {
+      font-size: 22px;
+    }
+    .next-date span {
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .next-info {
+      display: grid;
+      flex: 1;
+      gap: 2px;
+      min-width: 0;
+    }
+    .next-info a {
+      color: var(--ink);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .next-info a:hover {
+      color: var(--primary);
+    }
+    .next-info .muted {
+      font-size: 14px;
+    }
+    .calendar-section h2 {
+      font-size: 21px;
+    }
+    @media (max-width: 520px) {
+      .next-list li {
+        flex-wrap: wrap;
+      }
+    }
   `,
 })
 export class TableauSportifComponent {
@@ -98,12 +173,17 @@ export class TableauSportifComponent {
 
   readonly prochaines = computed(() => this.aVenir().slice(0, 3));
   readonly evenements = computed(() =>
-    this.aVenir().filter(r => r.seance).map(r => evenementSeance(r.seance as SeanceResume)),
+    this.aVenir()
+      .filter((r) => r.seance)
+      .map((r) => evenementSeance(r.seance as SeanceResume)),
   );
 
   constructor() {
     // 50 réservations à venir suffisent pour le calendrier personnel.
-    forkJoin({ reservations: this.compte.reservations('a_venir', 1, 50), avis: this.compte.mesAvis() }).subscribe({
+    forkJoin({
+      reservations: this.compte.reservations('a_venir', 1, 50),
+      avis: this.compte.mesAvis(),
+    }).subscribe({
       next: ({ reservations, avis }) => {
         this.aVenir.set(reservations.items);
         this.total.set(reservations.total);

@@ -17,7 +17,14 @@ interface EtatActivites {
 /** Catalogue des disciplines, filtrable par catégorie ; chaque carte ouvre la recherche. */
 @Component({
   selector: 'app-activites',
-  imports: [FormsModule, RouterLink, VisualShowcaseComponent, LoaderComponent, EtatVideComponent, ImageSecoursDirective],
+  imports: [
+    FormsModule,
+    RouterLink,
+    VisualShowcaseComponent,
+    LoaderComponent,
+    EtatVideComponent,
+    ImageSecoursDirective,
+  ],
   templateUrl: './activites.html',
   styleUrl: './activites.css',
 })
@@ -38,12 +45,19 @@ export class ActivitesComponent {
   readonly categorie = signal('');
   readonly texte = signal('');
 
-  readonly categories = computed(() => [...new Set(this.etat().activites.map(a => a.categorie))].sort((a, b) => a.localeCompare(b, 'fr')));
+  readonly categories = computed(() =>
+    [...new Set(this.etat().activites.map((a) => a.categorie))].sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    ),
+  );
 
   readonly activites = computed(() => {
     const terme = this.texte().trim().toLocaleLowerCase('fr');
-    return this.etat().activites.filter(a =>
-      (!this.categorie() || a.categorie === this.categorie())
-      && (!terme || `${a.nom} ${a.description ?? ''} ${a.categorie}`.toLocaleLowerCase('fr').includes(terme)));
+    return this.etat().activites.filter(
+      (a) =>
+        (!this.categorie() || a.categorie === this.categorie()) &&
+        (!terme ||
+          `${a.nom} ${a.description ?? ''} ${a.categorie}`.toLocaleLowerCase('fr').includes(terme)),
+    );
   });
 }

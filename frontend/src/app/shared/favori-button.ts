@@ -26,11 +26,16 @@ export class FavorisStore {
   }
 
   recharger(): void {
-    this.compte.favoris().subscribe({ next: favoris => this.favoris.set(favoris), error: () => this.favoris.set([]) });
+    this.compte
+      .favoris()
+      .subscribe({
+        next: (favoris) => this.favoris.set(favoris),
+        error: () => this.favoris.set([]),
+      });
   }
 
   trouver(type: TypeCible, id: number): Favori | undefined {
-    return this.favoris().find(f => f.type === type && f.cible?.id === id);
+    return this.favoris().find((f) => f.type === type && f.cible?.id === id);
   }
 }
 
@@ -38,11 +43,20 @@ export class FavorisStore {
 @Component({
   selector: 'app-favori',
   template: `
-    <button type="button" class="fav-btn" [class.on]="favori()" [disabled]="envoi()"
-      [attr.aria-pressed]="!!favori()" [attr.aria-label]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
-      [title]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'" (click)="basculer($event)">
+    <button
+      type="button"
+      class="fav-btn"
+      [class.on]="favori()"
+      [disabled]="envoi()"
+      [attr.aria-pressed]="!!favori()"
+      [attr.aria-label]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      [title]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      (click)="basculer($event)"
+    >
       <span aria-hidden="true">{{ favori() ? '♥' : '♡' }}</span>
-      @if (avecTexte()) { <span>{{ favori() ? 'Favori' : 'Ajouter aux favoris' }}</span> }
+      @if (avecTexte()) {
+        <span>{{ favori() ? 'Favori' : 'Ajouter aux favoris' }}</span>
+      }
     </button>
   `,
 })
@@ -58,7 +72,9 @@ export class FavoriButtonComponent {
   private readonly router = inject(Router);
 
   readonly envoi = signal(false);
-  readonly favori = computed(() => this.store.favoris().find(f => f.type === this.type() && f.cible?.id === this.cibleId()));
+  readonly favori = computed(() =>
+    this.store.favoris().find((f) => f.type === this.type() && f.cible?.id === this.cibleId()),
+  );
 
   basculer(event: Event): void {
     // Le bouton est souvent posé sur une carte cliquable : on ne suit pas le lien.
@@ -71,7 +87,9 @@ export class FavoriButtonComponent {
 
     this.envoi.set(true);
     const existant = this.favori();
-    const requete: Observable<unknown> = existant ? this.compte.retirerFavori(existant.id) : this.compte.ajouterFavori(this.type(), this.cibleId());
+    const requete: Observable<unknown> = existant
+      ? this.compte.retirerFavori(existant.id)
+      : this.compte.ajouterFavori(this.type(), this.cibleId());
     requete.subscribe({
       next: () => {
         this.store.recharger();

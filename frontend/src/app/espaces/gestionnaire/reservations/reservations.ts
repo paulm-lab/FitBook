@@ -6,7 +6,11 @@ import { Page, Reservation } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { EtatVideComponent, LoaderComponent, PaginationComponent } from '../../../shared/ui';
 
-const STATUTS: Record<string, string> = { confirmee: 'Confirmée', annulee: 'Annulée', terminee: 'Terminée' };
+const STATUTS: Record<string, string> = {
+  confirmee: 'Confirmée',
+  annulee: 'Annulée',
+  terminee: 'Terminée',
+};
 
 /** Réservations des séances de mes salles (US-G04). */
 @Component({
@@ -23,12 +27,32 @@ const STATUTS: Record<string, string> = { confirmee: 'Confirmée', annulee: 'Ann
 
     <div class="row" style="margin-bottom:16px">
       <div class="tabs" role="tablist" aria-label="Période" style="margin:0">
-        <button type="button" class="tab" role="tab" [attr.aria-selected]="periode() === 'a_venir'" (click)="periode.set('a_venir'); charger(1)">À venir</button>
-        <button type="button" class="tab" role="tab" [attr.aria-selected]="periode() === 'toutes'" (click)="periode.set('toutes'); charger(1)">Toutes</button>
+        <button
+          type="button"
+          class="tab"
+          role="tab"
+          [attr.aria-selected]="periode() === 'a_venir'"
+          (click)="periode.set('a_venir'); charger(1)"
+        >
+          À venir
+        </button>
+        <button
+          type="button"
+          class="tab"
+          role="tab"
+          [attr.aria-selected]="periode() === 'toutes'"
+          (click)="periode.set('toutes'); charger(1)"
+        >
+          Toutes
+        </button>
       </div>
       <label class="field" style="min-width:200px">
         <span class="sr-only">Statut</span>
-        <select [value]="statut()" (change)="statut.set($any($event.target).value); charger(1)" aria-label="Filtrer par statut">
+        <select
+          [value]="statut()"
+          (change)="statut.set($any($event.target).value); charger(1)"
+          aria-label="Filtrer par statut"
+        >
           <option value="">Tous les statuts</option>
           <option value="confirmee">Confirmées</option>
           <option value="annulee">Annulées</option>
@@ -43,26 +67,46 @@ const STATUTS: Record<string, string> = { confirmee: 'Confirmée', annulee: 'Ann
       <p class="alert alert--error" role="alert">{{ erreur() }}</p>
     } @else if (page(); as p) {
       @if (p.items.length === 0) {
-        <app-etat-vide titre="Aucune réservation" message="Aucune réservation ne correspond à ces filtres." icone="🎟" />
+        <app-etat-vide
+          titre="Aucune réservation"
+          message="Aucune réservation ne correspond à ces filtres."
+          icone="🎟"
+        />
       } @else {
         <p class="muted">{{ p.total }} réservation(s)</p>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th scope="col">Séance</th><th scope="col">Date</th><th scope="col">Salle</th>
-                <th scope="col">Sportif</th><th scope="col">E-mail</th><th scope="col">Statut</th>
+                <th scope="col">Séance</th>
+                <th scope="col">Date</th>
+                <th scope="col">Salle</th>
+                <th scope="col">Sportif</th>
+                <th scope="col">E-mail</th>
+                <th scope="col">Statut</th>
               </tr>
             </thead>
             <tbody>
               @for (r of p.items; track r.id) {
                 <tr>
-                  <td>@if (r.seance) { <a [routerLink]="['/gestionnaire/seances', r.seance.id, 'inscrits']">{{ r.seance.titre }}</a> }</td>
+                  <td>
+                    @if (r.seance) {
+                      <a [routerLink]="['/gestionnaire/seances', r.seance.id, 'inscrits']">{{
+                        r.seance.titre
+                      }}</a>
+                    }
+                  </td>
                   <td>{{ r.seance?.dateDebut | date: 'EEE d MMM y · HH:mm' }}</td>
                   <td>{{ r.seance?.salle?.nom ?? '—' }}</td>
                   <td>{{ r.sportif?.prenom }} {{ r.sportif?.nom }}</td>
-                  <td>@if (r.sportif?.email) { <a [href]="'mailto:' + r.sportif!.email">{{ r.sportif!.email }}</a> }</td>
-                  <td><span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) }}</span></td>
+                  <td>
+                    @if (r.sportif?.email) {
+                      <a [href]="'mailto:' + r.sportif!.email">{{ r.sportif!.email }}</a>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) }}</span>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -92,15 +136,21 @@ export class ReservationsGestionnaireComponent {
   charger(page: number): void {
     this.chargement.set(true);
     this.erreur.set('');
-    this.gestion.reservationsGestionnaire({ periode: this.periode(), statut: this.statut() || undefined, page }).subscribe({
-      next: p => {
-        this.page.set(p);
-        this.chargement.set(false);
-      },
-      error: error => {
-        this.erreur.set(messageErreur(error, 'Impossible de charger les réservations.'));
-        this.chargement.set(false);
-      },
-    });
+    this.gestion
+      .reservationsGestionnaire({
+        periode: this.periode(),
+        statut: this.statut() || undefined,
+        page,
+      })
+      .subscribe({
+        next: (p) => {
+          this.page.set(p);
+          this.chargement.set(false);
+        },
+        error: (error) => {
+          this.erreur.set(messageErreur(error, 'Impossible de charger les réservations.'));
+          this.chargement.set(false);
+        },
+      });
   }
 }

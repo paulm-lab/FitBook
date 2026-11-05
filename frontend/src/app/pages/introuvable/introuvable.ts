@@ -8,8 +8,11 @@ import { EtatVideComponent } from '../../shared/ui';
   imports: [RouterLink, EtatVideComponent],
   template: `
     <main class="container page" id="contenu">
-      <app-etat-vide titre="Page introuvable" icone="404"
-        message="Cette adresse n’existe pas ou a changé. Retrouvez votre prochaine séance depuis l’accueil ou la recherche.">
+      <app-etat-vide
+        titre="Page introuvable"
+        icone="404"
+        message="Cette adresse n’existe pas ou a changé. Retrouvez votre prochaine séance depuis l’accueil ou la recherche."
+      >
         <div class="row" style="justify-content: center">
           <a class="btn" routerLink="/">Retour à l’accueil</a>
           <a class="btn btn--ghost" routerLink="/recherche">Rechercher une séance</a>

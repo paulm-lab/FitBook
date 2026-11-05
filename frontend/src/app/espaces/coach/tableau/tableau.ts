@@ -18,7 +18,15 @@ interface StatsCoach {
 /** Tableau de bord du coach (US-C06) : chiffres clés, évolution, prochaines séances. */
 @Component({
   selector: 'app-tableau-coach',
-  imports: [RouterLink, DatePipe, DecimalPipe, LoaderComponent, EtatVideComponent, EtoilesComponent, GraphiqueEvolutionComponent],
+  imports: [
+    RouterLink,
+    DatePipe,
+    DecimalPipe,
+    LoaderComponent,
+    EtatVideComponent,
+    EtoilesComponent,
+    GraphiqueEvolutionComponent,
+  ],
   template: `
     <header class="page-header">
       <div>
@@ -31,7 +39,8 @@ interface StatsCoach {
 
     @if (profilIncomplet()) {
       <p class="alert" role="status" style="margin-bottom:20px">
-        Votre profil professionnel est incomplet : ajoutez une bio et vos spécialités pour être trouvé par les sportifs.
+        Votre profil professionnel est incomplet : ajoutez une bio et vos spécialités pour être
+        trouvé par les sportifs.
         <a routerLink="/coach/profil">Compléter mon profil →</a>
       </p>
     }
@@ -42,10 +51,26 @@ interface StatsCoach {
       <p class="alert alert--error" role="alert">{{ erreur() }}</p>
     } @else if (stats(); as s) {
       <div class="stats">
-        <div class="stat"><span class="stat-value">{{ s.nbSeancesAVenir }}</span><span class="stat-label">séances à venir</span></div>
-        <div class="stat"><span class="stat-value">{{ s.nbInscritsAVenir }}</span><span class="stat-label">sportifs inscrits</span></div>
-        <div class="stat"><span class="stat-value">{{ s.tauxRemplissage !== null ? (s.tauxRemplissage | number: '1.0-1') + ' %' : '—' }}</span><span class="stat-label">taux de remplissage</span></div>
-        <div class="stat"><span class="stat-value">{{ s.note.note !== null ? (s.note.note | number: '1.1-1') : '—' }}</span><app-etoiles [note]="s.note.note" [nbAvis]="s.note.nbAvis" /></div>
+        <div class="stat">
+          <span class="stat-value">{{ s.nbSeancesAVenir }}</span
+          ><span class="stat-label">séances à venir</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{ s.nbInscritsAVenir }}</span
+          ><span class="stat-label">sportifs inscrits</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{
+            s.tauxRemplissage !== null ? (s.tauxRemplissage | number: '1.0-1') + ' %' : '—'
+          }}</span
+          ><span class="stat-label">taux de remplissage</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">{{
+            s.note.note !== null ? (s.note.note | number: '1.1-1') : '—'
+          }}</span
+          ><app-etoiles [note]="s.note.note" [nbAvis]="s.note.nbAvis" />
+        </div>
       </div>
 
       <div class="grid grid--2" style="align-items:start">
@@ -54,18 +79,39 @@ interface StatsCoach {
           <app-graphique-evolution [donnees]="s.evolution" />
         </section>
         <section class="panel">
-          <div class="row row--between"><h2>Prochaines séances</h2><a routerLink="/coach/seances" class="text-link">Tout voir →</a></div>
+          <div class="row row--between">
+            <h2>Prochaines séances</h2>
+            <a routerLink="/coach/seances" class="text-link">Tout voir →</a>
+          </div>
           @if (prochaines().length === 0) {
-            <app-etat-vide titre="Aucune séance programmée" message="Créez votre prochaine séance pour la rendre réservable." icone="📅" />
+            <app-etat-vide
+              titre="Aucune séance programmée"
+              message="Créez votre prochaine séance pour la rendre réservable."
+              icone="📅"
+            />
           } @else {
             <ul class="stack" style="list-style:none;margin:0;padding:0;gap:10px">
               @for (seance of prochaines(); track seance.id) {
-                <li class="row row--between" style="padding:10px 0;border-bottom:1px solid var(--border)">
+                <li
+                  class="row row--between"
+                  style="padding:10px 0;border-bottom:1px solid var(--border)"
+                >
                   <span>
-                    <strong>{{ seance.titre }}</strong><br>
-                    <span class="muted">{{ seance.dateDebut | date: 'EEE d MMM · HH:mm' }} · {{ seance.capaciteMax - seance.placesDisponibles }}/{{ seance.capaciteMax }} inscrits</span>
+                    <strong>{{ seance.titre }}</strong
+                    ><br />
+                    <span class="muted"
+                      >{{ seance.dateDebut | date: 'EEE d MMM · HH:mm' }} ·
+                      {{ seance.capaciteMax - seance.placesDisponibles }}/{{
+                        seance.capaciteMax
+                      }}
+                      inscrits</span
+                    >
                   </span>
-                  <a class="btn btn--sm btn--ghost" [routerLink]="['/coach/seances', seance.id, 'inscrits']">Inscrits</a>
+                  <a
+                    class="btn btn--sm btn--ghost"
+                    [routerLink]="['/coach/seances', seance.id, 'inscrits']"
+                    >Inscrits</a
+                  >
                 </li>
               }
             </ul>
@@ -89,13 +135,13 @@ export class TableauCoachComponent {
   });
 
   constructor() {
-    this.gestion.profilCoach().subscribe({ next: p => this.profil.set(p) });
+    this.gestion.profilCoach().subscribe({ next: (p) => this.profil.set(p) });
     this.gestion.statsCoach().subscribe({
-      next: s => {
+      next: (s) => {
         this.stats.set(s);
         this.chargement.set(false);
       },
-      error: error => {
+      error: (error) => {
         this.erreur.set(messageErreur(error, 'Impossible de charger vos statistiques.'));
         this.chargement.set(false);
       },

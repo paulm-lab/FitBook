@@ -18,8 +18,11 @@ describe('ConnexionComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: auth },
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => returnUrl } } } }
-      ]
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: () => returnUrl } } },
+        },
+      ],
     }).compileComponents();
   });
 
@@ -31,7 +34,15 @@ describe('ConnexionComponent', () => {
 
   it('connecte l’utilisateur et le redirige vers la page demandée', () => {
     returnUrl = '/profil';
-    auth.connexion.mockReturnValue(of({ id: 1, nom: 'Test', prenom: 'Camille', email: 'camille@example.test', telephone: '0612345678' }));
+    auth.connexion.mockReturnValue(
+      of({
+        id: 1,
+        nom: 'Test',
+        prenom: 'Camille',
+        email: 'camille@example.test',
+        telephone: '0612345678',
+      }),
+    );
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     const component = creerComposant();
 
@@ -44,7 +55,15 @@ describe('ConnexionComponent', () => {
 
   it('refuse une redirection vers un autre site et ouvre l’espace du rôle', () => {
     returnUrl = '//exemple.com';
-    auth.connexion.mockReturnValue(of({ id: 1, nom: 'Test', prenom: 'Camille', email: 'camille@example.test', telephone: '0612345678' }));
+    auth.connexion.mockReturnValue(
+      of({
+        id: 1,
+        nom: 'Test',
+        prenom: 'Camille',
+        email: 'camille@example.test',
+        telephone: '0612345678',
+      }),
+    );
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
 
     creerComposant().connecter();
@@ -63,10 +82,15 @@ describe('ConnexionComponent', () => {
   });
 
   it('affiche le message du serveur pour un compte non activé', () => {
-    auth.connexion.mockReturnValue(throwError(() => new HttpErrorResponse({
-      status: 403,
-      error: { message: 'Confirmez votre adresse e-mail avant de vous connecter.' }
-    })));
+    auth.connexion.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: { message: 'Confirmez votre adresse e-mail avant de vous connecter.' },
+          }),
+      ),
+    );
     const component = creerComposant();
 
     component.connecter();
@@ -87,10 +111,15 @@ describe('ConnexionComponent', () => {
   });
 
   it('n’affiche pas le renvoi de lien pour un compte bloqué', () => {
-    auth.connexion.mockReturnValue(throwError(() => new HttpErrorResponse({
-      status: 403,
-      error: { message: 'Ce compte a été bloqué. Contactez l’administrateur.' }
-    })));
+    auth.connexion.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: { message: 'Ce compte a été bloqué. Contactez l’administrateur.' },
+          }),
+      ),
+    );
     const component = creerComposant();
 
     component.connecter();
@@ -100,7 +129,11 @@ describe('ConnexionComponent', () => {
   });
 
   it('affiche le message de limitation après trop de tentatives', () => {
-    auth.connexion.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 429, error: { message: 'Trop de tentatives.' } })));
+    auth.connexion.mockReturnValue(
+      throwError(
+        () => new HttpErrorResponse({ status: 429, error: { message: 'Trop de tentatives.' } }),
+      ),
+    );
     const component = creerComposant();
 
     component.connecter();
@@ -109,7 +142,9 @@ describe('ConnexionComponent', () => {
   });
 
   it('réactive le formulaire si le service lève une exception synchrone', () => {
-    auth.connexion.mockImplementation(() => { throw new Error('service unavailable'); });
+    auth.connexion.mockImplementation(() => {
+      throw new Error('service unavailable');
+    });
     const component = creerComposant();
 
     component.connecter();
@@ -131,7 +166,10 @@ describe('ConnexionComponent', () => {
     auth.connexion.mockReturnValue(response$);
     const fixture = TestBed.createComponent(ConnexionComponent);
     await fixture.whenStable();
-    fixture.componentInstance.formulaire.setValue({ email: 'camille@example.test', password: 'MotDePasse-123!' });
+    fixture.componentInstance.formulaire.setValue({
+      email: 'camille@example.test',
+      password: 'MotDePasse-123!',
+    });
     const element: HTMLElement = fixture.nativeElement;
     const bouton = () => element.querySelector('button[type="submit"]') as HTMLButtonElement;
 

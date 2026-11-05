@@ -7,15 +7,36 @@
     </div>
     <label class="field activity-search">
       <span class="sr-only">Rechercher une activité</span>
-      <input type="search" [ngModel]="texte()" (ngModelChange)="texte.set($event)" placeholder="Rechercher une activité">
+      <input
+        type="search"
+        [ngModel]="texte()"
+        (ngModelChange)="texte.set($event)"
+        placeholder="Rechercher une activité"
+      />
     </label>
   </header>
 
   @if (categories().length > 1) {
     <div class="tabs" role="group" aria-label="Filtrer par catégorie">
-      <button type="button" class="tab" [class.active]="!categorie()" [attr.aria-pressed]="!categorie()" (click)="categorie.set('')">Toutes</button>
+      <button
+        type="button"
+        class="tab"
+        [class.active]="!categorie()"
+        [attr.aria-pressed]="!categorie()"
+        (click)="categorie.set('')"
+      >
+        Toutes
+      </button>
       @for (c of categories(); track c) {
-        <button type="button" class="tab" [class.active]="categorie() === c" [attr.aria-pressed]="categorie() === c" (click)="categorie.set(c)">{{ c }}</button>
+        <button
+          type="button"
+          class="tab"
+          [class.active]="categorie() === c"
+          [attr.aria-pressed]="categorie() === c"
+          (click)="categorie.set(c)"
+        >
+          {{ c }}
+        </button>
       }
     </div>
   }
@@ -23,27 +44,59 @@
   @if (chargement()) {
     <app-loader texte="Chargement des activités…" />
   } @else if (erreur()) {
-    <p class="alert alert--error" role="alert">Impossible de charger les activités. Réessayez plus tard.</p>
+    <p class="alert alert--error" role="alert">
+      Impossible de charger les activités. Réessayez plus tard.
+    </p>
   } @else {
     <p class="sr-only" aria-live="polite">{{ activites().length }} activité(s)</p>
     <div class="grid">
       @for (a of activites(); track a.id) {
         <article class="card card--link">
-          <a class="card-media" [routerLink]="['/recherche']" [queryParams]="{ activiteId: a.id }" tabindex="-1" aria-hidden="true">
-            <img [src]="a.image || '/assets/fitbook-media-fallback.svg'" alt="" loading="lazy" decoding="async" appSecours>
+          <a
+            class="card-media"
+            [routerLink]="['/recherche']"
+            [queryParams]="{ activiteId: a.id }"
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            <img
+              [src]="a.image || '/assets/fitbook-media-fallback.svg'"
+              alt=""
+              loading="lazy"
+              decoding="async"
+              appSecours
+            />
           </a>
           <div class="card-body">
             <span class="card-kicker">{{ a.categorie }}</span>
-            <h2 class="card-title"><a [routerLink]="['/recherche']" [queryParams]="{ activiteId: a.id }">{{ a.nom }}</a></h2>
-            @if (a.description) { <p class="card-meta">{{ a.description }}</p> }
+            <h2 class="card-title">
+              <a [routerLink]="['/recherche']" [queryParams]="{ activiteId: a.id }">{{ a.nom }}</a>
+            </h2>
+            @if (a.description) {
+              <p class="card-meta">{{ a.description }}</p>
+            }
             <div class="card-footer">
-              <span class="muted">{{ a.niveau }}@if (a.duree) { · {{ a.duree }} min }</span>
-              <a class="btn btn--sm" [routerLink]="['/recherche']" [queryParams]="{ activiteId: a.id }">Voir les séances</a>
+              <span class="muted"
+                >{{ a.niveau }}
+                @if (a.duree) {
+                  · {{ a.duree }} min
+                }
+              </span>
+              <a
+                class="btn btn--sm"
+                [routerLink]="['/recherche']"
+                [queryParams]="{ activiteId: a.id }"
+                >Voir les séances</a
+              >
             </div>
           </div>
         </article>
       } @empty {
-        <app-etat-vide titre="Aucune activité" message="Aucune activité ne correspond à cette recherche." icone="⌕" />
+        <app-etat-vide
+          titre="Aucune activité"
+          message="Aucune activité ne correspond à cette recherche."
+          icone="⌕"
+        />
       }
     </div>
   }
