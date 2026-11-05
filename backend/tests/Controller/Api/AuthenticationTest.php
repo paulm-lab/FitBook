@@ -4,25 +4,30 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
-use App\Entity\Utilisateur;
-use App\Repository\UtilisateurRepository;
+use App\Entity\User;
+use App\Repository\UserRepository;
 use App\Service\FitBookMailer;
 use App\Service\MailQueueTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\RawMessage;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
+/**
+ * Inscription, confirmation de l'adresse par lien signé, connexion et déconnexion.
+ */
 final class AuthenticationTest extends WebTestCase
 {
     private const PASSWORD = 'MotDePasse-123!';
 
-    public function testRegistrationPersistsAnInactiveUserWithHashedPassword(): void
+    public function testRegistrationPersistsAnUnverifiedSportifWithHashedPassword(): void
     {
         $client = $this->clientWithSchema();
 
@@ -37,13 +42,14 @@ final class AuthenticationTest extends WebTestCase
 
         $user = $this->findUser('camille@example.test');
         self::assertNotNull($user);
-        self::assertSame('Camille', $user->getPrenom());
-        self::assertSame('Test', $user->getNom());
-        self::assertSame('+33123456789', $user->getTelephone());
-        self::assertSame('inactif', $user->getStatut());
+        self::assertSame('Camille', $user->getFirstName());
+        self::assertSame('Test', $user->getLastName());
+        self::assertSame('+33123456789', $user->getPhone());
+        self::assertSame([User::ROLE_SPORTIF], $user->getRoles());
+        self::assertFalse($user->isVerified());
         self::assertNotSame(self::PASSWORD, $user->getPassword());
-        self::assertNotNull($user->getVerificationTokenHash());
         self::assertQueuedEmailCount(1);
+        self::assertStringContainsString('_hash=', $this->verificationLinkFromEmail());
     }
 
     public function testRegistrationReportsAnEmailAcceptedSynchronouslyAsSent(): void
@@ -80,9 +86,7 @@ final class AuthenticationTest extends WebTestCase
         self::assertSame('failed', $response['verificationEmailStatus']);
         self::assertFalse($response['verificationEmailQueued']);
         self::assertStringContainsString('demander un nouveau lien', $response['message']);
-        $user = $this->findUser('camille@example.test');
-        self::assertSame('inactif', $user->getStatut());
-        self::assertNotNull($user->getVerificationTokenHash());
+        self::assertFalse($this->findUser('camille@example.test')->isVerified());
 
         $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
         self::assertResponseStatusCodeSame(503);
@@ -125,7 +129,7 @@ final class AuthenticationTest extends WebTestCase
     public function testUnverifiedAccountCannotLogIn(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser('inactif');
+        $this->createUser(verified: false);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
 
@@ -133,10 +137,21 @@ final class AuthenticationTest extends WebTestCase
         self::assertSame('Confirmez votre adresse e-mail avant de vous connecter.', $this->json($client)['message']);
     }
 
-    public function testUnverifiedStatusIsNotRevealedWithAWrongPassword(): void
+    public function testBlockedAccountCannotLogIn(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser('inactif');
+        $this->createUser(verified: true, blocked: true);
+
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertStringContainsString('bloqué', $this->json($client)['message']);
+    }
+
+    public function testAccountStatusIsNotRevealedWithAWrongPassword(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->createUser(verified: false);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => 'Mauvais-mdp-1']);
 
@@ -144,48 +159,52 @@ final class AuthenticationTest extends WebTestCase
         self::assertSame('Adresse e-mail ou mot de passe incorrect.', $this->json($client)['message']);
     }
 
-    public function testEmailVerificationActivatesTheAccount(): void
+    public function testSignedLinkFromTheEmailActivatesTheAccount(): void
     {
         $client = $this->clientWithSchema();
-        $user = $this->createUser('inactif');
-        $token = str_repeat('ab', 32);
-        $user->setVerificationTokenHash(hash('sha256', $token))->setVerificationTokenExpiresAt(new \DateTimeImmutable('+1 hour'));
-        $this->entityManager()->flush();
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
 
-        $client->request('GET', '/api/auth/verify-email?token=' . $token);
+        $client->request('GET', $this->verificationLinkFromEmail());
 
         self::assertResponseRedirects('http://localhost:4200/verification-email?status=success');
-        $user = $this->findUser('camille@example.test');
-        self::assertSame('actif', $user->getStatut());
-        self::assertNotNull($user->getEmailVerifiedAt());
-        self::assertNull($user->getVerificationTokenHash());
+        self::assertTrue($this->findUser('camille@example.test')->isVerified());
+
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertResponseIsSuccessful();
     }
 
-    public function testExpiredOrUnknownVerificationTokenIsRejected(): void
+    public function testTamperedOrExpiredLinksAreRejected(): void
     {
         $client = $this->clientWithSchema();
-        $user = $this->createUser('inactif');
-        $token = str_repeat('cd', 32);
-        $user->setVerificationTokenHash(hash('sha256', $token))->setVerificationTokenExpiresAt(new \DateTimeImmutable('-1 minute'));
-        $this->entityManager()->flush();
+        $user = $this->createUser(verified: false);
+        $signer = static::getContainer()->get(UriSigner::class);
+        $base = sprintf('http://localhost/api/auth/verify-email?email=%s&id=%d', hash('sha256', (string) $user->getEmail()), $user->getId());
 
-        $client->request('GET', '/api/auth/verify-email?token=' . $token);
+        // Lien modifié après signature : un autre identifiant.
+        $tampered = str_replace('id=' . $user->getId(), 'id=999', $signer->sign($base, new \DateTimeImmutable('+1 hour')));
+        $client->request('GET', $tampered);
         self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
 
-        $client->request('GET', '/api/auth/verify-email?token=' . str_repeat('0', 64));
+        // Lien expiré.
+        $client->request('GET', $signer->sign($base, new \DateTimeImmutable('-1 minute')));
         self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
-        self::assertSame('inactif', $this->findUser('camille@example.test')->getStatut());
+
+        // Lien sans signature.
+        $client->request('GET', $base);
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
+
+        self::assertFalse($this->findUser('camille@example.test')->isVerified());
     }
 
     public function testActiveAccountLogsInAndKeepsItsSessionUntilLogout(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser('actif');
+        $this->createUser(verified: true);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
         self::assertResponseIsSuccessful();
         self::assertSame('Camille', $this->json($client)['prenom']);
-        self::assertArrayNotHasKey('motDePasse', $this->json($client));
+        self::assertArrayNotHasKey('password', $this->json($client));
 
         $client->request('GET', '/api/me');
         self::assertResponseIsSuccessful();
@@ -197,16 +216,25 @@ final class AuthenticationTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testResendVerificationQueuesANewLinkForInactiveAccounts(): void
+    public function testResendVerificationQueuesANewLinkForUnverifiedAccounts(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser('inactif');
+        $this->createUser(verified: false);
 
         $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
 
         self::assertResponseIsSuccessful();
-        self::assertNotNull($this->findUser('camille@example.test')->getVerificationTokenHash());
         self::assertQueuedEmailCount(1);
+    }
+
+    public function testResendGivesTheSameAnswerForUnknownAddresses(): void
+    {
+        $client = $this->clientWithSchema();
+
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
+
+        self::assertResponseIsSuccessful();
+        self::assertQueuedEmailCount(0);
     }
 
     private function clientWithSchema(): KernelBrowser
@@ -215,7 +243,7 @@ final class AuthenticationTest extends WebTestCase
         // La base SQLite en mémoire doit survivre entre les requêtes d'un même test.
         $client->disableReboot();
         $em = $this->entityManager();
-        (new SchemaTool($em))->createSchema([$em->getClassMetadata(Utilisateur::class)]);
+        (new SchemaTool($em))->createSchema($em->getMetadataFactory()->getAllMetadata());
 
         return $client;
     }
@@ -226,17 +254,31 @@ final class AuthenticationTest extends WebTestCase
         $container->set(FitBookMailer::class, new FitBookMailer($mailer, $container->get(MailQueueTracker::class), 'no-reply@fitbook.test'));
     }
 
-    private function createUser(string $statut): Utilisateur
+    /**
+     * Lien de confirmation lu dans le HTML de l'e-mail mis en file, tel que l'utilisateur le reçoit.
+     * (Symfony vide le contexte Twig une fois l'e-mail rendu : on lit donc le corps HTML.)
+     */
+    private function verificationLinkFromEmail(): string
     {
-        $user = (new Utilisateur())
-            ->setNom('Test')
-            ->setPrenom('Camille')
+        $email = self::getMailerMessage();
+        self::assertInstanceOf(TemplatedEmail::class, $email);
+        self::assertMatchesRegularExpression('#href="([^"]*verify-email[^"]*)"#', (string) $email->getHtmlBody());
+        preg_match('#href="([^"]*verify-email[^"]*)"#', (string) $email->getHtmlBody(), $match);
+
+        return html_entity_decode($match[1]);
+    }
+
+    private function createUser(bool $verified, bool $blocked = false): User
+    {
+        $user = (new User())
+            ->setLastName('Test')
+            ->setFirstName('Camille')
             ->setEmail('camille@example.test')
-            ->setTelephone('0612345678')
-            ->setRole('ROLE_USER')
-            ->setDateInscription(new \DateTimeImmutable('today'))
-            ->setStatut($statut);
-        $user->setMotDePasse(static::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, self::PASSWORD));
+            ->setPhone('0612345678')
+            ->setRoles([User::ROLE_SPORTIF])
+            ->setIsVerified($verified)
+            ->setIsBlocked($blocked);
+        $user->setPassword(static::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, self::PASSWORD));
         $this->entityManager()->persist($user);
         $this->entityManager()->flush();
 
@@ -255,11 +297,11 @@ final class AuthenticationTest extends WebTestCase
         ], $overrides);
     }
 
-    private function findUser(string $email): ?Utilisateur
+    private function findUser(string $email): ?User
     {
         $this->entityManager()->clear();
 
-        return static::getContainer()->get(UtilisateurRepository::class)->findOneBy(['email' => $email]);
+        return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
     }
 
     private function entityManager(): EntityManagerInterface

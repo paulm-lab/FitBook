@@ -15,7 +15,7 @@ avant la Phase 2.
 | Domaine | État actuel |
 |---------|-------------|
 | Entités | `Utilisateur`, `Coach`, `Salle`, `Activite`, `Seance`, `Reservation`, `Avis`, `Favori` (noms français) |
-| Base | MySQL **9.1** (WAMP), 21 migrations Doctrine, connexion en `root` |
+| Base | MySQL **9.1** (WAMP), 21 migrations Doctrine, connexion en `root`. Tables en **MyISAM** (moteur par défaut de WAMP) : ni clés étrangères, ni transactions, ni verrous — découvert en Phase 2, corrigé en imposant InnoDB (voir [MLD § 5](mld.md)) |
 | Authentification | Session PHP (cookie), `json_login`, un seul rôle utilisé (`ROLE_USER`) |
 | Inscription | Validation manuelle, mot de passe haché, e-mail de vérification par jeton maison (haché, 24 h) |
 | E-mails | Symfony Mailer + Messenger (file asynchrone), Mailpit en développement |

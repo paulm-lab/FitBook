@@ -8,6 +8,13 @@ doctrine:
 
         profiling_collect_backtrace: '%kernel.debug%'
         use_savepoints: true
+
+        # InnoDB imposé : certains serveurs (WAMP) créent les tables en MyISAM par défaut,
+        # moteur qui ignore les clés étrangères, les transactions et les verrous FOR UPDATE.
+        default_table_options:
+            engine: InnoDB
+            charset: utf8mb4
+            collation: utf8mb4_unicode_ci
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true
