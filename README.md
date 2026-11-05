@@ -279,12 +279,11 @@ types : `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 Ces points n'ont pas pu être réalisés depuis l'environnement de développement de la session
 de finalisation ; ils ne demandent aucun changement de code.
 
-1. **Mettre à jour Symfony** (avis de sécurité sur 7.4.x < 7.4.23) :
-   `cd backend && composer update "symfony/*" --with-all-dependencies`, puis relancer les tests.
-   Le fichier `C:\Windows\System32\drivers\etc\hosts` contient `8.8.8.8 codeload.github.com`,
-   qui empêche Composer de télécharger les archives : retirer cette ligne d'abord.
-2. **Installer les outils d'analyse PHP** (configurations fournies : `phpstan.dist.neon`,
+1. **Installer les outils d'analyse PHP** (configurations fournies : `phpstan.dist.neon`,
    `.php-cs-fixer.dist.php`) :
+   Le fichier `C:\Windows\System32\drivers\etc\hosts` contient `8.8.8.8 codeload.github.com`,
+   qui empêche Composer de télécharger les archives : retirer cette ligne d'abord, ou ajouter
+   `--prefer-source` (clonage Git depuis github.com, plus lent).
    `composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/extension-installer friendsofphp/php-cs-fixer`,
    puis `vendor/bin/phpstan analyse` et `vendor/bin/php-cs-fixer fix --dry-run --diff`.
-3. **Pousser** les branches et le tag : `git push origin main develop --tags`.
+2. **Pousser** les branches et le tag : `git push origin main develop --tags`.

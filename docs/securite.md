@@ -74,14 +74,10 @@
 ### A06 — Composants vulnérables
 
 - `npm audit --omit=dev` : **0 vulnérabilité** (5 novembre 2026).
-- `composer audit` signale des avis sur Symfony 7.4.x antérieurs à **7.4.23** (http-foundation,
-  routing, security-http, serializer…). **Action requise** :
-  `composer update "symfony/*" --with-all-dependencies` puis relancer les tests. La mise à jour
-  n'a pas pu être faite depuis le poste de développement : l'entrée `8.8.8.8 codeload.github.com`
-  du fichier `hosts` de Windows empêche Composer de télécharger les archives.
-  Aucun des composants concernés n'est exposé de façon exploitable dans FitBook (pas de
-  `private_ranges`, pas d'X509, pas de dénormalisation de fichiers), mais la mise à jour reste
-  nécessaire.
+- `composer audit` : **aucun avis de sécurité** depuis la mise à jour vers **Symfony 7.4.23**
+  (LTS), le 5 novembre 2026 : les avis publiés sur les versions 7.4.x antérieures
+  (http-foundation, routing, security-http, serializer…) sont corrigés.
+- À refaire avant chaque livraison : `composer audit` et `npm audit --omit=dev`.
 
 ### A07 — Identification et authentification
 
