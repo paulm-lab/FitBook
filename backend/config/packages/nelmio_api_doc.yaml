@@ -1,0 +1,28 @@
+# Documentation OpenAPI de l'API, générée à partir des routes et des attributs #[OA\…].
+# Interface Swagger : http://127.0.0.1:8000/api/doc — JSON : /api/doc.json
+nelmio_api_doc:
+    documentation:
+        info:
+            title: FitBook API
+            description: |
+                API REST JSON de FitBook (UAA MI08) : réservation de salles, de cours et de coachs.
+
+                Authentification : POST /api/login renvoie un jeton JWT, à envoyer ensuite dans
+                l'en-tête « Authorization: Bearer <jeton> » (bouton « Authorize »).
+
+                Erreurs : 400 JSON invalide · 401 non authentifié · 403 refusé · 404 introuvable ·
+                409 conflit métier · 422 { "errors": { "champ": "message" } } · 429 trop de tentatives.
+            version: 1.0.0
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - Bearer: []
+    areas:
+        default:
+            # Toutes les routes /api, sauf la documentation elle-même.
+            path_patterns:
+                - ^/api(?!/doc)
