@@ -2,8 +2,13 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
+    # L'API est sans état (JWT) : aucune session PHP n'est démarrée par l'application.
     session: true
+
+    # Seuls ces noms d'hôte sont acceptés (sinon réponse 400). Les liens absolus envoyés par
+    # e-mail (confirmation, mot de passe oublié) ne peuvent donc pas pointer vers un hôte
+    # choisi par un attaquant via l'en-tête Host.
+    trusted_hosts: '%env(TRUSTED_HOSTS)%'
 
     #esi: true
     #fragments: true

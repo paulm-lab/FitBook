@@ -8,6 +8,7 @@ use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use App\Tests\Support\JwtLoginTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -15,6 +16,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  */
 final class ProfileControllerTest extends WebTestCase
 {
+    use JwtLoginTrait;
+
     public function testAnonymousVisitorCannotReadOwnProfile(): void
     {
         $client = $this->clientWithSchema();
@@ -137,7 +140,9 @@ final class ProfileControllerTest extends WebTestCase
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->persist($user);
         $em->flush();
-        $client?->loginUser($user);
+        if ($client !== null) {
+            $this->loginWithJwt($client, $user);
+        }
 
         return $user;
     }

@@ -3,7 +3,7 @@
 Plateforme web de réservation de **salles de sport**, de **cours** et de **coachs sportifs**.
 Projet de formation **UAA MI08 — Produire un projet Web**.
 
-> 🚧 **Phase 2 — Base de données et socle backend** terminée.
+> 🚧 **Phase 3 — Authentification, rôles et voters** terminée.
 > Le guide d'installation complet (frontend compris) sera finalisé en Phase 10.
 
 ---
@@ -46,7 +46,7 @@ fitbook-mi08/
 └── README.md
 ```
 
-## Installation du backend (état Phase 2)
+## Installation du backend (état Phase 3)
 
 Prérequis : PHP 8.3, Composer, [Symfony CLI](https://symfony.com/download), MySQL 8+
 (WAMP ou Docker) et [Mailpit](https://mailpit.axllent.org/) pour les e-mails.
@@ -73,19 +73,58 @@ sont limités à ces deux bases. L'application ne se connecte jamais en `root`.
 ```dotenv
 DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
 MAILER_DSN=smtp://127.0.0.1:1025
+# Passphrase de la clé privée JWT : une longue chaîne aléatoire.
+JWT_PASSPHRASE=une-longue-phrase-secrete-aleatoire
 ```
 
 (Avec Docker, utiliser le port `3307`.)
 
-### 3. Dépendances, schéma et données de démonstration
+### 3. Dépendances, clés JWT, schéma et données de démonstration
 
 ```bash
 cd backend
 symfony composer install
+symfony console lexik:jwt:generate-keypair      # clés RSA dans config/jwt/ (jamais versionnées)
 symfony console doctrine:migrations:migrate     # tables, contraintes CHECK, procédures stockées
 symfony console doctrine:fixtures:load          # jeu de démonstration (Bruxelles)
 symfony serve --port=8000 --no-tls              # API sur http://127.0.0.1:8000
 symfony console messenger:consume async -vv     # dans un 2e terminal : envoi des e-mails
+```
+
+> **Windows** : si `lexik:jwt:generate-keypair` échoue avec `error:80000003:system library`,
+> indiquer à OpenSSL le fichier livré avec PHP, puis relancer la commande :
+> `set OPENSSL_CONF=C:\wamp64\bin\php\php8.3.14\extras\ssl\openssl.cnf`
+
+## Authentification (Phase 3)
+
+| Route | Méthode | Rôle |
+|-------|---------|------|
+| `/api/inscription` | POST | Inscription : `prenom`, `nom`, `email`, `telephone`, `password`, `role` (`sportif` par défaut, `coach` ou `gestionnaire` ; jamais `admin`) |
+| `/api/auth/verify-email` | GET | Lien signé reçu par e-mail (VerifyEmailBundle) : active le compte |
+| `/api/auth/resend-verification` | POST | Renvoie le lien de confirmation (`email`) |
+| `/api/login` | POST | `email` + `password` → `{ "token": "…", profil }` + cookie `BEARER` HttpOnly |
+| `/api/me` | GET | Utilisateur connecté |
+| `/api/logout` | POST | Supprime le cookie |
+| `/api/auth/forgot-password` | POST | Envoie un lien de réinitialisation (`email`) |
+| `/api/auth/reset-password` | POST | `token` + `password` : nouveau mot de passe (lien à usage unique, valable 1 h) |
+
+- **JWT** (LexikJWTAuthenticationBundle), valable 1 h, accepté dans `Authorization: Bearer <jeton>`
+  ou dans le cookie `BEARER` (HttpOnly, SameSite=Lax). L'API est sans état : aucune session PHP.
+- **Rôles** : `ROLE_SPORTIF`, `ROLE_COACH`, `ROLE_GESTIONNAIRE`, `ROLE_ADMIN` (hérite de tous).
+  **Voters** : un coach ne modifie que ses séances, un gestionnaire que ses salles et leurs
+  séances, un sportif que ses réservations et ses avis (`src/Security/Voter/`).
+- **Protections** : 5 échecs de connexion en 15 min → 429 ; 5 inscriptions par IP et par heure ;
+  3 demandes d'e-mail (renvoi, mot de passe oublié) par adresse en 15 min ; réponses identiques
+  que l'adresse existe ou non ; en-têtes `Host` inconnus refusés (`TRUSTED_HOSTS`).
+- **Erreurs** : `400` JSON mal formé · `401` non authentifié · `403` compte non vérifié, bloqué ou
+  droit refusé · `409` adresse déjà utilisée · `422` `{ "errors": { "champ": "message" } }` · `429` trop de tentatives.
+
+Exemple avec `curl` :
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/login -H "Content-Type: application/json" \
+     -d '{"email":"sportif1@fitbook.test","password":"Sportif123!"}'
+curl http://127.0.0.1:8000/api/me -H "Authorization: Bearer <jeton>"
 ```
 
 ## Comptes de démonstration
@@ -114,7 +153,8 @@ symfony php bin/phpunit                 # toute la suite
 symfony php bin/phpunit --group mysql   # procédures stockées et contraintes CHECK (MySQL)
 ```
 
-Les tests fonctionnels utilisent SQLite en mémoire. Les tests d'intégration du groupe `mysql`
+Les tests fonctionnels utilisent SQLite en mémoire et des clés JWT de test générées
+automatiquement dans `backend/var/jwt-test/`. Les tests d'intégration du groupe `mysql`
 reconstruisent la base `fitbook_test` à partir des migrations ; ils nécessitent, dans
 `backend/.env.test.local` (non versionné) :
 
@@ -151,7 +191,7 @@ types : `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 |-------|---------|------|
 | 1 | Analyse : GitFlow, arborescence, documentation | ✅ Terminée |
 | 2 | Base de données et socle backend | ✅ Terminée |
-| 3 | Authentification, rôles, voters | ⏳ |
+| 3 | Authentification, rôles, voters | ✅ Terminée |
 | 4 | API métier, recherche, réservations, e-mails | ⏳ |
 | 5 | Socle frontend, design system | ⏳ |
 | 6 | Pages publiques et espace sportif | ⏳ |

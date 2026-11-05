@@ -1,0 +1,38 @@
+lexik_jwt_authentication:
+    # Clés RSA générées par : symfony console lexik:jwt:generate-keypair (jamais versionnées).
+    secret_key: '%env(resolve:JWT_SECRET_KEY)%'
+    public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
+    pass_phrase: '%env(JWT_PASSPHRASE)%'
+    token_ttl: '%env(int:JWT_TTL)%'
+
+    # Le jeton est accepté dans l'en-tête Authorization (front refondu, Postman)
+    # ou dans le cookie BEARER (front actuel, qui s'appuie sur les cookies).
+    token_extractors:
+        authorization_header:
+            enabled: true
+            prefix: Bearer
+            name: Authorization
+        cookie:
+            enabled: true
+            name: BEARER
+
+    # À la connexion, le jeton est aussi posé dans un cookie HttpOnly : inaccessible au
+    # JavaScript (protection XSS) et non envoyé par les autres sites (SameSite=Lax).
+    set_cookies:
+        BEARER:
+            samesite: lax
+            path: /
+            httpOnly: true
+            secure: false
+    # Le jeton reste aussi dans le corps de la réponse, pour les clients sans cookie.
+    remove_token_from_body_when_cookies_used: false
+
+when@prod:
+    lexik_jwt_authentication:
+        set_cookies:
+            BEARER:
+                samesite: lax
+                path: /
+                httpOnly: true
+                # HTTPS obligatoire en production.
+                secure: true
