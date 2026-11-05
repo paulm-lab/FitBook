@@ -1,59 +1,40 @@
-# FitbookFront
+# FitBook — frontend Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.17.
+Application Angular 21 (composants standalone, signals, détection de changements *zoneless*,
+routes chargées à la demande). Installation et commandes : voir le [README principal](../README.md#frontend).
 
-## Development server
+## Organisation
 
-To start a local development server, run:
-
-```bash
-ng serve
+```text
+src/app/
+├── app.*                 # Coquille : en-tête selon le rôle, notifications, mode sombre, pied de page
+├── app.routes.ts         # Toutes les routes (loadComponent), guards, anciennes adresses redirigées
+├── core/
+│   ├── models.ts         # Types des réponses de l'API (docs/api.md)
+│   ├── http.ts           # API_URL, paramètres de requête, messages d'erreur (422 par champ)
+│   ├── auth/             # AuthService (session en signals), intercepteur JWT / 401, guards par rôle
+│   └── services/         # CatalogueService, CompteService, GestionService, toasts, thème
+├── shared/               # Composants réutilisables : toasts, confirmation, pagination, étoiles,
+│                         # favoris, cartes, avis, FullCalendar, Chart.js, Leaflet
+├── pages/                # Pages publiques et pages de compte
+└── espaces/
+    ├── espace-layout.ts  # Menu latéral commun (liens définis dans app.routes.ts)
+    ├── sportif/          # /mon-espace
+    ├── coach/            # /coach
+    ├── gestionnaire/     # /gestionnaire
+    ├── admin/            # /admin
+    └── commun/           # Écrans partagés coach / gestionnaire / admin (séances, salles, calendrier…)
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Choix techniques
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- **Session** : le jeton JWT est posé par l'API dans un cookie HttpOnly et gardé en mémoire
+  (jamais dans `localStorage`) ; `/api/me` restaure la session au démarrage
+  (`provideAppInitializer`). L'intercepteur ajoute l'en-tête `Authorization` et renvoie vers
+  `/connexion?returnUrl=…` sur un 401.
+- **Droits** : les guards masquent les espaces selon le rôle ; l'API reste seule juge (rôles et Voters).
+- **Styles** : jetons de la charte dans `src/styles.css` (variables CSS), redéfinis pour le mode
+  sombre (`data-theme="dark"`). Les composants n'utilisent que ces variables.
+- **Sécurité** : aucun `innerHTML` ; les commentaires d'avis sont affichés en texte.
+- **Accessibilité** : lien d'évitement, focus visible, libellés et erreurs liés aux champs,
+  régions `aria-live` pour les toasts et les compteurs, règles d'accessibilité d'angular-eslint.
