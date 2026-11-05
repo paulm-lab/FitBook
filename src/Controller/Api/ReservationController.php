@@ -8,8 +8,10 @@ use App\Entity\Reservation;
 use App\Entity\Seance;
 use App\Entity\Utilisateur;
 use App\Repository\ReservationRepository;
+use App\Service\FitBookMailer;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ReservationController extends AbstractController
 {
     #[Route('', name: 'api_reservations_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, ReservationRepository $reservations): JsonResponse
+    public function create(Request $request, EntityManagerInterface $entityManager, ReservationRepository $reservations, FitBookMailer $mailer, LoggerInterface $logger): JsonResponse
     {
         $user = $this->getUser();
         if (!$user instanceof Utilisateur) {
@@ -71,6 +73,14 @@ final class ReservationController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
             $entityManager->commit();
+            // La réservation est déjà validée : un échec d'envoi ne doit pas la faire échouer.
+            try {
+                $mailer->sendReservationConfirmation($reservation);
+            } catch (\Throwable $exception) {
+                $logger->warning('Réservation enregistrée, mais échec de l’e-mail de confirmation.', [
+                    'exception_class' => $exception::class,
+                ]);
+            }
 
             return $this->json([
                 'id' => $reservation->getId(),
