@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { catchError, defer, EMPTY, finalize, take, TimeoutError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService, InscriptionResponse, StatutEmailVerification } from '../../services/auth-service';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 
 type ChampInscription = 'prenom' | 'nom' | 'email' | 'telephone' | 'password';
@@ -21,6 +21,8 @@ export class InscriptionComponent {
   confirmation = '';
   emailInscrit = '';
   lienEnFile = false;
+  // null après un renvoi : la réponse volontairement neutre du backend ne dit pas si l'e-mail est parti.
+  statutEmail: StatutEmailVerification | null = null;
   envoi = false;
   erreursServeur: Partial<Record<ChampInscription, string>> = {};
   readonly formulaire;
@@ -79,12 +81,20 @@ export class InscriptionComponent {
     ).subscribe({
       next: response => {
         this.emailInscrit = typeof response.email === 'string' && response.email ? response.email : donnees.email;
-        this.lienEnFile = response.verificationEmailQueued === true;
-        this.confirmation = this.lienEnFile
-          ? `Compte cr\u{e9}\u{e9}. Le lien de v\u{e9}rification a bien \u{e9}t\u{e9} pris en compte pour ${this.emailInscrit}.`
-          : `Compte cr\u{e9}\u{e9}. L'e-mail de v\u{e9}rification n'a pas pu \u{ea}tre mis en file. Vous pouvez en demander un nouveau.`;
+        this.statutEmail = InscriptionComponent.statutDepuisReponse(response);
+        this.lienEnFile = this.statutEmail !== 'failed';
+        this.confirmation = this.statutEmail === 'failed'
+          ? `Compte cr\u{e9}\u{e9}. L'e-mail de v\u{e9}rification n'a pas pu \u{ea}tre envoy\u{e9}.`
+          : 'Compte cr\u{e9}\u{e9}.';
       }
     });
+  }
+
+  // Sans statut explicite (ancien backend), on n'affirme jamais que l'e-mail est parti.
+  private static statutDepuisReponse(response: InscriptionResponse): StatutEmailVerification {
+    const statut = response.verificationEmailStatus;
+    if (statut === 'sent' || statut === 'queued' || statut === 'failed') return statut;
+    return response.verificationEmailQueued === true ? 'queued' : 'failed';
   }
   renvoyerLien(): void {
     if (this.envoi || !this.emailInscrit) return;
@@ -93,7 +103,7 @@ export class InscriptionComponent {
     this.auth.renvoyerVerification(this.emailInscrit).pipe(
       finalize(() => { this.envoi = false; this.cdr.markForCheck(); })
     ).subscribe({
-      next: response => { this.confirmation = response.message; this.lienEnFile = true; },
+      next: response => { this.confirmation = response.message; this.lienEnFile = true; this.statutEmail = null; },
       error: (error: unknown) => {
         if (error instanceof TimeoutError) {
           this.erreur = 'Le serveur met trop de temps à répondre. Vérifiez votre connexion avant de réessayer.';

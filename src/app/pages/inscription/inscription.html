@@ -8,11 +8,19 @@
       <div class="success-message" role="status">
         <p>{{ confirmation }}</p>
 
-        @if (emailInscrit && lienEnFile) {
+        @if (emailInscrit && statutEmail === 'sent') {
           <p>
-            Le lien de vérification a été pris en compte pour
+            L'e-mail de vérification a été envoyé à
             <strong>{{ emailInscrit }}</strong>.
             Vérifiez également vos courriers indésirables.
+          </p>
+        }
+
+        @if (emailInscrit && statutEmail === 'queued') {
+          <p>
+            L'e-mail de vérification pour <strong>{{ emailInscrit }}</strong>
+            est en file d'attente : il n'est pas encore parti et peut mettre
+            quelques minutes à arriver. S'il n'arrive pas, demandez un nouveau lien.
           </p>
         }
 

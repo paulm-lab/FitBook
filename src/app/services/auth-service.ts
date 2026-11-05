@@ -4,7 +4,9 @@ import { BehaviorSubject, Observable, catchError, map, of, tap, timeout } from '
 import { API_URL } from '../api';
 import { UtilisateurConnecte } from '../models/utilisateur';
 
-export interface InscriptionResponse { message: string; email: string; verificationEmailQueued: boolean; }
+// sent : accepté par le serveur SMTP ; queued : en file Messenger, pas encore parti ; failed : ni l'un ni l'autre.
+export type StatutEmailVerification = 'sent' | 'queued' | 'failed';
+export interface InscriptionResponse { message: string; email: string; verificationEmailQueued: boolean; verificationEmailStatus?: StatutEmailVerification; }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

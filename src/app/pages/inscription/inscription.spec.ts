@@ -65,6 +65,48 @@ describe('InscriptionComponent', () => {
     expect(component.envoi).toBe(false);
   });
 
+  function inscrireAvecStatut(statut: 'sent' | 'queued' | 'failed'): string {
+    auth.inscription.mockReturnValue(of({
+      message: 'Compte créé.',
+      email: 'camille@example.test',
+      verificationEmailQueued: statut !== 'failed',
+      verificationEmailStatus: statut
+    }));
+    const fixture = TestBed.createComponent(InscriptionComponent);
+    remplirFormulaire(fixture.componentInstance);
+    fixture.componentInstance.inscrire();
+    fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent ?? '';
+  }
+
+  it('annonce un e-mail envoyé seulement quand le serveur SMTP l’a accepté', () => {
+    const texte = inscrireAvecStatut('sent');
+    expect(texte).toContain('a été envoyé à');
+    expect(texte).not.toContain("file d'attente");
+  });
+
+  it('indique un e-mail en file d’attente sans prétendre qu’il est parti', () => {
+    const texte = inscrireAvecStatut('queued');
+    expect(texte).toContain("en file d'attente");
+    expect(texte).toContain("n'est pas encore parti");
+    expect(texte).not.toContain('a été envoyé à');
+  });
+
+  it('signale l’échec d’envoi et propose un nouveau lien', () => {
+    const texte = inscrireAvecStatut('failed');
+    expect(texte).toContain("n'a pas pu être envoyé");
+    expect(texte).toContain('Renvoyer le lien de vérification');
+    expect(texte).not.toContain('a été envoyé à');
+  });
+
+  it('ne déduit jamais « envoyé » d’une réponse sans statut explicite', () => {
+    auth.inscription.mockReturnValue(of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }));
+    const component = creerComposant();
+    remplirFormulaire(component);
+    component.inscrire();
+    expect(component.statutEmail).toBe('queued');
+  });
+
   it('réactive le formulaire quand le service lève une exception synchrone', () => {
     auth.inscription.mockImplementation(() => { throw new Error('service unavailable'); });
     const component = creerComposant();
