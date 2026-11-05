@@ -203,15 +203,30 @@ coach ne doit pas effacer silencieusement des séances réservées : on **annule
 
 ## 4. Procédures stockées
 
-Créées par une migration Doctrine et versionnées dans `database/procedures/` (Phase 2).
+Versionnées dans `database/procedures/*.sql` (exécutables tels quels dans le client `mysql`) et
+installées par la migration `Version20261105150000`, qui lit ces mêmes fichiers.
 
 | Procédure | Paramètres | Rôle | Résultat |
 |-----------|------------|------|----------|
-| `sp_reserver_seance` | `p_user_id`, `p_session_id` | Verrouille la séance (`SELECT … FOR UPDATE`), vérifie statut, date, doublon et capacité, puis insère (ou réactive) la réservation | Code : `0` OK, `1` séance introuvable, `2` séance indisponible, `3` déjà réservée, `4` complète |
-| `sp_stats_salle` | `p_gym_id` | Statistiques du tableau de bord gestionnaire | Nombre de réservations, taux de remplissage (%), note moyenne des avis visibles |
-| `sp_annuler_reservation` | `p_reservation_id`, `p_user_id` | Annule si la réservation appartient à l'utilisateur et si la séance commence dans plus de 2 h | Code : `0` OK, `1` introuvable, `2` non propriétaire, `3` trop tard, `4` déjà annulée |
+| `sp_reserver_seance` | `IN p_user_id`, `IN p_session_id`, `OUT p_code`, `OUT p_reservation_id` | Verrouille la séance (`SELECT … FOR UPDATE`), vérifie statut, date, doublon et capacité, puis insère (ou réactive) la réservation | `p_code` : `0` OK, `1` séance introuvable, `2` séance indisponible, `3` déjà réservée, `4` complète |
+| `sp_annuler_reservation` | `IN p_reservation_id`, `IN p_user_id`, `OUT p_code` | Annule si la réservation appartient à l'utilisateur et si la séance commence dans plus de 2 h | `p_code` : `0` OK, `1` introuvable, `2` non propriétaire, `3` trop tard, `4` déjà annulée ou terminée |
+| `sp_stats_salle` | `IN p_gym_id` | Statistiques du tableau de bord gestionnaire | Une ligne : `nb_seances`, `capacite_totale`, `nb_reservations`, `taux_remplissage` (%), `note_moyenne`, `nb_avis` (avis visibles) |
 
-## 5. Diagramme
+Exemple : `CALL sp_reserver_seance(12, 34, @code, @id); SELECT @code, @id;`
+
+- Les deux procédures d'écriture **gèrent leur propre transaction** (`START TRANSACTION … COMMIT`,
+  `ROLLBACK` en cas d'erreur) : elles ne doivent pas être appelées dans une transaction déjà ouverte.
+- Les dates sont comparées avec `UTC_TIMESTAMP()` (voir § 5).
+
+## 5. Choix techniques de la base (Phase 2)
+
+| Choix | Raison |
+|-------|--------|
+| **Moteur InnoDB imposé** (`default_table_options` dans `doctrine.yaml`) | Le MySQL de WAMP crée les tables en **MyISAM** par défaut : ce moteur ignore silencieusement les clés étrangères, les transactions et les verrous `FOR UPDATE`. L'ancienne version du site en était victime : son verrou de réservation ne protégeait rien. |
+| **Dates stockées en UTC** | PHP (UTC) et MySQL (heure de Paris) n'avaient pas le même fuseau : `NOW()` aurait décalé la règle des 2 h. Le Kernel fixe PHP en UTC, les procédures utilisent `UTC_TIMESTAMP()` et l'API renvoie des dates ISO 8601 avec décalage (`2026-11-10T09:00:00+00:00`), que le navigateur affiche à l'heure locale. |
+| **Utilisateur `fitbook_user`** | Droits limités à `fitbook` et `fitbook_test`, aucun droit global (`database/scripts/create_user.sql`). |
+
+## 6. Diagramme
 
 ```mermaid
 erDiagram
