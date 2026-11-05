@@ -4,75 +4,65 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Seance;
-use App\Repository\SeanceRepository;
+use App\Entity\Session;
+use App\Enum\SessionStatus;
+use App\Repository\SessionRepository;
+use App\Service\CataloguePresenter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Séances publiques : liste filtrable des séances à venir et détail d'une séance.
+ * (La recherche avancée paginée /api/search arrive en Phase 4.)
+ */
 #[Route('/api/seances')]
 final class SeanceController extends AbstractController
 {
-    #[Route('', name: 'api_seances_index', methods: ['GET'])]
-    public function index(Request $request, SeanceRepository $repository): JsonResponse
-    {
-        $query = $repository->createQueryBuilder('seance')
-            ->leftJoin('seance.activite', 'activite')->addSelect('activite')
-            ->leftJoin('seance.coach', 'coach')->addSelect('coach')
-            ->leftJoin('seance.salle', 'salle')->addSelect('salle')
-            ->andWhere('seance.statut = :status')->setParameter('status', 'actif')
-            ->andWhere('seance.dateDebut >= :now')->setParameter('now', new \DateTimeImmutable());
+    public function __construct(
+        private readonly SessionRepository $sessions,
+        private readonly CataloguePresenter $presenter,
+    ) {
+    }
 
-        if ($activity = trim((string) $request->query->get('activite', ''))) {
-            $query->andWhere('LOWER(activite.nom) LIKE :activity')
-                ->setParameter('activity', '%' . mb_strtolower($activity) . '%');
-        }
-        if ($place = trim((string) $request->query->get('lieu', ''))) {
-            $query->andWhere('LOWER(salle.adresse) LIKE :place')
-                ->setParameter('place', '%' . mb_strtolower($place) . '%');
-        }
-        if ($date = $request->query->get('date')) {
-            $dateValue = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
-            if (!$dateValue || $dateValue->format('Y-m-d') !== $date) {
+    #[Route('', name: 'api_seances_index', methods: ['GET'])]
+    public function index(Request $request): JsonResponse
+    {
+        $day = null;
+        $date = $request->query->get('date');
+        if ($date !== null && $date !== '') {
+            $day = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
+            if (!$day || $day->format('Y-m-d') !== $date) {
                 return $this->json(['message' => 'Le filtre date doit être au format YYYY-MM-DD.'], 400);
             }
-            $query->andWhere('seance.dateSeance = :date')->setParameter('date', $dateValue);
         }
 
-        $items = $query->orderBy('seance.dateSeance', 'ASC')->addOrderBy('seance.heureDebut', 'ASC')->getQuery()->getResult();
-        return $this->json(array_map(fn (Seance $item): array => $this->seanceData($item), $items));
+        $items = $this->sessions->findUpcoming(
+            new \DateTimeImmutable(),
+            trim((string) $request->query->get('activite', '')),
+            trim((string) $request->query->get('lieu', '')),
+            $day,
+        );
+        $counts = $this->sessions->confirmedCounts($items);
+
+        return $this->json(array_map(
+            fn (Session $s): array => $this->presenter->session($s, $counts[$s->getId()] ?? 0),
+            $items,
+        ));
     }
 
+    /** Détail d'une séance active et à venir : comme la liste, les séances passées sont masquées. */
     #[Route('/{id}', name: 'api_seances_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, SeanceRepository $repository): JsonResponse
+    public function show(int $id): JsonResponse
     {
-        $item = $repository->find($id);
-        return $item ? $this->json($this->seanceData($item)) : $this->json(['message' => 'Séance introuvable.'], 404);
-    }
+        $item = $this->sessions->find($id);
+        if (!$item || $item->getStatus() !== SessionStatus::Active || $item->getStartAt() <= new \DateTimeImmutable()) {
+            return $this->json(['message' => 'Séance introuvable.'], 404);
+        }
 
-    private function seanceData(Seance $item): array
-    {
-        $coach = $item->getCoach();
-        $salle = $item->getSalle();
-        $activite = $item->getActivite();
+        $counts = $this->sessions->confirmedCounts([$item]);
 
-        return [
-            'id' => $item->getId(),
-            'titre' => $item->getTitre(),
-            'description' => $item->getDescription(),
-            'dateDebut' => $item->getDateDebut()?->format('Y-m-d H:i:s'),
-            'dateFin' => $item->getDateFin()?->format('Y-m-d H:i:s'),
-            'dateSeance' => $item->getDateSeance()?->format('Y-m-d'),
-            'heureDebut' => $item->getHeureDebut()?->format('H:i:s'),
-            'heureFin' => $item->getHeureFin()?->format('H:i:s'),
-            'capaciteMax' => $item->getCapaciteMax(),
-            'placesDisponibles' => $item->getPlacesDisponibles(),
-            'prix' => $item->getPrix(),
-            'statut' => $item->getStatut(),
-            'activite' => $activite ? ['id' => $activite->getId(), 'nom' => $activite->getNom()] : null,
-            'coach' => $coach ? ['id' => $coach->getId(), 'nom' => $coach->getNom(), 'prenom' => $coach->getPrenom()] : null,
-            'salle' => $salle ? ['id' => $salle->getId(), 'nom' => $salle->getNom(), 'adresse' => $salle->getAdresse()] : null,
-        ];
+        return $this->json($this->presenter->session($item, $counts[$item->getId()] ?? 0));
     }
 }

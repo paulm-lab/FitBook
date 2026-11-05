@@ -1,126 +1,158 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
+use App\Enum\ReservationStatus;
 use App\Repository\ReservationRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Réservation d'une place par un sportif (1 réservation = 1 place, décision D3).
+ *
+ * Le couple (utilisateur, séance) est unique (RG-04) : une réservation annulée puis refaite
+ * réactive la même ligne.
+ */
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
+#[ORM\UniqueConstraint(name: 'uq_reservation_user_session', columns: ['user_id', 'session_id'])]
+#[ORM\Index(name: 'idx_reservation_session_status', columns: ['session_id', 'status'])]
 class Reservation
 {
+    /** Délai minimal avant le début de la séance pour pouvoir annuler (RG-05). */
+    public const CANCELLATION_DELAY = '+2 hours';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
-    private ?\DateTimeImmutable $dateReservation = null;
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'reservations')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ?User $user = null;
 
-    #[ORM\Column(length: 20)]
-    private ?string $statut = null;
+    #[ORM\ManyToOne(targetEntity: Session::class, inversedBy: 'reservations')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ?Session $session = null;
+
+    #[ORM\Column(length: 20, enumType: ReservationStatus::class)]
+    private ReservationStatus $status = ReservationStatus::Confirmee;
 
     #[ORM\Column]
-    private ?int $nombrePlaces = null;
+    private \DateTimeImmutable $createdAt;
 
-    #[ORM\Column(name: 'prix_total', type: Types::DECIMAL, precision: 10, scale: 2)]
-    private ?string $montantTotal = null;
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $cancelledAt = null;
 
-    #[ORM\Column(name: 'date_annulation', type: Types::DATE_IMMUTABLE, nullable: true)]
-    private ?\DateTimeImmutable $dateAnnulation = null;
+    /** Jeton du QR code présenté à l'accueil (bonus). */
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $qrToken = null;
 
-    #[ORM\ManyToOne(inversedBy: 'reservations')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Utilisateur $utilisateur = null;
+    /** Empêche l'envoi de deux rappels pour la même réservation. */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $reminderSentAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'reservations')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Seance $seance = null;
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getDateReservation(): ?\DateTimeImmutable
+    public function getUser(): ?User
     {
-        return $this->dateReservation;
+        return $this->user;
     }
 
-    public function setDateReservation(\DateTimeImmutable $dateReservation): static
+    public function setUser(User $user): static
     {
-        $this->dateReservation = $dateReservation;
+        $this->user = $user;
 
         return $this;
     }
 
-    public function getStatut(): ?string
+    public function getSession(): ?Session
     {
-        return $this->statut;
+        return $this->session;
     }
 
-    public function setStatut(string $statut): static
+    public function setSession(Session $session): static
     {
-        $this->statut = $statut;
+        $this->session = $session;
 
         return $this;
     }
 
-    public function getNombrePlaces(): ?int
+    public function getStatus(): ReservationStatus
     {
-        return $this->nombrePlaces;
+        return $this->status;
     }
 
-    public function setNombrePlaces(int $nombrePlaces): static
+    public function setStatus(ReservationStatus $status): static
     {
-        $this->nombrePlaces = $nombrePlaces;
+        $this->status = $status;
 
         return $this;
     }
 
-    public function getMontantTotal(): ?string
+    public function getCreatedAt(): \DateTimeImmutable
     {
-        return $this->montantTotal;
+        return $this->createdAt;
     }
 
-    public function setMontantTotal(string $montantTotal): static
+    public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
-        $this->montantTotal = $montantTotal;
+        $this->createdAt = $createdAt;
 
         return $this;
     }
 
-    public function getDateAnnulation(): ?\DateTimeImmutable
+    public function getCancelledAt(): ?\DateTimeImmutable
     {
-        return $this->dateAnnulation;
+        return $this->cancelledAt;
     }
 
-    public function setDateAnnulation(?\DateTimeImmutable $dateAnnulation): static
+    public function setCancelledAt(?\DateTimeImmutable $cancelledAt): static
     {
-        $this->dateAnnulation = $dateAnnulation;
-        return $this;
-    }
-    public function getUtilisateur(): ?Utilisateur
-    {
-        return $this->utilisateur;
-    }
-
-    public function setUtilisateur(?Utilisateur $utilisateur): static
-    {
-        $this->utilisateur = $utilisateur;
+        $this->cancelledAt = $cancelledAt;
 
         return $this;
     }
 
-    public function getSeance(): ?Seance
+    public function getQrToken(): ?string
     {
-        return $this->seance;
+        return $this->qrToken;
     }
 
-    public function setSeance(?Seance $seance): static
+    public function setQrToken(?string $qrToken): static
     {
-        $this->seance = $seance;
+        $this->qrToken = $qrToken;
 
         return $this;
+    }
+
+    public function getReminderSentAt(): ?\DateTimeImmutable
+    {
+        return $this->reminderSentAt;
+    }
+
+    public function setReminderSentAt(?\DateTimeImmutable $reminderSentAt): static
+    {
+        $this->reminderSentAt = $reminderSentAt;
+
+        return $this;
+    }
+
+    /** Annulable si confirmée et si la séance commence dans plus de 2 heures (RG-05). */
+    public function isCancellable(\DateTimeImmutable $now): bool
+    {
+        $startAt = $this->session?->getStartAt();
+
+        return $this->status === ReservationStatus::Confirmee
+            && $startAt !== null
+            && $startAt > $now->modify(self::CANCELLATION_DELAY);
     }
 }
