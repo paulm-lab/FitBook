@@ -41,7 +41,10 @@ final class ProfileControllerTest extends WebTestCase
             'prenom' => 'Lea',
             'email' => 'lea@example.test',
             'telephone' => '0612345678',
+            'avatar' => null,
             'roles' => [User::ROLE_SPORTIF],
+            'role' => 'sportif',
+            'coachId' => null,
         ], $response);
         self::assertArrayNotHasKey('password', $response);
     }
@@ -89,7 +92,7 @@ final class ProfileControllerTest extends WebTestCase
     public function testUserDirectoryRequiresAuthentication(): void
     {
         $client = $this->clientWithSchema();
-        $client->request('GET', '/api/utilisateurs');
+        $client->request('GET', '/api/admin/utilisateurs');
 
         self::assertResponseStatusCodeSame(401);
     }
@@ -98,7 +101,7 @@ final class ProfileControllerTest extends WebTestCase
     {
         $client = $this->clientWithSchema();
         $this->createUser('member@example.test', 'Martin', 'Lea', $client);
-        $client->request('GET', '/api/utilisateurs');
+        $client->request('GET', '/api/admin/utilisateurs');
 
         self::assertResponseStatusCodeSame(403);
     }
@@ -109,10 +112,10 @@ final class ProfileControllerTest extends WebTestCase
         $this->createUser('admin@example.test', 'Admin', 'Root', $client, User::ROLE_ADMIN);
         $this->createUser('member@example.test', 'Martin', 'Lea');
 
-        $client->request('GET', '/api/utilisateurs');
+        $client->request('GET', '/api/admin/utilisateurs');
 
         self::assertResponseIsSuccessful();
-        self::assertCount(2, json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR));
+        self::assertCount(2, json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['items']);
     }
 
     private function clientWithSchema(): KernelBrowser
