@@ -71,6 +71,16 @@ describe('helpers HTTP', () => {
       messageErreur(new HttpErrorResponse({ status: 409, error: { message: 'Complet.' } })),
     ).toBe('Complet.');
     expect(messageErreur(new HttpErrorResponse({ status: 0 }))).toContain('injoignable');
+    // API arrêtée derrière le proxy de développement : 500 sans corps.
+    expect(messageErreur(new HttpErrorResponse({ status: 500, error: null }))).toContain(
+      'injoignable',
+    );
+    // Vraie erreur Symfony : corps JSON, message générique.
+    expect(
+      messageErreur(
+        new HttpErrorResponse({ status: 500, error: { title: 'Internal Server Error' } }),
+      ),
+    ).toBe('Une erreur est survenue. Réessayez.');
     expect(
       erreursChamps(new HttpErrorResponse({ status: 409, error: { errors: { a: 'b' } } })),
     ).toEqual({});

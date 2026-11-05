@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { defer, finalize, take } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
+import { MESSAGE_INJOIGNABLE, serveurInjoignable } from '../../core/http';
 import { AuthService } from '../../core/auth/auth.service';
 
 /** Connexion par e-mail et mot de passe (US-S01) : jeton JWT posé par l'API dans un cookie HttpOnly. */
@@ -83,6 +84,7 @@ export class ConnexionComponent {
 
   private messageErreur(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) return 'Connexion impossible. Réessayez plus tard.';
+    if (serveurInjoignable(error)) return MESSAGE_INJOIGNABLE;
     const message = typeof error.error?.message === 'string' ? error.error.message : '';
     switch (error.status) {
       case 401:
@@ -95,8 +97,6 @@ export class ConnexionComponent {
           message ||
           'Trop de tentatives de connexion. Patientez quelques minutes avant de réessayer.'
         );
-      case 0:
-        return 'Le serveur FitBook est injoignable. Vérifiez votre connexion et réessayez.';
       default:
         return 'Connexion impossible. Réessayez plus tard.';
     }
