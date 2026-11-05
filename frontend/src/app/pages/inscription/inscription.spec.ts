@@ -251,7 +251,9 @@ describe('InscriptionComponent', () => {
 
   it('termine l’état d’envoi et affiche une erreur si le renvoi échoue', () => {
     auth.renvoyerVerification.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 503 })),
+      throwError(
+        () => new HttpErrorResponse({ status: 503, error: { title: 'Service Unavailable' } }),
+      ),
     );
     const component = creerComposant();
     component.emailInscrit.set('camille@example.test');
@@ -348,7 +350,11 @@ describe('InscriptionComponent', () => {
   });
 
   it('réactive le formulaire et affiche un message en cas d’erreur serveur', () => {
-    auth.inscription.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    auth.inscription.mockReturnValue(
+      throwError(
+        () => new HttpErrorResponse({ status: 500, error: { title: 'Internal Server Error' } }),
+      ),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
 
