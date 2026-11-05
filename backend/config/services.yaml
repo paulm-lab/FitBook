@@ -13,15 +13,14 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            # Adresse du front Angular : liens envoyés par e-mail et redirections.
+            string $frontendUrl: '%env(resolve:FRONTEND_URL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
-
-    App\Controller\Api\InscriptionController:
-        arguments:
-            $frontendUrl: '%env(resolve:FRONTEND_URL)%'
 
     App\Service\FitBookMailer:
         arguments:
@@ -29,3 +28,12 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        # Compteurs de limitation (connexion, inscription) en mémoire : conservés pendant un test,
+        # remis à zéro au test suivant (nouveau noyau). autoconfigure désactivé pour que Symfony
+        # ne les vide pas entre deux requêtes du même test.
+        cache.rate_limiter:
+            class: Symfony\Component\Cache\Adapter\ArrayAdapter
+            autoconfigure: false

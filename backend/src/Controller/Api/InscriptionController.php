@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Dto\RegistrationRequest;
+use App\Entity\CoachProfile;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\EmailDeliveryStatus;
 use App\Service\FitBookMailer;
+use App\Service\ValidationErrors;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,82 +19,74 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use SymfonyCasts\Bundle\VerifyEmail\Exception\VerifyEmailExceptionInterface;
+use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
 
 /**
- * Inscription et confirmation de l'adresse e-mail.
+ * Inscription (avec choix du rôle) et confirmation de l'adresse e-mail.
  *
- * Le lien de confirmation est **signé** (UriSigner) et expire après 24 h : rien n'est stocké
- * en base. Il contient l'empreinte de l'adresse, donc un changement d'adresse l'invalide.
+ * Le lien de confirmation est signé par VerifyEmailBundle et expire : rien n'est stocké en base.
+ * Il est lié à l'adresse du compte, donc un changement d'adresse invalide les anciens liens.
+ * Tant que l'adresse n'est pas confirmée, la connexion est refusée (UserChecker, RG-02).
  */
 #[Route('/api')]
 final class InscriptionController extends AbstractController
 {
-    private const LINK_LIFETIME = '+24 hours';
-
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly FitBookMailer $mailer,
-        private readonly UrlGeneratorInterface $urlGenerator,
-        private readonly UriSigner $uriSigner,
+        private readonly VerifyEmailHelperInterface $verifyEmailHelper,
         private readonly LoggerInterface $logger,
         private readonly string $frontendUrl,
     ) {
     }
 
     #[Route('/inscription', name: 'api_inscription', methods: ['POST'])]
-    public function register(Request $request, UserRepository $users): JsonResponse
-    {
+    public function register(
+        Request $request,
+        UserRepository $users,
+        ValidatorInterface $validator,
+        RateLimiterFactory $inscriptionLimiter,
+    ): JsonResponse {
+        // Limite par adresse IP : empêche la création de comptes en masse.
+        if (!$inscriptionLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+            return $this->json(['message' => 'Trop de tentatives d’inscription. Réessayez plus tard.'], 429);
+        }
+
         try {
             $data = $request->toArray();
         } catch (\Throwable) {
             return $this->json(['message' => 'Le corps de la requête doit être un JSON valide.'], 400);
         }
 
-        $nom = $this->stringValue($data, 'nom');
-        $prenom = $this->stringValue($data, 'prenom');
-        $email = mb_strtolower($this->stringValue($data, 'email'));
-        $telephone = $this->stringValue($data, 'telephone');
-        $password = is_string($data['password'] ?? null) ? $data['password'] : '';
-
-        // Validation de chaque champ (remplacée par Symfony Validator en Phase 3).
-        $errors = [];
-        if ($prenom === '' || mb_strlen($prenom) > 50) {
-            $errors['prenom'] = $prenom === '' ? 'Le prénom est obligatoire.' : 'Le prénom ne peut pas dépasser 50 caractères.';
-        }
-        if ($nom === '' || mb_strlen($nom) > 50) {
-            $errors['nom'] = $nom === '' ? 'Le nom est obligatoire.' : 'Le nom ne peut pas dépasser 50 caractères.';
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 180) {
-            $errors['email'] = 'Saisissez une adresse e-mail valide.';
-        }
-        if ($telephone === '' || mb_strlen($telephone) > 20 || !preg_match('/^\+?[0-9\s().-]{7,20}$/', $telephone)) {
-            $errors['telephone'] = 'Saisissez un numéro de téléphone valide (7 à 20 caractères).';
-        }
-        if (strlen($password) < 8 || strlen($password) > 4096) {
-            $errors['password'] = 'Le mot de passe doit contenir entre 8 et 4096 caractères.';
-        }
-        if ($errors !== []) {
-            return $this->json(['message' => 'Certains champs sont invalides.', 'errors' => $errors], 400);
+        $form = RegistrationRequest::fromArray($data);
+        $violations = $validator->validate($form);
+        if (\count($violations) > 0) {
+            return ValidationErrors::response($violations);
         }
 
-        if ($users->findOneBy(['email' => $email])) {
+        if ($users->findOneBy(['email' => $form->email])) {
             return $this->duplicateEmail();
         }
 
-        // Inscription publique : toujours un compte sportif (choix du rôle en Phase 3).
         $user = (new User())
-            ->setLastName($nom)
-            ->setFirstName($prenom)
-            ->setEmail($email)
-            ->setPhone($telephone)
-            ->setRoles([User::ROLE_SPORTIF])
+            ->setLastName($form->nom)
+            ->setFirstName($form->prenom)
+            ->setEmail($form->email)
+            ->setPhone($form->telephone)
+            ->setRoles([$form->symfonyRole()])
             ->setIsVerified(false);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $form->password));
+
+        // Un coach reçoit un profil professionnel vide, qu'il complète depuis son espace (US-C01).
+        if ($user->hasRole(User::ROLE_COACH)) {
+            $this->entityManager->persist((new CoachProfile())->setUser($user));
+        }
         $this->entityManager->persist($user);
 
         try {
@@ -115,7 +110,8 @@ final class InscriptionController extends AbstractController
                 EmailDeliveryStatus::Queued => "Compte cr\u{e9}\u{e9}. L'e-mail de v\u{e9}rification est en file d'attente d'envoi : il n'est pas encore parti.",
                 EmailDeliveryStatus::Failed => "Compte cr\u{e9}\u{e9}, mais l'e-mail de v\u{e9}rification n'a pas pu \u{ea}tre envoy\u{e9}. Vous pouvez demander un nouveau lien.",
             },
-            'email' => $email,
+            'email' => $user->getEmail(),
+            'role' => $form->role,
             'verificationEmailStatus' => $status->value,
             // Conservé pour les clients existants : vrai si l'e-mail est parti ou en file.
             'verificationEmailQueued' => $status !== EmailDeliveryStatus::Failed,
@@ -125,13 +121,15 @@ final class InscriptionController extends AbstractController
     #[Route('/auth/verify-email', name: 'api_auth_verify_email', methods: ['GET'])]
     public function verify(Request $request, UserRepository $users): RedirectResponse
     {
-        // Signature invalide, lien modifié ou expiré : refus sans rien révéler.
-        if (!$this->uriSigner->checkRequest($request)) {
+        $user = $users->find((int) $request->query->get('id'));
+        if (!$user) {
             return $this->verificationResultRedirect('error');
         }
 
-        $user = $users->find((int) $request->query->get('id'));
-        if (!$user || !hash_equals($this->emailFingerprint($user), (string) $request->query->get('email'))) {
+        // Signature invalide, lien modifié, expiré ou émis pour une autre adresse : refus.
+        try {
+            $this->verifyEmailHelper->validateEmailConfirmationFromRequest($request, (string) $user->getId(), (string) $user->getEmail());
+        } catch (VerifyEmailExceptionInterface) {
             return $this->verificationResultRedirect('error');
         }
 
@@ -153,7 +151,7 @@ final class InscriptionController extends AbstractController
     }
 
     #[Route('/auth/resend-verification', name: 'api_auth_resend_verification', methods: ['POST'])]
-    public function resend(Request $request, UserRepository $users): JsonResponse
+    public function resend(Request $request, UserRepository $users, RateLimiterFactory $emailRequestLimiter): JsonResponse
     {
         // Réponse identique que le compte existe ou non : pas d'énumération des adresses.
         $neutral = ['message' => "Si le compte doit \u{ea}tre v\u{e9}rifi\u{e9}, la demande de renvoi a \u{e9}t\u{e9} prise en compte."];
@@ -163,10 +161,14 @@ final class InscriptionController extends AbstractController
         } catch (\Throwable) {
             return $this->json($neutral);
         }
+        $email = mb_strtolower(\is_string($data['email'] ?? null) ? trim($data['email']) : '');
 
-        $email = mb_strtolower($this->stringValue($data, 'email'));
+        // Limite par adresse e-mail et par IP : empêche d'inonder une boîte de liens.
+        if (!$emailRequestLimiter->create($email . '|' . $request->getClientIp())->consume()->isAccepted()) {
+            return $this->json(['message' => 'Trop de demandes. Réessayez dans quelques minutes.'], 429);
+        }
+
         $user = filter_var($email, FILTER_VALIDATE_EMAIL) ? $users->findOneBy(['email' => $email]) : null;
-
         if ($user && !$user->isVerified() && $this->trySendVerification($user) === EmailDeliveryStatus::Failed) {
             return $this->json(['message' => "Le lien de v\u{e9}rification n'a pas pu \u{ea}tre envoy\u{e9}. R\u{e9}essayez plus tard."], 503);
         }
@@ -189,23 +191,17 @@ final class InscriptionController extends AbstractController
         return $this->redirect($url);
     }
 
-    /** Empreinte de l'adresse incluse dans le lien : changer d'adresse invalide les anciens liens. */
-    private function emailFingerprint(User $user): string
-    {
-        return hash('sha256', (string) $user->getEmail());
-    }
-
     private function trySendVerification(User $user): EmailDeliveryStatus
     {
-        $url = $this->urlGenerator->generate(
+        $signature = $this->verifyEmailHelper->generateSignature(
             'api_auth_verify_email',
-            ['id' => $user->getId(), 'email' => $this->emailFingerprint($user)],
-            UrlGeneratorInterface::ABSOLUTE_URL,
+            (string) $user->getId(),
+            (string) $user->getEmail(),
+            ['id' => $user->getId()],
         );
-        $signedUrl = $this->uriSigner->sign($url, new \DateTimeImmutable(self::LINK_LIFETIME));
 
         try {
-            return $this->mailer->sendVerification($user, $signedUrl);
+            return $this->mailer->sendVerification($user, $signature->getSignedUrl());
         } catch (\Throwable $exception) {
             // Jamais le DSN ni le lien : la classe d'exception suffit à diagnostiquer.
             $this->logger->warning('L’e-mail de vérification FitBook n’a pas pu être envoyé.', [
@@ -214,11 +210,5 @@ final class InscriptionController extends AbstractController
 
             return EmailDeliveryStatus::Failed;
         }
-    }
-
-    /** @param array<string, mixed> $data */
-    private function stringValue(array $data, string $key): string
-    {
-        return is_string($data[$key] ?? null) ? trim($data[$key]) : '';
     }
 }
