@@ -1,0 +1,20 @@
+<main class="directory-page">
+  <app-visual-showcase [page]="pageVisuels"></app-visual-showcase>
+  <header class="directory-heading"><span class="section-kicker">LES RENCONTRES FITBOOK</span><h1>@if (montrerCoaches && montrerSalles) { Coaches & salles } @else if (montrerCoaches) { Nos coaches } @else { Nos salles }</h1><p>Les personnes et les lieux qui vous accompagnent dans votre pratique.</p></header>
+  @if (montrerCoaches) {
+    <section id="coaches"><div class="directory-section-title"><span class="section-kicker">VOS GUIDES</span><h2>Nos coaches</h2></div>
+      @if (coachesChargement) { <p>Chargement des coaches...</p> }
+      @if (coachErreur) { <p class="error-message" role="alert">{{ coachErreur }}</p> }
+      @if (!coachesChargement && !coachErreur && coaches.length === 0) { <p>Aucun coach a afficher pour le moment.</p> }
+      <div class="directory-grid">@for (coach of coaches; track coach.id) { <article class="directory-card coach-card"><div class="directory-photo"><img [src]="photoCoach(coach)" [alt]="'Portrait de ' + coach.prenom + ' ' + coach.nom" loading="lazy" decoding="async" (error)="imageError($event)"></div><div class="directory-copy"><span class="speciality">{{ coach.specialite }}</span><h3>{{ coach.prenom }} {{ coach.nom }}</h3><p>{{ coach.description }}</p></div></article> }</div>
+    </section>
+  }
+  @if (montrerSalles) {
+    <section id="salles"><div class="directory-section-title"><span class="section-kicker">VOS ESPACES</span><h2>Nos salles</h2></div>
+      @if (sallesChargement) { <p>Chargement des salles...</p> }
+      @if (salleErreur) { <p class="error-message" role="alert">{{ salleErreur }}</p> }
+      @if (!sallesChargement && !salleErreur && salles.length === 0) { <p>Aucune salle a afficher pour le moment.</p> }
+      <div class="directory-grid">@for (salle of salles; track salle.id) { <article class="directory-card"><div class="directory-photo"><img [src]="photoSalle(salle)" [alt]="'Salle de sport ' + salle.nom" loading="lazy" decoding="async" (error)="imageError($event)"></div><div class="directory-copy"><h3>{{ salle.nom }}</h3><p>{{ salle.adresse }}</p><p>{{ salle.description }}</p>@if (salle.equipements) { <p><strong>Equipements :</strong> {{ salle.equipements }}</p> }<span class="speciality">Capacite : {{ salle.capacite }} personnes</span></div></article> }</div>
+    </section>
+  }
+</main>

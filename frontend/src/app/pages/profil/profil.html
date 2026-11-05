@@ -1,0 +1,33 @@
+<main class="profile-page">
+  <section class="profile-card" aria-labelledby="profile-title">
+    <span class="section-kicker">VOTRE ESPACE FITBOOK</span>
+    <h1 id="profile-title">Mon profil sportif</h1>
+    @if (chargement) { <p role="status" aria-live="polite">Chargement de votre profil…</p> }
+    @if (erreur && !profil) { <p class="error-message" role="alert">{{ erreur }}</p> }
+    @if (!chargement && profil) {
+      <form [formGroup]="formulaire" (ngSubmit)="enregistrer()" novalidate>
+        <label for="profile-prenom">Prénom</label>
+        <input id="profile-prenom" formControlName="prenom" autocomplete="given-name" maxlength="50" required
+          [attr.aria-invalid]="formulaire.controls.prenom.touched && formulaire.controls.prenom.invalid"
+          [attr.aria-describedby]="formulaire.controls.prenom.touched && formulaire.controls.prenom.invalid ? 'profile-prenom-error' : null">
+        @if (formulaire.controls.prenom.touched && formulaire.controls.prenom.invalid) { <small id="profile-prenom-error">Le prénom est obligatoire (50 caractères maximum).</small> }
+        <label for="profile-nom">Nom</label>
+        <input id="profile-nom" formControlName="nom" autocomplete="family-name" maxlength="50" required
+          [attr.aria-invalid]="formulaire.controls.nom.touched && formulaire.controls.nom.invalid"
+          [attr.aria-describedby]="formulaire.controls.nom.touched && formulaire.controls.nom.invalid ? 'profile-nom-error' : null">
+        @if (formulaire.controls.nom.touched && formulaire.controls.nom.invalid) { <small id="profile-nom-error">Le nom est obligatoire (50 caractères maximum).</small> }
+        <label for="profile-email">Adresse e-mail</label>
+        <input id="profile-email" type="email" [value]="profil.email" autocomplete="email" readonly aria-describedby="email-readonly-hint">
+        <small id="email-readonly-hint">L’adresse e-mail ne peut pas être modifiée depuis cette page.</small>
+        <label for="profile-phone">Téléphone</label>
+        <input id="profile-phone" type="tel" formControlName="telephone" autocomplete="tel" maxlength="20" required
+          [attr.aria-invalid]="formulaire.controls.telephone.touched && formulaire.controls.telephone.invalid"
+          [attr.aria-describedby]="formulaire.controls.telephone.touched && formulaire.controls.telephone.invalid ? 'profile-phone-error' : null">
+        @if (formulaire.controls.telephone.touched && formulaire.controls.telephone.invalid) { <small id="profile-phone-error">Saisissez un numéro valide (7 à 20 caractères).</small> }
+        @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+        @if (confirmation) { <p class="success-message" role="status">{{ confirmation }}</p> }
+        <button class="form-action" type="submit" [disabled]="envoi" [attr.aria-busy]="envoi">{{ envoi ? 'Enregistrement…' : 'Enregistrer les modifications' }}</button>
+      </form>
+    }
+  </section>
+</main>

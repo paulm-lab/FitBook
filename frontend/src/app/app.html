@@ -1,0 +1,22 @@
+<header class="navbar" [class.menu-open]="menuOuvert">
+  <a routerLink="/" class="brand" (click)="fermerMenu()"><span class="brand-icon">F</span><span>FitBook</span></a>
+  <button class="menu-toggle" type="button" (click)="menuOuvert = !menuOuvert" [attr.aria-expanded]="menuOuvert" aria-controls="site-navigation" aria-label="Ouvrir le menu">
+    <span></span><span></span><span></span>
+  </button>
+  <nav class="main-nav" id="site-navigation" aria-label="Navigation principale">
+    <a routerLink="/activites" routerLinkActive="active" (click)="fermerMenu()">Activités</a>
+    <a routerLink="/salles" routerLinkActive="active" (click)="fermerMenu()">Salles</a>
+    <a routerLink="/coaches" routerLinkActive="active" (click)="fermerMenu()">Coaches</a>
+    <a routerLink="/tarifs" routerLinkActive="active" (click)="fermerMenu()">Tarifs</a>
+  </nav>
+  <div class="nav-actions">
+    @if (auth.utilisateur$ | async; as utilisateur) {
+      <a routerLink="/profil" class="login-link" (click)="fermerMenu()">Mon profil · {{ utilisateur.prenom }}</a>
+      <button class="signup-button" type="button" (click)="deconnecter()">Déconnexion</button>
+    } @else {
+      <a routerLink="/connexion" class="login-link" (click)="fermerMenu()">Connexion</a>
+      <a routerLink="/inscription" class="signup-button" (click)="fermerMenu()">S'inscrire</a>
+    }
+  </div>
+</header>
+<router-outlet></router-outlet>

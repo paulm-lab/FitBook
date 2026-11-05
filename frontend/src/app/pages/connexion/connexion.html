@@ -1,0 +1,32 @@
+<main class="login-page">
+  <section class="login-card" aria-labelledby="login-title">
+    <span class="section-kicker">HEUREUX DE VOUS REVOIR</span>
+    <h1 id="login-title">Connexion</h1>
+    <p>Connectez-vous pour réserver votre prochaine séance.</p>
+
+    <form [formGroup]="formulaire" (ngSubmit)="connecter()" novalidate>
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" formControlName="email" autocomplete="email" inputmode="email"
+        [attr.aria-invalid]="formulaire.controls.email.touched && formulaire.controls.email.invalid"
+        [attr.aria-describedby]="formulaire.controls.email.touched && formulaire.controls.email.invalid ? 'email-error' : null">
+      @if (formulaire.controls.email.touched && formulaire.controls.email.invalid) {
+        <small id="email-error">{{ formulaire.controls.email.hasError('required') ? 'Saisissez votre adresse e-mail.' : 'Saisissez une adresse e-mail valide.' }}</small>
+      }
+
+      <label for="login-password">Mot de passe</label>
+      <input id="login-password" type="password" formControlName="password" autocomplete="current-password"
+        [attr.aria-invalid]="formulaire.controls.password.touched && formulaire.controls.password.invalid"
+        [attr.aria-describedby]="formulaire.controls.password.touched && formulaire.controls.password.invalid ? 'password-error' : null">
+      @if (formulaire.controls.password.touched && formulaire.controls.password.invalid) {
+        <small id="password-error">{{ formulaire.controls.password.hasError('required') ? 'Saisissez votre mot de passe.' : '8 caractères minimum.' }}</small>
+      }
+
+      @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+      <button class="form-action" type="submit" [disabled]="envoi" [attr.aria-busy]="envoi">
+        {{ envoi ? 'Connexion...' : 'Se connecter' }}
+      </button>
+    </form>
+    <p class="form-switch">Pas encore de compte ? <a routerLink="/inscription">Créer un compte</a></p>
+  </section>
+  <app-visual-showcase page="login" [compact]="true"></app-visual-showcase>
+</main>

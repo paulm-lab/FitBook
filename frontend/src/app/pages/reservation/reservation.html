@@ -1,0 +1,16 @@
+<main class="form-page"><section class="form-card"><span class="section-kicker">VOTRE PROCHAINE SÉANCE</span><h1>Réservation</h1>
+  @if (chargement) { <p role="status" aria-live="polite">Chargement de la séance…</p> }
+  @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+  @if (seance) {
+    <article class="booking-summary"><img class="booking-photo" [src]="bookingImage" [alt]="'Activité sportive : ' + seance.titre" loading="lazy" decoding="async" (error)="imageError($event)"><h2>{{ seance.titre }}</h2><p>{{ seance.description }}</p><p>{{ seance.dateDebut | date:'EEEE d MMMM à HH:mm' }} - {{ seance.prix }} € / place</p><p>Places restantes : {{ seance.placesDisponibles }}</p>
+      <label for="booking-places">Nombre de places</label>
+      <input id="booking-places" type="number" inputmode="numeric" min="1" [max]="seance.placesDisponibles" [(ngModel)]="nombrePlaces" [ngModelOptions]="{standalone:true}" [disabled]="seance.placesDisponibles < 1"
+        [attr.aria-invalid]="nombrePlaces < 1 || nombrePlaces > seance.placesDisponibles"
+        [attr.aria-describedby]="nombrePlaces < 1 || nombrePlaces > seance.placesDisponibles ? 'booking-places-error' : null">
+      @if (seance.placesDisponibles < 1) { <small class="field-error">Cette séance est complète.</small> }
+      @else if (nombrePlaces < 1 || nombrePlaces > seance.placesDisponibles) { <small class="field-error" id="booking-places-error">Choisissez entre 1 et {{ seance.placesDisponibles }} place(s).</small> }
+      <button class="form-action" type="button" (click)="reserver()" [attr.aria-busy]="envoi" [disabled]="envoi || seance.placesDisponibles < 1 || nombrePlaces < 1 || nombrePlaces > seance.placesDisponibles">{{ envoi ? 'Réservation…' : 'Confirmer la réservation' }}</button>
+    </article>
+  }
+  @if (confirmation) { <p class="success-message" role="status">{{ confirmation }}</p> }
+</section><app-visual-showcase page="booking" [compact]="true"></app-visual-showcase></main>

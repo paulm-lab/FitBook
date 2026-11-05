@@ -1,0 +1,14 @@
+<main class="catalogue-page">
+  <app-visual-showcase page="activities"></app-visual-showcase>
+  <header class="catalogue-heading"><span class="section-kicker">TROUVEZ VOTRE DISCIPLINE</span><h1>Les activites</h1><p>Explorez les pratiques et trouvez une seance pres de chez vous.</p></header>
+  <label class="catalogue-search"><span class="sr-only">Rechercher une activite</span><input [(ngModel)]="recherche" placeholder="Rechercher une activite"></label>
+  @if (loading) { <p>Chargement des activites...</p> }
+  @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+  @if (!loading && !erreur) {
+    <div class="catalogue-grid">
+      @for (activite of activitesFiltrees; track activite.id) {
+        <article class="catalogue-card"><div class="card-photo"><img [src]="imageActivite(activite)" [alt]="'Pratique de ' + activite.nom" loading="lazy" decoding="async" (error)="imageError($event)"><span>{{ activite.nom }}</span></div><div class="card-body"><p>{{ activite.description }}</p><div class="card-meta"><span>{{ activite.niveau }}</span><span>{{ activite.duree }} min</span></div><a class="action-button" [routerLink]="['/seances']" [queryParams]="{activite: activite.nom}">Voir les seances</a></div></article>
+      } @empty { <p>Aucune activite ne correspond a cette recherche.</p> }
+    </div>
+  }
+</main>
