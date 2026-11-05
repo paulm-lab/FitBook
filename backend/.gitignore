@@ -27,3 +27,7 @@
 # Avatars envoyés par les utilisateurs (jamais versionnés).
 /public/uploads/
 ###< fitbook ###
+
+###> outils qualité ###
+/.php-cs-fixer.cache
+###< outils qualité ###

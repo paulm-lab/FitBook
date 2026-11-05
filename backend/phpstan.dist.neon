@@ -1,0 +1,14 @@
+# PHPStan niveau 6 (cahier des charges § 7).
+# Installation : composer require --dev phpstan/phpstan phpstan/phpstan-symfony phpstan/phpstan-doctrine phpstan/extension-installer
+# Analyse :      vendor/bin/phpstan analyse
+parameters:
+    level: 6
+    paths:
+        - src
+        - tests
+    excludePaths:
+        - src/Migrations
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
