@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService } from '../../core/auth/auth.service';
 import { VerificationEmailComponent } from './verification-email';
 
 describe('VerificationEmailComponent', () => {

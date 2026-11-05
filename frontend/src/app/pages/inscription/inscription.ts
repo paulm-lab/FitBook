@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { catchError, defer, EMPTY, finalize, take, TimeoutError } from 'rxjs';
-import { AuthService, InscriptionResponse, StatutEmailVerification } from '../../services/auth-service';
+import { AuthService, InscriptionResponse, StatutEmailVerification } from '../../core/auth/auth.service';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 
 type ChampInscription = 'prenom' | 'nom' | 'email' | 'telephone' | 'password';
@@ -58,7 +58,7 @@ export class InscriptionComponent {
     };
     this.envoi = true;
 
-    defer(() => this.auth.inscription(donnees)).pipe(
+    defer(() => this.auth.inscription({ ...donnees, role: 'sportif' })).pipe(
       catchError((error: unknown) => {
         if (error instanceof TimeoutError) {
           this.erreur = 'Le serveur met trop de temps \u{e0} r\u{e9}pondre. V\u{e9}rifiez votre connexion avant de r\u{e9}essayer.';

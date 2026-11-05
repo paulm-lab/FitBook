@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService } from '../../core/auth/auth.service';
 import { ConnexionComponent } from './connexion';
 
 describe('ConnexionComponent', () => {

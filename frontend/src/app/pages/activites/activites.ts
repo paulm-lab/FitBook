@@ -2,8 +2,8 @@ import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CatalogueService } from '../../services/catalogue-service';
-import { Activite } from '../../models/activite';
+import { CatalogueService } from '../../core/services/catalogue.service';
+import { Activite } from '../../core/models';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 
 @Component({ selector: 'app-activites', standalone: true, imports: [CommonModule, FormsModule, RouterLink, VisualShowcaseComponent], templateUrl: './activites.html', styleUrl: './activites.css' })
@@ -16,7 +16,7 @@ export class ActivitesComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
   constructor(private readonly catalogue: CatalogueService) {}
   ngOnInit(): void {
-    this.catalogue.getActivites().subscribe({next: data => { this.activites = data; this.loading = false; this.cdr.markForCheck(); }, error: () => { this.erreur = 'Impossible de charger les activités.'; this.loading = false; this.cdr.markForCheck(); }});
+    this.catalogue.activites().subscribe({next: data => { this.activites = data; this.loading = false; this.cdr.markForCheck(); }, error: () => { this.erreur = 'Impossible de charger les activités.'; this.loading = false; this.cdr.markForCheck(); }});
   }
   get activitesFiltrees(): Activite[] {
     const terme = this.recherche.trim().toLocaleLowerCase('fr');

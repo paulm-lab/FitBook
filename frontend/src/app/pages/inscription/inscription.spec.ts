@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Subject, TimeoutError, of, throwError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService } from '../../core/auth/auth.service';
 import { InscriptionComponent } from './inscription';
 
 describe('InscriptionComponent', () => {

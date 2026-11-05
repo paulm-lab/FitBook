@@ -4,7 +4,7 @@ import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, defer, EMPTY, finalize, take, TimeoutError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService } from '../../core/auth/auth.service';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 
 @Component({
