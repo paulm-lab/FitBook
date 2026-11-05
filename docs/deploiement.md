@@ -138,6 +138,5 @@ a modifié les données.
 
 ## 8. Avant la première mise en production
 
-- `composer update "symfony/*"` (Symfony ≥ 7.4.23, voir [`securite.md`](securite.md) § A06), tests verts.
 - `composer audit` et `npm audit --omit=dev` sans vulnérabilité.
 - Mots de passe et clés propres au serveur, aucune donnée de démonstration.

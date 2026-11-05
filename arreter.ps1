@@ -38,6 +38,10 @@ Get-CimInstance Win32_Process -Filter "Name='php.exe'" |
 Get-CimInstance Win32_Process -Filter "Name='symfony.exe' OR Name='php-cgi.exe'" |
     Where-Object { $_.CommandLine -like '* serve*' -or $_.CommandLine -like '*symfony-cli*' } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+# Serveur PHP intégré (solution de secours de demarrer.ps1).
+Get-CimInstance Win32_Process -Filter "Name='php.exe'" |
+    Where-Object { $_.CommandLine -like '*-S 127.0.0.1:8000*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Ok 'API et worker d''e-mails arrêtés.'
 
 if (-not $GarderMailpit) {

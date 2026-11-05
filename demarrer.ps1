@@ -117,10 +117,22 @@ try {
 
         # Fenêtre cachée plutôt que « symfony serve -d » : sous Windows, le mode démon échoue
         # quand .symfony.local.yaml existe (journal verrouillé par Symfony CLI lui-même).
-        Start-Process -FilePath 'symfony' -ArgumentList 'serve' -WorkingDirectory $backend -WindowStyle Hidden
+        $symfonyLance = $true
+        try {
+            Start-Process -FilePath 'symfony' -ArgumentList 'serve' -WorkingDirectory $backend -WindowStyle Hidden
+        } catch {
+            # Windows peut bloquer symfony.exe (SmartScreen, Smart App Control) : serveur PHP
+            # intégré et worker lancés directement avec php.exe, qui reste autorisé.
+            $symfonyLance = $false
+            Attention 'Symfony CLI bloqué par Windows : serveur PHP intégré utilisé à la place.'
+            $php = (Get-Command php -ErrorAction SilentlyContinue).Source
+            if (-not $php) { $php = Get-ChildItem 'C:\wamp64\bin\php\php8.3*\php.exe' | Select-Object -Last 1 -ExpandProperty FullName }
+            Start-Process -FilePath $php -WorkingDirectory $backend -WindowStyle Hidden -ArgumentList '-S', '127.0.0.1:8000', '-t', 'public', 'public/index.php'
+            Start-Process -FilePath $php -WorkingDirectory $backend -WindowStyle Hidden -ArgumentList 'bin/console', 'messenger:consume', 'async'
+        }
         if (AttendrePort 8000 30) {
             Ok 'API démarrée : http://127.0.0.1:8000 (documentation : /api/doc)'
-            Ok 'Worker d''e-mails démarré (backend\.symfony.local.yaml).'
+            Ok ($(if ($symfonyLance) { 'Worker d''e-mails démarré (backend\.symfony.local.yaml).' } else { 'Worker d''e-mails démarré.' }))
         } else {
             Attention 'L''API ne répond pas : lancez « symfony serve » dans backend\ pour voir l''erreur.'
         }
