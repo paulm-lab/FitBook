@@ -5,6 +5,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
+use App\Service\EmailDeliveryStatus;
 use App\Service\FitBookMailer;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -14,7 +15,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -103,24 +103,19 @@ final class InscriptionController extends AbstractController
             return $this->json(['message' => 'Le compte n’a pas pu être enregistré. Réessayez plus tard.'], 503);
         }
 
-        // Messenger routes verification email messages to its async transport.
-        // Queue the message here without waiting for SMTP delivery.
-        $verificationEmailQueued = true;
-        try {
-            $this->sendVerification($user, $token);
-        } catch (\Throwable $exception) {
-            $verificationEmailQueued = false;
-            $this->logger->warning('Verification email could not be queued.', [
-                'exception_class' => $exception::class,
-            ]);
-        }
+        // Le compte existe déjà : un échec d'envoi ne bloque pas l'inscription, un nouveau lien peut être demandé.
+        $status = $this->trySendVerification($user, $token);
 
         return $this->json([
-            'message' => $verificationEmailQueued
-                ? "Compte cr\u{e9}\u{e9}. Le lien de v\u{e9}rification a \u{e9}t\u{e9} ajout\u{e9} \u{e0} la file d'envoi."
-                : "Compte cr\u{e9}\u{e9}, mais le lien de v\u{e9}rification n'a pas pu \u{ea}tre mis en file d'envoi. Vous pouvez en demander un nouveau.",
+            'message' => match ($status) {
+                EmailDeliveryStatus::Sent => "Compte cr\u{e9}\u{e9}. L'e-mail de v\u{e9}rification a \u{e9}t\u{e9} envoy\u{e9}.",
+                EmailDeliveryStatus::Queued => "Compte cr\u{e9}\u{e9}. L'e-mail de v\u{e9}rification est en file d'attente d'envoi : il n'est pas encore parti.",
+                EmailDeliveryStatus::Failed => "Compte cr\u{e9}\u{e9}, mais l'e-mail de v\u{e9}rification n'a pas pu \u{ea}tre envoy\u{e9}. Vous pouvez demander un nouveau lien.",
+            },
             'email' => $email,
-            'verificationEmailQueued' => $verificationEmailQueued,
+            'verificationEmailStatus' => $status->value,
+            // Conservé pour les clients existants : vrai si l'e-mail est parti ou en file.
+            'verificationEmailQueued' => $status !== EmailDeliveryStatus::Failed,
         ], 201);
     }
 
@@ -148,7 +143,8 @@ final class InscriptionController extends AbstractController
 
         try {
             $this->mailer->sendRegistrationConfirmation($user);
-        } catch (TransportExceptionInterface $exception) {
+        } catch (\Throwable $exception) {
+            // Le compte est déjà activé : l'e-mail de bienvenue est accessoire.
             $this->logger->warning('Compte vérifié, mais échec de l’e-mail de confirmation.', [
                 'exception_class' => $exception::class,
             ]);
@@ -180,13 +176,8 @@ final class InscriptionController extends AbstractController
                 ->setVerificationTokenExpiresAt(new \DateTimeImmutable('+24 hours'))
                 ->setStatut('inactif');
             $this->entityManager->flush();
-            try {
-                $this->sendVerification($user, $token);
-            } catch (\Throwable $exception) {
-                $this->logger->warning('Verification email resend could not be queued.', [
-                    'exception_class' => $exception::class,
-                ]);
-                return $this->json(['message' => "Le lien de v\u{e9}rification n'a pas pu \u{ea}tre mis en file d'envoi."], 503);
+            if ($this->trySendVerification($user, $token) === EmailDeliveryStatus::Failed) {
+                return $this->json(['message' => "Le lien de v\u{e9}rification n'a pas pu \u{ea}tre envoy\u{e9}. R\u{e9}essayez plus tard."], 503);
             }
         }
 
@@ -199,13 +190,22 @@ final class InscriptionController extends AbstractController
         return is_string($data[$key] ?? null) ? trim($data[$key]) : '';
     }
 
-    private function sendVerification(Utilisateur $user, string $token): void
+    private function trySendVerification(Utilisateur $user, string $token): EmailDeliveryStatus
     {
         $url = $this->urlGenerator->generate(
             'api_auth_verify_email',
             ['token' => $token],
             UrlGeneratorInterface::ABSOLUTE_URL,
         );
-        $this->mailer->sendVerification($user, $url);
+        try {
+            return $this->mailer->sendVerification($user, $url);
+        } catch (\Throwable $exception) {
+            // Jamais le DSN ni le jeton : la classe d'exception suffit à diagnostiquer.
+            $this->logger->warning('L’e-mail de vérification FitBook n’a pas pu être envoyé.', [
+                'exception_class' => $exception::class,
+            ]);
+
+            return EmailDeliveryStatus::Failed;
+        }
     }
 }

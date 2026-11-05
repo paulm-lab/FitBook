@@ -6,10 +6,16 @@ namespace App\Tests\Controller\Api;
 
 use App\Entity\Utilisateur;
 use App\Repository\UtilisateurRepository;
+use App\Service\FitBookMailer;
+use App\Service\MailQueueTracker;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Mailer\Envelope;
+use Symfony\Component\Mailer\Exception\TransportException;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\RawMessage;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AuthenticationTest extends WebTestCase
@@ -26,6 +32,8 @@ final class AuthenticationTest extends WebTestCase
         $response = $this->json($client);
         self::assertSame('camille@example.test', $response['email']);
         self::assertTrue($response['verificationEmailQueued']);
+        self::assertSame('queued', $response['verificationEmailStatus']);
+        self::assertStringContainsString("en file d'attente", $response['message']);
 
         $user = $this->findUser('camille@example.test');
         self::assertNotNull($user);
@@ -36,6 +44,48 @@ final class AuthenticationTest extends WebTestCase
         self::assertNotSame(self::PASSWORD, $user->getPassword());
         self::assertNotNull($user->getVerificationTokenHash());
         self::assertQueuedEmailCount(1);
+    }
+
+    public function testRegistrationReportsAnEmailAcceptedSynchronouslyAsSent(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->useMailer(new class implements MailerInterface {
+            public function send(RawMessage $message, ?Envelope $envelope = null): void
+            {
+            }
+        });
+
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
+
+        self::assertResponseStatusCodeSame(201);
+        $response = $this->json($client);
+        self::assertSame('sent', $response['verificationEmailStatus']);
+        self::assertStringContainsString('a été envoyé', $response['message']);
+    }
+
+    public function testSmtpFailureStillCreatesTheAccountAndAllowsAResend(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->useMailer(new class implements MailerInterface {
+            public function send(RawMessage $message, ?Envelope $envelope = null): void
+            {
+                throw new TransportException('535 5.7.0 The email limit is reached');
+            }
+        });
+
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
+
+        self::assertResponseStatusCodeSame(201);
+        $response = $this->json($client);
+        self::assertSame('failed', $response['verificationEmailStatus']);
+        self::assertFalse($response['verificationEmailQueued']);
+        self::assertStringContainsString('demander un nouveau lien', $response['message']);
+        $user = $this->findUser('camille@example.test');
+        self::assertSame('inactif', $user->getStatut());
+        self::assertNotNull($user->getVerificationTokenHash());
+
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
+        self::assertResponseStatusCodeSame(503);
     }
 
     public function testRegistrationNormalizesEmailAndRejectsDuplicates(): void
@@ -168,6 +218,12 @@ final class AuthenticationTest extends WebTestCase
         (new SchemaTool($em))->createSchema([$em->getClassMetadata(Utilisateur::class)]);
 
         return $client;
+    }
+
+    private function useMailer(MailerInterface $mailer): void
+    {
+        $container = static::getContainer();
+        $container->set(FitBookMailer::class, new FitBookMailer($mailer, $container->get(MailQueueTracker::class), 'no-reply@fitbook.test'));
     }
 
     private function createUser(string $statut): Utilisateur
