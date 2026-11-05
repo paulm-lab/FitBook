@@ -8,9 +8,9 @@
 | Niveau | Outil | Nombre | Résultat (5 novembre 2026) | Commande |
 |--------|-------|--------|---------------------------|----------|
 | Unitaires et fonctionnels API | PHPUnit 12 (SQLite en mémoire) | 85 tests, 340 assertions | ✅ tous verts | `cd backend && php bin/phpunit --exclude-group mysql` |
-| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` | 8 tests | ⚠️ à exécuter avec MySQL démarré | `php bin/phpunit --group mysql` |
+| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` (MySQL 9.1 / WAMP) | 8 tests, 32 assertions | ✅ tous verts | `php bin/phpunit --group mysql` |
 | Frontend | Vitest (`ng test`) | 50 tests | ✅ tous verts | `cd frontend && npm test -- --watch=false` |
-| API de bout en bout | Postman + Newman | 60 requêtes, 106 assertions | ✅ 0 échec | voir [`postman/README.md`](../postman/README.md) |
+| API de bout en bout | Postman + Newman, sur SQLite puis sur MySQL (procédures stockées) | 60 requêtes, 106 assertions | ✅ 0 échec sur les deux bases | voir [`postman/README.md`](../postman/README.md) |
 | Parcours dans le navigateur | Recette (script Playwright headless + contrôle visuel) | 47 pages, 8 parcours | ✅ sans erreur | § 3 |
 | Qualité front | ESLint (angular-eslint, accessibilité des templates) + Prettier | — | ✅ 0 erreur | `npm run lint` · `npm run format:check` |
 | Qualité back | PHPStan niveau 6, PHP-CS-Fixer | — | ⚠️ configurés, outils à installer | `phpstan.dist.neon`, `.php-cs-fixer.dist.php` |
