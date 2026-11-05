@@ -1,0 +1,33 @@
+<main class="verification-page">
+  <section class="verification-card" aria-labelledby="verification-title">
+    <span class="section-kicker">VÉRIFICATION DE VOTRE COMPTE</span>
+    @if (success) {
+      <div role="status" class="verification-result success-message">
+        <h1 id="verification-title">Adresse vérifiée</h1>
+        <p>Votre adresse e-mail est vérifiée. Votre compte FitBook est actif.</p>
+        <a class="form-action" routerLink="/connexion">Se connecter</a>
+      </div>
+    } @else {
+      <div role="status" class="verification-result">
+        <h1 id="verification-title">Lien de vérification invalide</h1>
+        <p>Le lien de vérification est invalide ou expiré. Demandez un nouveau lien.</p>
+        @if (confirmation) { <p class="success-message" role="status">{{ confirmation }}</p> }
+        <form [formGroup]="formulaire" (ngSubmit)="renvoyerLien()" novalidate>
+          <label for="verification-email">Adresse e-mail</label>
+          <input id="verification-email" type="email" formControlName="email" autocomplete="email" inputmode="email"
+            [attr.aria-invalid]="formulaire.controls.email.touched && formulaire.controls.email.invalid"
+            [attr.aria-describedby]="formulaire.controls.email.touched && formulaire.controls.email.invalid ? 'verification-email-error' : null">
+          @if (formulaire.controls.email.touched && formulaire.controls.email.invalid) {
+            <small id="verification-email-error">Saisissez une adresse e-mail valide.</small>
+          }
+          @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+          <button class="form-action" type="submit" [disabled]="formulaire.invalid || envoi" [attr.aria-busy]="envoi">
+            {{ envoi ? 'Envoi…' : 'Renvoyer le lien' }}
+          </button>
+        </form>
+        <p class="form-switch"><a routerLink="/connexion">Se connecter</a></p>
+      </div>
+    }
+  </section>
+  <app-visual-showcase page="login" [compact]="true"></app-visual-showcase>
+</main>

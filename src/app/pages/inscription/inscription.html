@@ -1,0 +1,166 @@
+<main class="form-page signup-page">
+  <section class="form-card signup-card">
+    <span class="section-kicker">REJOIGNEZ FITBOOK</span>
+    <h1>Créer un compte</h1>
+    <p>Un compte pour réserver vos séances sportives.</p>
+
+    @if (confirmation) {
+      <div class="success-message" role="status">
+        <p>{{ confirmation }}</p>
+
+        @if (emailInscrit && lienEnFile) {
+          <p>
+            Le lien de vérification a été pris en compte pour
+            <strong>{{ emailInscrit }}</strong>.
+            Vérifiez également vos courriers indésirables.
+          </p>
+        }
+
+        @if (emailInscrit && !lienEnFile) {
+          <p>
+            Le lien n'a pas pu être envoyé.
+            Vous pouvez en demander un nouveau pour
+            <strong>{{ emailInscrit }}</strong>.
+          </p>
+        }
+
+        @if (erreur) {
+          <p class="error-message" role="alert">{{ erreur }}</p>
+        }
+
+        @if (emailInscrit) {
+          <button
+            class="form-action"
+            type="button"
+            [disabled]="envoi"
+            (click)="renvoyerLien()">
+            {{ envoi ? 'Envoi...' : 'Renvoyer le lien de vérification' }}
+          </button>
+        }
+      </div>
+    } @else {
+      <form
+        [formGroup]="formulaire"
+        (ngSubmit)="inscrire()"
+        novalidate>
+
+        <div class="form-row">
+          <label for="signup-prenom">
+            Prénom
+            <input
+              id="signup-prenom"
+              type="text"
+              formControlName="prenom"
+              autocomplete="given-name"
+              [attr.aria-invalid]="!!erreurChamp('prenom')"
+              aria-describedby="signup-prenom-error"
+              (input)="effacerErreurServeur('prenom')">
+
+            @if (erreurChamp('prenom')) {
+              <small class="field-error" id="signup-prenom-error">
+                {{ erreurChamp('prenom') }}
+              </small>
+            }
+          </label>
+
+          <label for="signup-nom">
+            Nom
+            <input
+              id="signup-nom"
+              type="text"
+              formControlName="nom"
+              autocomplete="family-name"
+              [attr.aria-invalid]="!!erreurChamp('nom')"
+              aria-describedby="signup-nom-error"
+              (input)="effacerErreurServeur('nom')">
+
+            @if (erreurChamp('nom')) {
+              <small class="field-error" id="signup-nom-error">
+                {{ erreurChamp('nom') }}
+              </small>
+            }
+          </label>
+        </div>
+
+        <label for="signup-email">
+          E-mail
+          <input
+            id="signup-email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            [attr.aria-invalid]="!!erreurChamp('email')"
+            aria-describedby="signup-email-error"
+            (input)="effacerErreurServeur('email')">
+
+          @if (erreurChamp('email')) {
+            <small class="field-error" id="signup-email-error">
+              {{ erreurChamp('email') }}
+            </small>
+          }
+        </label>
+
+        <label for="signup-telephone">
+          Téléphone
+          <input
+            id="signup-telephone"
+            type="tel"
+            formControlName="telephone"
+            autocomplete="tel"
+            [attr.aria-invalid]="!!erreurChamp('telephone')"
+            aria-describedby="signup-telephone-error"
+            (input)="effacerErreurServeur('telephone')">
+
+          @if (erreurChamp('telephone')) {
+            <small class="field-error" id="signup-telephone-error">
+              {{ erreurChamp('telephone') }}
+            </small>
+          }
+        </label>
+
+        <label for="signup-password">
+          Mot de passe
+          <input
+            id="signup-password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            aria-describedby="signup-password-hint signup-password-error"
+            [attr.aria-invalid]="!!erreurChamp('password')"
+            (input)="effacerErreurServeur('password')">
+
+          <small id="signup-password-hint">
+            8 caractères minimum.
+          </small>
+
+          @if (erreurChamp('password')) {
+            <small class="field-error" id="signup-password-error">
+              {{ erreurChamp('password') }}
+            </small>
+          }
+        </label>
+
+        @if (erreur) {
+          <p class="error-message" role="alert">{{ erreur }}</p>
+        }
+
+        <button
+          class="form-action"
+          type="submit"
+          [disabled]="envoi">
+          {{ envoi ? 'Création...' : 'Créer mon compte' }}
+        </button>
+      </form>
+    }
+
+    <p class="form-switch">
+      Déjà membre ?
+      <a routerLink="/connexion">Se connecter</a>
+    </p>
+  </section>
+
+  <app-visual-showcase
+    page="signup"
+    [compact]="true">
+  </app-visual-showcase>
+</main>

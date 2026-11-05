@@ -1,0 +1,30 @@
+<div class="seances-page">
+  <app-visual-showcase page="sessions"></app-visual-showcase>
+  <header class="page-header"><h1>Les séances disponibles</h1><p>Découvrez les activités sportives et réservez votre prochaine séance.</p></header>
+  <form class="seance-filters" (ngSubmit)="rechercher()" aria-label="Filtrer les séances">
+    <label>Activité<input [(ngModel)]="activite" name="activite" placeholder="Yoga, fitness…"></label>
+    <label>Lieu<input [(ngModel)]="lieu" name="lieu" placeholder="Votre ville"></label>
+    <label>Date<input [(ngModel)]="date" name="date" type="date"></label>
+    <button type="submit">Filtrer</button>
+  </form>
+  @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
+  @if (chargement) { <p role="status" aria-live="polite">Chargement des séances…</p> }
+  @if (!chargement && !erreur && seances.length === 0) { <p>Aucune séance trouvée.</p> }
+  @if (!chargement && seances.length > 0) {
+    <div class="seances-grid">
+      @for (seance of seances; track seance.id) {
+        <article class="seance-card">
+          <div class="seance-photo"><img [src]="imageSeance(seance)" [alt]="'Photo sportive pour ' + seance.titre" loading="lazy" decoding="async" (error)="imageError($event)"></div>
+          <div class="seance-content"><h2>{{ seance.titre }}</h2><p>{{ seance.description }}</p>
+            @if (seance.activite) { <p><strong>Activité :</strong> {{ nomActivite(seance.activite) }}</p> }
+            @if (seance.coach) { <p><strong>Coach :</strong> {{ seance.coach.prenom }} {{ seance.coach.nom }}</p> }
+            @if (seance.salle) { <p><strong>Salle :</strong> {{ seance.salle.nom }}@if (seance.salle.adresse) {, {{ seance.salle.adresse }}}</p> }
+            <p><strong>Début :</strong> {{ seance.dateDebut | date:'dd/MM/yyyy à HH:mm' }}</p><p><strong>Fin :</strong> {{ seance.dateFin | date:'dd/MM/yyyy à HH:mm' }}</p>
+            <p><strong>Places disponibles :</strong> {{ seance.placesDisponibles }}</p><p class="price">{{ seance.prix }} EUR</p>
+            <a class="reserve-button" [routerLink]="seance.placesDisponibles > 0 ? ['/reservation'] : null" [queryParams]="seance.placesDisponibles > 0 ? { seance: seance.id } : null" [attr.aria-disabled]="seance.placesDisponibles <= 0">Réserver</a>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

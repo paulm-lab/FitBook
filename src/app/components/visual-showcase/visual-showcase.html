@@ -1,0 +1,20 @@
+<section class="visual-showcase" [class.visual-showcase--compact]="compact" aria-label="Visuels sportifs FitBook">
+  <article class="visual-lead">
+    <img [src]="visuals.hero.src" [alt]="visuals.hero.alt" loading="lazy" decoding="async" (error)="useFallback($event)">
+    <div class="visual-lead-copy"><span>{{ visuals.kicker }}</span><h2>{{ visuals.title }}</h2><p>{{ visuals.description }}</p></div>
+  </article>
+
+  <section class="visual-carousel" aria-label="Galerie photo sportive">
+    <header class="visual-carousel-heading"><div><span class="visual-kicker">EN IMAGES</span><h3>Inspirez-vous</h3></div><div class="visual-controls"><button type="button" aria-label="Photos precedentes" (click)="scrollGallery(-1)">←</button><button type="button" aria-label="Photos suivantes" (click)="scrollGallery(1)">→</button></div></header>
+    <div #galleryTrack class="visual-track" tabindex="0" aria-label="Carrousel horizontal de photos">
+      @for (item of visuals.photos; track item.src) {
+        <figure class="visual-photo"><img [src]="item.src" [alt]="item.alt" loading="lazy" decoding="async" (error)="useFallback($event)"><figcaption>{{ item.label }}</figcaption></figure>
+      }
+    </div>
+  </section>
+
+  <section class="visual-video" aria-label="Video sportive">
+    <div class="visual-video-copy"><span class="visual-kicker">A VOUS DE JOUER</span><h3>Le sport en mouvement</h3><p>{{ visuals.videoLabel }}</p></div>
+    <div class="visual-video-frame"><video controls playsinline preload="none" [poster]="visuals.videoPoster" [attr.aria-label]="visuals.videoLabel" (error)="markVideoUnavailable()"><source [src]="visuals.video" type="video/mp4">Votre navigateur ne prend pas en charge la video HTML5.</video>@if (videoUnavailable) { <p class="video-fallback">Video temporairement indisponible.</p> }</div>
+  </section>
+</section>

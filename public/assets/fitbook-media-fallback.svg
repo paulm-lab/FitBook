@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">Visuel sportif FitBook</title>
+  <desc id="desc">Fond bleu nuit avec un symbole orange de mouvement.</desc>
+  <rect width="1200" height="700" fill="#10213a"/>
+  <circle cx="840" cy="320" r="210" fill="#ff642d" opacity=".18"/>
+  <path d="M460 390h105l44-105h104l-44 105h105l-44 105H520z" fill="#ff642d"/>
+  <text x="90" y="580" fill="#fff" font-family="Arial,sans-serif" font-size="50" font-weight="700">FitBook</text>
+</svg>

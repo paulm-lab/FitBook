@@ -1,0 +1,29 @@
+<main class="pricing-page">
+  <header class="pricing-heading">
+    <span class="section-kicker">LES FORMULES FITBOOK</span>
+    <h1>Un pass pour chaque rythme.</h1>
+    <p>Sans engagement. Annulez ou changez de formule quand vous le souhaitez.</p>
+  </header>
+
+  <section class="plan-grid" aria-label="Formules d'abonnement FitBook">
+    @for (plan of plans; track plan.id) {
+      <article class="plan-card" [class.plan-card--featured]="plan.featured">
+        @if (plan.featured) {
+          <span class="plan-badge">Le plus choisi</span>
+        }
+        <div class="plan-heading">
+          <h2>{{ plan.nom }}</h2>
+          <p>Pour bouger à votre rythme</p>
+        </div>
+        <p class="plan-price"><span class="price-value">{{ plan.prix }}</span><span class="price-currency">&euro;</span><span class="price-period">/mois</span></p>
+        <p class="plan-session-count">{{ plan.seances }}</p>
+        <ul class="plan-benefits">
+          @for (avantage of plan.avantages; track avantage) {
+            <li><span class="benefit-check" aria-hidden="true">✓</span><span>{{ avantage }}</span></li>
+          }
+        </ul>
+        <button class="plan-button" type="button" (click)="choisirFormule(plan.id)" [attr.aria-label]="'Choisir la formule ' + plan.nom">Choisir cette formule</button>
+      </article>
+    }
+  </section>
+</main>
