@@ -1,0 +1,13 @@
+# Secrets et environnements locaux : jamais versionnés
+.env.local
+.env.*.local
+**/.env.local
+
+# Outils locaux
+.agentlens/
+.local-symfony-cli/
+.idea/
+.vscode/
+
+# Rapports générés
+postman/reports/*.html
