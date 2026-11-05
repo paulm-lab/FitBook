@@ -15,6 +15,7 @@ use App\Enum\SessionStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use App\Tests\Support\JwtLoginTrait;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -22,6 +23,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  */
 final class CatalogueAndReservationTest extends WebTestCase
 {
+    use JwtLoginTrait;
+
     private KernelBrowser $client;
     private Gym $gym;
     private Activity $activity;
@@ -82,7 +85,7 @@ final class CatalogueAndReservationTest extends WebTestCase
     public function testSportifReservesOnePlaceAndCannotReserveTwice(): void
     {
         $session = $this->session('+2 days', price: '15.00');
-        $this->client->loginUser($this->user('a@example.test'));
+        $this->loginWithJwt($this->client, $this->user('a@example.test'));
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $session->getId()]);
         self::assertResponseStatusCodeSame(201);
@@ -102,7 +105,7 @@ final class CatalogueAndReservationTest extends WebTestCase
     {
         $session = $this->session('+2 days', capacity: 1);
         $this->reservation($this->user('a@example.test'), $session);
-        $this->client->loginUser($this->user('b@example.test'));
+        $this->loginWithJwt($this->client, $this->user('b@example.test'));
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $session->getId()]);
 
@@ -115,7 +118,7 @@ final class CatalogueAndReservationTest extends WebTestCase
         $session = $this->session('+2 days');
         $athlete = $this->user('a@example.test');
         $old = $this->reservation($athlete, $session, ReservationStatus::Annulee);
-        $this->client->loginUser($athlete);
+        $this->loginWithJwt($this->client, $athlete);
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $session->getId()]);
 
@@ -125,7 +128,7 @@ final class CatalogueAndReservationTest extends WebTestCase
 
     public function testUnavailableSessionsAndSeveralPlacesAreRefused(): void
     {
-        $this->client->loginUser($this->user('a@example.test'));
+        $this->loginWithJwt($this->client, $this->user('a@example.test'));
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $this->session('-1 hour')->getId()]);
         self::assertResponseStatusCodeSame(409);
