@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Http\ApiException;
 use App\Http\ApiRequest;
 use App\Repository\FavoriteRepository;
+use App\Repository\ReviewRepository;
 use App\Service\CataloguePresenter;
 use App\Service\TargetResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -51,8 +52,7 @@ final class FavoriteController extends AbstractController
         $target = $targets->resolve($data['type'] ?? null, $data['cibleId'] ?? null);
         $user = $this->currentUser();
 
-        $field = array_search($target::class, TargetResolver::TYPES, true);
-        $existing = $this->favorites->findOneBy(['user' => $user, ['salle' => 'gym', 'coach' => 'coach', 'seance' => 'session'][$field] => $target]);
+        $existing = $this->favorites->findOneBy(['user' => $user, ReviewRepository::field($target) => $target]);
         if ($existing !== null) {
             throw ApiException::conflict('Déjà dans vos favoris.');
         }

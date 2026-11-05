@@ -38,7 +38,7 @@ class ReviewRepository extends ServiceEntityRepository
     /** Avis visibles d'une cible, du plus récent au plus ancien. */
     public function visibleFor(Gym|CoachProfile|Session $target): QueryBuilder
     {
-        $field = self::TARGET_FIELDS[$target::class];
+        $field = self::field($target);
 
         return $this->createQueryBuilder('v')
             ->join('v.author', 'a')->addSelect('a')
@@ -81,14 +81,15 @@ class ReviewRepository extends ServiceEntityRepository
     /** @return array{note: float|null, nbAvis: int} */
     public function ratingOf(Gym|CoachProfile|Session $target): array
     {
-        $rating = $this->ratings($target::class, [(int) $target->getId()])[(int) $target->getId()] ?? null;
+        $class = array_search(self::field($target), self::TARGET_FIELDS, true);
+        $rating = $this->ratings($class, [(int) $target->getId()])[(int) $target->getId()] ?? null;
 
         return ['note' => $rating['note'] ?? null, 'nbAvis' => $rating['nbAvis'] ?? 0];
     }
 
     public function findOneByAuthorAndTarget(User $author, Gym|CoachProfile|Session $target): ?Review
     {
-        return $this->findOneBy(['author' => $author, self::TARGET_FIELDS[$target::class] => $target]);
+        return $this->findOneBy(['author' => $author, self::field($target) => $target]);
     }
 
     /**
@@ -127,6 +128,19 @@ class ReviewRepository extends ServiceEntityRepository
         }
 
         return $query->andWhere('v.coach = :coach OR s.coach = :coach')->setParameter('coach', $coach);
+    }
+
+    /**
+     * Champ de la cible. Test par instanceof et non par ::class : une entité chargée en
+     * différé est un proxy Doctrine (Proxies\__CG__\App\Entity\…), sous-classe de l'entité.
+     */
+    public static function field(Gym|CoachProfile|Session $target): string
+    {
+        return match (true) {
+            $target instanceof Gym => 'gym',
+            $target instanceof CoachProfile => 'coach',
+            default => 'session',
+        };
     }
 
     public function countPending(): int
