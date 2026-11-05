@@ -47,10 +47,19 @@ security:
         - { path: ^/api/auth/, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/logout$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/doc, roles: PUBLIC_ACCESS }
         # Tout compte connecté, quel que soit son rôle ; les droits fins sont dans les Voters.
         - { path: ^/api/me, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/reservations, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/favoris, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/seances/\d+/inscrits, roles: IS_AUTHENTICATED_FULLY }
+        # Espaces réservés à un rôle (l'administrateur hérite de tous).
+        - { path: ^/api/coach/, roles: ROLE_COACH }
+        - { path: ^/api/gestionnaire/, roles: ROLE_GESTIONNAIRE }
         - { path: ^/api/admin, roles: ROLE_ADMIN }
+        # Catalogue : lecture publique, écriture réservée aux comptes connectés (puis Voters).
+        - { path: ^/api/(seances|salles|activites|disponibilites|avis), methods: [POST, PUT, PATCH, DELETE], roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/salles/\d+/(stats|reservations), roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

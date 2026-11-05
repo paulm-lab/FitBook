@@ -140,7 +140,8 @@ final class CatalogueAndReservationTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $this->session('+1 day')->getId(), 'nombrePlaces' => 2]);
-        self::assertResponseStatusCodeSame(400);
+        // Corps refusé par le JSON Schema (nombrePlaces vaut toujours 1).
+        self::assertResponseStatusCodeSame(422);
     }
 
     private function user(string $email, string $role = User::ROLE_SPORTIF): User
