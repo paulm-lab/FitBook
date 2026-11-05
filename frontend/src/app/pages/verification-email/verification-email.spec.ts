@@ -47,8 +47,8 @@ describe('VerificationEmailComponent', () => {
     component.renvoyerLien();
 
     expect(auth.renvoyerVerification).toHaveBeenCalledWith('camille@example.test');
-    expect(component.confirmation).toBe('Demande prise en compte.');
-    expect(component.envoi).toBe(false);
+    expect(component.confirmation()).toBe('Demande prise en compte.');
+    expect(component.envoi()).toBe(false);
   });
 
   it('réactive le bouton et affiche une erreur si le renvoi échoue', async () => {
@@ -59,8 +59,8 @@ describe('VerificationEmailComponent', () => {
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('La demande de renvoi');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('La demande de renvoi');
   });
 
   it('réactive le bouton si le service de renvoi lève une exception synchrone', async () => {
@@ -71,7 +71,7 @@ describe('VerificationEmailComponent', () => {
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('La demande de renvoi');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('La demande de renvoi');
   });
 });

@@ -1,0 +1,76 @@
+<main class="container page" id="contenu">
+  @switch (etat()) {
+    @case ('chargement') { <app-loader texte="Chargement du coach…" /> }
+    @case ('introuvable') {
+      <app-etat-vide titre="Coach introuvable" icone="?" message="Ce coach n’existe pas ou son profil n’est plus publié.">
+        <a class="btn" [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">Voir les coachs</a>
+      </app-etat-vide>
+    }
+    @case ('erreur') {
+      <app-etat-vide titre="Chargement impossible" icone="!" message="Le profil n’a pas pu être chargé. Vérifiez votre connexion.">
+        <button type="button" class="btn" (click)="charger(id())">Réessayer</button>
+      </app-etat-vide>
+    }
+    @case ('ok') {
+      @let c = coach()!;
+      <nav class="breadcrumb" aria-label="Fil d’Ariane"><a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">Coachs</a> › <span>{{ c.prenom }} {{ c.nom }}</span></nav>
+
+      <header class="panel coach-hero">
+        @if (c.photo) {
+          <img class="coach-photo" [src]="c.photo" [alt]="'Photo de ' + c.prenom + ' ' + c.nom" appSecours>
+        } @else {
+          <span class="coach-photo avatar--initiales" aria-hidden="true">{{ initiales() }}</span>
+        }
+        <div class="stack coach-id">
+          <div>
+            <span class="section-kicker">Coach{{ c.ville ? ' · ' + c.ville : '' }}</span>
+            <h1>{{ c.prenom }} {{ c.nom }}</h1>
+            <app-etoiles [note]="c.note.note" [nbAvis]="c.note.nbAvis" />
+          </div>
+          @if (c.specialites.length) {
+            <div class="chips" aria-label="Spécialités">
+              @for (s of c.specialites; track s) { <span class="chip">{{ s }}</span> }
+            </div>
+          }
+          <dl class="facts">
+            @if (c.experienceAnnees != null) { <div><dt>Expérience</dt><dd>{{ c.experienceAnnees }} an{{ c.experienceAnnees > 1 ? 's' : '' }}</dd></div> }
+            @if (c.tarifHoraire) { <div><dt>Tarif horaire</dt><dd>{{ c.tarifHoraire | number: '1.0-2' }} €</dd></div> }
+            <div><dt>Séances à venir</dt><dd>{{ c.prochainesSeances.length }}</dd></div>
+          </dl>
+          <app-favori type="coach" [cibleId]="c.id" [avecTexte]="true" />
+        </div>
+      </header>
+
+      <div class="coach-grid">
+        <div class="stack">
+          <section class="panel">
+            <h2>Biographie</h2>
+            <p class="text pre">{{ c.biographie || 'Ce coach n’a pas encore rédigé sa présentation.' }}</p>
+            @if (c.certification) {
+              <h3>Certifications</h3>
+              <p class="text pre">{{ c.certification }}</p>
+            }
+          </section>
+
+          <section class="panel">
+            <h2>Prochaines séances</h2>
+            @if (c.prochainesSeances.length) {
+              <div class="grid">
+                @for (seance of c.prochainesSeances; track seance.id) { <app-seance-card [seance]="seance" /> }
+              </div>
+            } @else {
+              <p class="muted">Aucune séance programmée pour le moment.</p>
+            }
+          </section>
+
+          <app-avis-section type="coach" [cibleId]="c.id" [note]="c.note" [avis]="c.avis" (change)="charger(id(), true)" />
+        </div>
+
+        <aside class="panel">
+          <h2>Disponibilités</h2>
+          <app-disponibilites-liste [disponibilites]="c.disponibilites" />
+        </aside>
+      </div>
+    }
+  }
+</main>

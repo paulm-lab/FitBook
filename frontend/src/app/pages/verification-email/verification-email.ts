@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, defer, EMPTY, finalize, take, TimeoutError } from 'rxjs';
@@ -9,48 +8,44 @@ import { VisualShowcaseComponent } from '../../components/visual-showcase/visual
 
 @Component({
   selector: 'app-verification-email',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, VisualShowcaseComponent],
+  imports: [ReactiveFormsModule, RouterLink, VisualShowcaseComponent],
   templateUrl: './verification-email.html',
   styleUrl: './verification-email.css'
 })
 export class VerificationEmailComponent {
-  readonly success: boolean;
-  readonly formulaire;
-  envoi = false;
-  confirmation = '';
-  erreur = '';
-  // Application zoneless : la vue doit être notifiée quand une réponse HTTP modifie l'état.
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
 
-  constructor(route: ActivatedRoute, private readonly fb: FormBuilder, private readonly auth: AuthService) {
-    this.success = route.snapshot.queryParamMap.get('status') === 'success';
-    this.formulaire = this.fb.nonNullable.group({
-      email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]]
-    });
-  }
+  /** ?status=success : lien valide, compte activé ; toute autre valeur : lien invalide ou expiré. */
+  readonly success = inject(ActivatedRoute).snapshot.queryParamMap.get('status') === 'success';
+  readonly envoi = signal(false);
+  readonly confirmation = signal('');
+  readonly erreur = signal('');
+  readonly formulaire = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(180)]],
+  });
 
   renvoyerLien(): void {
-    if (this.envoi || this.formulaire.invalid) {
+    if (this.envoi() || this.formulaire.invalid) {
       this.formulaire.markAllAsTouched();
       return;
     }
 
-    this.envoi = true;
-    this.erreur = '';
-    this.confirmation = '';
+    this.envoi.set(true);
+    this.erreur.set('');
+    this.confirmation.set('');
     const email = this.formulaire.controls.email.value.trim();
     defer(() => this.auth.renvoyerVerification(email)).pipe(
       take(1),
       catchError((error: unknown) => {
-        this.erreur = error instanceof TimeoutError
+        this.erreur.set(error instanceof TimeoutError
           ? 'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.'
           : error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
             ? error.error.message
-            : 'La demande de renvoi n’a pas abouti. Réessayez dans quelques instants.';
+            : 'La demande de renvoi n’a pas abouti. Réessayez dans quelques instants.');
         return EMPTY;
       }),
-      finalize(() => { this.envoi = false; this.cdr.markForCheck(); })
-    ).subscribe(response => { this.confirmation = response.message; });
+      finalize(() => this.envoi.set(false))
+    ).subscribe(response => this.confirmation.set(response.message));
   }
 }

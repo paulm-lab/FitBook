@@ -1,8 +1,8 @@
-<main class="login-page">
+<main class="login-page" id="contenu">
   <section class="login-card" aria-labelledby="login-title">
     <span class="section-kicker">HEUREUX DE VOUS REVOIR</span>
     <h1 id="login-title">Connexion</h1>
-    <p>Connectez-vous pour réserver votre prochaine séance.</p>
+    <p>Connectez-vous pour réserver votre prochaine séance ou gérer votre espace.</p>
 
     <form [formGroup]="formulaire" (ngSubmit)="connecter()" novalidate>
       <label for="login-email">E-mail</label>
@@ -20,10 +20,22 @@
       @if (formulaire.controls.password.touched && formulaire.controls.password.invalid) {
         <small id="password-error">{{ formulaire.controls.password.hasError('required') ? 'Saisissez votre mot de passe.' : '8 caractères minimum.' }}</small>
       }
+      <a class="forgot-link" routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
 
-      @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
-      <button class="form-action" type="submit" [disabled]="envoi" [attr.aria-busy]="envoi">
-        {{ envoi ? 'Connexion...' : 'Se connecter' }}
+      @if (erreur()) {
+        <div class="error-message" role="alert">
+          <p>{{ erreur() }}</p>
+          @if (nonVerifie()) {
+            <button type="button" class="link-btn" (click)="renvoyerLien()" [disabled]="renvoiEnCours()">
+              {{ renvoiEnCours() ? 'Envoi…' : 'Renvoyer le lien de confirmation' }}
+            </button>
+          }
+        </div>
+      }
+      @if (renvoiMessage()) { <p class="success-message" role="status">{{ renvoiMessage() }}</p> }
+
+      <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
+        {{ envoi() ? 'Connexion...' : 'Se connecter' }}
       </button>
     </form>
     <p class="form-switch">Pas encore de compte ? <a routerLink="/inscription">Créer un compte</a></p>

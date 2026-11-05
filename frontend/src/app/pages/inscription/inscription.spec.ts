@@ -27,7 +27,8 @@ describe('InscriptionComponent', () => {
       nom: 'Test',
       email: 'camille@example.test',
       telephone: '+33123456789',
-      password: 'MotDePasse-Local-123!'
+      password: 'MotDePasse-Local-123!',
+      role: 'sportif'
     });
   }
 
@@ -43,9 +44,34 @@ describe('InscriptionComponent', () => {
     component.inscrire();
 
     expect(auth.inscription).toHaveBeenCalledTimes(1);
-    expect(component.confirmation).toContain('Compte créé.');
-    expect(component.lienEnFile).toBe(true);
-    expect(component.envoi).toBe(false);
+    expect(component.confirmation()).toContain('Compte créé.');
+    expect(component.lienEnFile()).toBe(true);
+    expect(component.envoi()).toBe(false);
+  });
+
+  it('envoie le rôle choisi à l’API', () => {
+    auth.inscription.mockReturnValue(of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }));
+    const component = creerComposant();
+    remplirFormulaire(component);
+    component.formulaire.controls.role.setValue('coach');
+
+    component.inscrire();
+
+    expect(auth.inscription).toHaveBeenCalledWith(expect.objectContaining({ role: 'coach', email: 'camille@example.test' }));
+  });
+
+  it('envoie le rôle sportif par défaut et ne propose jamais administrateur', () => {
+    auth.inscription.mockReturnValue(of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }));
+    const fixture = TestBed.createComponent(InscriptionComponent);
+    fixture.detectChanges();
+    const valeurs = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type="radio"]')).map(i => i.value);
+    expect(valeurs).toEqual(['sportif', 'coach', 'gestionnaire']);
+
+    const component = fixture.componentInstance;
+    component.formulaire.patchValue({ prenom: 'Camille', nom: 'Test', email: 'camille@example.test', telephone: '+33123456789', password: 'MotDePasse-Local-123!' });
+    component.inscrire();
+
+    expect(auth.inscription).toHaveBeenCalledWith(expect.objectContaining({ role: 'sportif' }));
   });
 
   it('confirme la création même si le backend ne peut pas mettre le courriel en file', () => {
@@ -59,10 +85,10 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.emailInscrit).toBe('camille@example.test');
-    expect(component.lienEnFile).toBe(false);
-    expect(component.confirmation).toContain('Compte créé.');
-    expect(component.envoi).toBe(false);
+    expect(component.emailInscrit()).toBe('camille@example.test');
+    expect(component.lienEnFile()).toBe(false);
+    expect(component.confirmation()).toContain('Compte créé.');
+    expect(component.envoi()).toBe(false);
   });
 
   function inscrireAvecStatut(statut: 'sent' | 'queued' | 'failed'): string {
@@ -104,7 +130,7 @@ describe('InscriptionComponent', () => {
     const component = creerComposant();
     remplirFormulaire(component);
     component.inscrire();
-    expect(component.statutEmail).toBe('queued');
+    expect(component.statutEmail()).toBe('queued');
   });
 
   it('réactive le formulaire quand le service lève une exception synchrone', () => {
@@ -114,8 +140,8 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Une erreur technique');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Une erreur technique');
   });
 
   it('évite les appels pour un formulaire invalide', () => {
@@ -124,7 +150,7 @@ describe('InscriptionComponent', () => {
     component.inscrire();
 
     expect(auth.inscription).not.toHaveBeenCalled();
-    expect(component.envoi).toBe(false);
+    expect(component.envoi()).toBe(false);
   });
 
   it('remet le bouton en état normal dès la réponse HTTP', () => {
@@ -134,12 +160,12 @@ describe('InscriptionComponent', () => {
     remplirFormulaire(component);
 
     component.inscrire();
-    expect(component.envoi).toBe(true);
+    expect(component.envoi()).toBe(true);
 
     response$.next({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true });
 
-    expect(component.envoi).toBe(false);
-    expect(component.emailInscrit).toBe('camille@example.test');
+    expect(component.envoi()).toBe(false);
+    expect(component.emailInscrit()).toBe('camille@example.test');
   });
 
   it('réactive le formulaire et signale un e-mail déjà utilisé', () => {
@@ -152,7 +178,7 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
+    expect(component.envoi()).toBe(false);
     expect(component.erreurChamp('email')).toBe('Cette adresse e-mail est déjà utilisée.');
   });
 
@@ -163,42 +189,42 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('trop de temps');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('trop de temps');
   });
 
   it('termine l’état d’envoi du lien après le succès du backend', () => {
     auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
     expect(auth.renvoyerVerification).toHaveBeenCalledWith('camille@example.test');
-    expect(component.confirmation).toBe('Demande prise en compte.');
-    expect(component.envoi).toBe(false);
+    expect(component.confirmation()).toBe('Demande prise en compte.');
+    expect(component.envoi()).toBe(false);
   });
 
   it('termine l’état d’envoi et affiche une erreur si le renvoi échoue', () => {
     auth.renvoyerVerification.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Le lien de vérification');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Le lien de vérification');
   });
 
   it('termine l’état d’envoi et affiche une erreur si le renvoi expire', () => {
     auth.renvoyerVerification.mockReturnValue(throwError(() => new TimeoutError()));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('trop de temps');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('trop de temps');
   });
 
   it('affiche « Création... » pendant l’envoi puis « Créer mon compte » après une erreur réseau', async () => {
@@ -250,8 +276,8 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toBe('Certains champs sont invalides.');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toBe('Certains champs sont invalides.');
     expect(component.erreurChamp('telephone')).toContain('numéro de téléphone');
   });
 
@@ -262,15 +288,15 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Une erreur technique');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Une erreur technique');
   });
 
   it('ne renvoie pas plusieurs demandes simultanément', () => {
     auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
-    component.envoi = true;
+    component.emailInscrit.set('camille@example.test');
+    component.envoi.set(true);
 
     component.renvoyerLien();
 
