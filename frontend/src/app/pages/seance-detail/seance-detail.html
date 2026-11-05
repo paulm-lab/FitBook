@@ -1,0 +1,163 @@
+<main class="container page" id="contenu">
+  @switch (etat()) {
+    @case ('chargement') {
+      <app-loader texte="Chargement de la séance…" />
+    }
+    @case ('introuvable') {
+      <app-etat-vide
+        titre="Séance introuvable"
+        icone="?"
+        message="Cette séance n’existe pas, est passée ou a été annulée."
+      >
+        <a class="btn" routerLink="/recherche">Voir les séances disponibles</a>
+      </app-etat-vide>
+    }
+    @case ('erreur') {
+      <app-etat-vide
+        titre="Chargement impossible"
+        icone="!"
+        message="La séance n’a pas pu être chargée. Vérifiez votre connexion."
+      >
+        <button type="button" class="btn" (click)="charger(id())">Réessayer</button>
+      </app-etat-vide>
+    }
+    @case ('ok') {
+      @let s = seance()!;
+      <nav class="breadcrumb" aria-label="Fil d’Ariane">
+        <a routerLink="/recherche">Séances</a> › <span>{{ s.titre }}</span>
+      </nav>
+
+      <div class="detail">
+        <div class="detail-main stack">
+          <div class="detail-hero">
+            <img
+              [src]="s.image || '/assets/fitbook-media-fallback.svg'"
+              [alt]="'Illustration : ' + (s.activite?.nom ?? s.titre)"
+              appSecours
+            />
+          </div>
+
+          <header class="stack detail-head">
+            <div class="row">
+              <span class="badge badge--primary">{{ s.activite?.nom }}</span>
+              <span class="badge">{{ niveau() }}</span>
+              @if (s.statut === 'annulee') {
+                <span class="badge badge--annulee">Annulée</span>
+              }
+            </div>
+            <div class="row row--between">
+              <h1>{{ s.titre }}</h1>
+              <app-favori type="seance" [cibleId]="s.id" [avecTexte]="true" />
+            </div>
+          </header>
+
+          @if (s.description) {
+            <section class="panel">
+              <h2>À propos de la séance</h2>
+              <p class="text pre">{{ s.description }}</p>
+            </section>
+          }
+
+          <section class="panel">
+            <h2>Organisation</h2>
+            <dl class="infos">
+              @if (s.salle) {
+                <dt>Lieu</dt>
+                <dd>
+                  <a [routerLink]="['/salles', s.salle.id]">{{ s.salle.nom }}</a
+                  ><br /><span class="muted">{{ s.salle.adresse }}</span>
+                </dd>
+              } @else {
+                <dt>Lieu</dt>
+                <dd>Précisé par le coach après la réservation</dd>
+              }
+              @if (s.coach) {
+                <dt>Coach</dt>
+                <dd>
+                  <a [routerLink]="['/coachs', s.coach.id]"
+                    >{{ s.coach.prenom }} {{ s.coach.nom }}</a
+                  >
+                </dd>
+              }
+              <dt>Note de l’organisateur</dt>
+              <dd>
+                <app-etoiles
+                  [note]="s.noteOrganisateur.note"
+                  [nbAvis]="s.noteOrganisateur.nbAvis"
+                />
+              </dd>
+            </dl>
+          </section>
+
+          <app-avis-section
+            type="seance"
+            [cibleId]="s.id"
+            [note]="s.note"
+            [avis]="s.avis"
+            (avisModifie)="charger(id(), true)"
+          />
+        </div>
+
+        <!-- Encadré de réservation, collé en haut sur grand écran. -->
+        <aside class="panel booking" aria-labelledby="reservation-titre">
+          <h2 id="reservation-titre" class="sr-only">Réservation</h2>
+          <p class="booking-date">
+            <time [attr.datetime]="s.dateDebut">{{ s.dateDebut | date: 'EEEE d MMMM y' }}</time
+            ><br />
+            <strong>{{ s.dateDebut | date: 'HH:mm' }} – {{ s.dateFin | date: 'HH:mm' }}</strong>
+            <span class="muted">({{ duree() }} min)</span>
+          </p>
+          <p class="booking-price">
+            {{ +s.prix === 0 ? 'Gratuit' : (s.prix | number: '1.2-2') + ' €' }}
+          </p>
+          <p aria-live="polite" [class.text]="!complet()" [class.full]="complet()">
+            @if (complet()) {
+              Complet — {{ s.capaciteMax }} places réservées
+            } @else {
+              {{ s.placesDisponibles }} place{{ s.placesDisponibles > 1 ? 's' : '' }} restante{{
+                s.placesDisponibles > 1 ? 's' : ''
+              }}
+              sur {{ s.capaciteMax }}
+            }
+          </p>
+
+          @if (passee()) {
+            <button class="btn btn--block" type="button" disabled>
+              {{ s.statut === 'annulee' ? 'Séance annulée' : 'Séance passée' }}
+            </button>
+          } @else if (complet()) {
+            <button class="btn btn--block" type="button" disabled>Complet</button>
+          } @else {
+            <button
+              class="btn btn--block"
+              type="button"
+              (click)="reserver()"
+              [disabled]="envoi()"
+              [attr.aria-busy]="envoi()"
+            >
+              {{
+                envoi()
+                  ? 'Réservation…'
+                  : auth.estConnecte()
+                    ? 'Réserver ma place'
+                    : 'Se connecter pour réserver'
+              }}
+            </button>
+          }
+          @if (reservee()) {
+            <p class="alert alert--success" role="status">
+              Place réservée. <a routerLink="/mon-espace/reservations">Voir mes réservations</a>
+            </p>
+          }
+          <p class="muted small">
+            Annulation gratuite jusqu’à 2 h avant le début. Paiement sur place.
+          </p>
+
+          @if (s.peutModifier) {
+            <a class="btn btn--ghost btn--block" [routerLink]="lienGestion()">Gérer cette séance</a>
+          }
+        </aside>
+      </div>
+    }
+  }
+</main>

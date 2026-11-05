@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Subject, TimeoutError, of, throwError } from 'rxjs';
-import { AuthService } from '../../services/auth-service';
+import { AuthService } from '../../core/auth/auth.service';
 import { InscriptionComponent } from './inscription';
 
 describe('InscriptionComponent', () => {
@@ -13,7 +13,7 @@ describe('InscriptionComponent', () => {
     auth.renvoyerVerification.mockReset();
     await TestBed.configureTestingModule({
       imports: [InscriptionComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }]
+      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     }).compileComponents();
   });
 
@@ -27,56 +27,106 @@ describe('InscriptionComponent', () => {
       nom: 'Test',
       email: 'camille@example.test',
       telephone: '+33123456789',
-      password: 'MotDePasse-Local-123!'
+      password: 'MotDePasse-Local-123!',
+      role: 'sportif',
     });
   }
 
   it('confirme le succès et indique que le lien de vérification a été mis en file', () => {
-    auth.inscription.mockReturnValue(of({
-      message: 'Compte créé.',
-      email: 'camille@example.test',
-      verificationEmailQueued: true
-    }));
+    auth.inscription.mockReturnValue(
+      of({
+        message: 'Compte créé.',
+        email: 'camille@example.test',
+        verificationEmailQueued: true,
+      }),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
 
     expect(auth.inscription).toHaveBeenCalledTimes(1);
-    expect(component.confirmation).toContain('Compte créé.');
-    expect(component.lienEnFile).toBe(true);
-    expect(component.envoi).toBe(false);
+    expect(component.confirmation()).toContain('Compte créé.');
+    expect(component.lienEnFile()).toBe(true);
+    expect(component.envoi()).toBe(false);
+  });
+
+  it('envoie le rôle choisi à l’API', () => {
+    auth.inscription.mockReturnValue(
+      of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }),
+    );
+    const component = creerComposant();
+    remplirFormulaire(component);
+    component.formulaire.controls.role.setValue('coach');
+
+    component.inscrire();
+
+    expect(auth.inscription).toHaveBeenCalledWith(
+      expect.objectContaining({ role: 'coach', email: 'camille@example.test' }),
+    );
+  });
+
+  it('envoie le rôle sportif par défaut et ne propose jamais administrateur', () => {
+    auth.inscription.mockReturnValue(
+      of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }),
+    );
+    const fixture = TestBed.createComponent(InscriptionComponent);
+    fixture.detectChanges();
+    const valeurs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
+        'input[type="radio"]',
+      ),
+    ).map((i) => i.value);
+    expect(valeurs).toEqual(['sportif', 'coach', 'gestionnaire']);
+
+    const component = fixture.componentInstance;
+    component.formulaire.patchValue({
+      prenom: 'Camille',
+      nom: 'Test',
+      email: 'camille@example.test',
+      telephone: '+33123456789',
+      password: 'MotDePasse-Local-123!',
+    });
+    component.inscrire();
+
+    expect(auth.inscription).toHaveBeenCalledWith(expect.objectContaining({ role: 'sportif' }));
   });
 
   it('confirme la création même si le backend ne peut pas mettre le courriel en file', () => {
-    auth.inscription.mockReturnValue(of({
-      message: 'Compte créé, courriel non mis en file.',
-      email: 'camille@example.test',
-      verificationEmailQueued: false
-    }));
+    auth.inscription.mockReturnValue(
+      of({
+        message: 'Compte créé, courriel non mis en file.',
+        email: 'camille@example.test',
+        verificationEmailQueued: false,
+      }),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
 
-    expect(component.emailInscrit).toBe('camille@example.test');
-    expect(component.lienEnFile).toBe(false);
-    expect(component.confirmation).toContain('Compte créé.');
-    expect(component.envoi).toBe(false);
+    expect(component.emailInscrit()).toBe('camille@example.test');
+    expect(component.lienEnFile()).toBe(false);
+    expect(component.confirmation()).toContain('Compte créé.');
+    expect(component.envoi()).toBe(false);
   });
 
   function inscrireAvecStatut(statut: 'sent' | 'queued' | 'failed'): string {
-    auth.inscription.mockReturnValue(of({
-      message: 'Compte créé.',
-      email: 'camille@example.test',
-      verificationEmailQueued: statut !== 'failed',
-      verificationEmailStatus: statut
-    }));
+    auth.inscription.mockReturnValue(
+      of({
+        message: 'Compte créé.',
+        email: 'camille@example.test',
+        verificationEmailQueued: statut !== 'failed',
+        verificationEmailStatus: statut,
+      }),
+    );
     const fixture = TestBed.createComponent(InscriptionComponent);
     remplirFormulaire(fixture.componentInstance);
     fixture.componentInstance.inscrire();
     fixture.detectChanges();
-    return (fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent ?? '';
+    return (
+      (fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent ?? ''
+    );
   }
 
   it('annonce un e-mail envoyé seulement quand le serveur SMTP l’a accepté', () => {
@@ -100,22 +150,26 @@ describe('InscriptionComponent', () => {
   });
 
   it('ne déduit jamais « envoyé » d’une réponse sans statut explicite', () => {
-    auth.inscription.mockReturnValue(of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }));
+    auth.inscription.mockReturnValue(
+      of({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true }),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
     component.inscrire();
-    expect(component.statutEmail).toBe('queued');
+    expect(component.statutEmail()).toBe('queued');
   });
 
   it('réactive le formulaire quand le service lève une exception synchrone', () => {
-    auth.inscription.mockImplementation(() => { throw new Error('service unavailable'); });
+    auth.inscription.mockImplementation(() => {
+      throw new Error('service unavailable');
+    });
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Une erreur technique');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Une erreur technique');
   });
 
   it('évite les appels pour un formulaire invalide', () => {
@@ -124,35 +178,51 @@ describe('InscriptionComponent', () => {
     component.inscrire();
 
     expect(auth.inscription).not.toHaveBeenCalled();
-    expect(component.envoi).toBe(false);
+    expect(component.envoi()).toBe(false);
   });
 
   it('remet le bouton en état normal dès la réponse HTTP', () => {
-    const response$ = new Subject<{ message: string; email: string; verificationEmailQueued: boolean }>();
+    const response$ = new Subject<{
+      message: string;
+      email: string;
+      verificationEmailQueued: boolean;
+    }>();
     auth.inscription.mockReturnValue(response$);
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
-    expect(component.envoi).toBe(true);
+    expect(component.envoi()).toBe(true);
 
-    response$.next({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true });
+    response$.next({
+      message: 'Compte créé.',
+      email: 'camille@example.test',
+      verificationEmailQueued: true,
+    });
 
-    expect(component.envoi).toBe(false);
-    expect(component.emailInscrit).toBe('camille@example.test');
+    expect(component.envoi()).toBe(false);
+    expect(component.emailInscrit()).toBe('camille@example.test');
   });
 
   it('réactive le formulaire et signale un e-mail déjà utilisé', () => {
-    auth.inscription.mockReturnValue(throwError(() => new HttpErrorResponse({
-      status: 409,
-      error: { message: 'Adresse déjà utilisée.', errors: { email: 'Adresse déjà utilisée.' } }
-    })));
+    auth.inscription.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: {
+              message: 'Adresse déjà utilisée.',
+              errors: { email: 'Adresse déjà utilisée.' },
+            },
+          }),
+      ),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
+    expect(component.envoi()).toBe(false);
     expect(component.erreurChamp('email')).toBe('Cette adresse e-mail est déjà utilisée.');
   });
 
@@ -163,46 +233,52 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('trop de temps');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('trop de temps');
   });
 
   it('termine l’état d’envoi du lien après le succès du backend', () => {
     auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
     expect(auth.renvoyerVerification).toHaveBeenCalledWith('camille@example.test');
-    expect(component.confirmation).toBe('Demande prise en compte.');
-    expect(component.envoi).toBe(false);
+    expect(component.confirmation()).toBe('Demande prise en compte.');
+    expect(component.envoi()).toBe(false);
   });
 
   it('termine l’état d’envoi et affiche une erreur si le renvoi échoue', () => {
-    auth.renvoyerVerification.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
+    auth.renvoyerVerification.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 503 })),
+    );
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Le lien de vérification');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Le lien de vérification');
   });
 
   it('termine l’état d’envoi et affiche une erreur si le renvoi expire', () => {
     auth.renvoyerVerification.mockReturnValue(throwError(() => new TimeoutError()));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
+    component.emailInscrit.set('camille@example.test');
 
     component.renvoyerLien();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('trop de temps');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('trop de temps');
   });
 
   it('affiche « Création... » pendant l’envoi puis « Créer mon compte » après une erreur réseau', async () => {
-    const response$ = new Subject<{ message: string; email: string; verificationEmailQueued: boolean }>();
+    const response$ = new Subject<{
+      message: string;
+      email: string;
+      verificationEmailQueued: boolean;
+    }>();
     auth.inscription.mockReturnValue(response$);
     const fixture = TestBed.createComponent(InscriptionComponent);
     await fixture.whenStable();
@@ -224,7 +300,11 @@ describe('InscriptionComponent', () => {
   });
 
   it('affiche la confirmation dans la page après la réponse du serveur', async () => {
-    const response$ = new Subject<{ message: string; email: string; verificationEmailQueued: boolean }>();
+    const response$ = new Subject<{
+      message: string;
+      email: string;
+      verificationEmailQueued: boolean;
+    }>();
     auth.inscription.mockReturnValue(response$);
     const fixture = TestBed.createComponent(InscriptionComponent);
     await fixture.whenStable();
@@ -233,7 +313,11 @@ describe('InscriptionComponent', () => {
 
     element.querySelector('form')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
-    response$.next({ message: 'Compte créé.', email: 'camille@example.test', verificationEmailQueued: true });
+    response$.next({
+      message: 'Compte créé.',
+      email: 'camille@example.test',
+      verificationEmailQueued: true,
+    });
     await fixture.whenStable();
 
     expect(element.querySelector('[role="status"]')?.textContent).toContain('camille@example.test');
@@ -241,17 +325,25 @@ describe('InscriptionComponent', () => {
   });
 
   it('affiche les erreurs de champ renvoyées par le serveur', () => {
-    auth.inscription.mockReturnValue(throwError(() => new HttpErrorResponse({
-      status: 400,
-      error: { message: 'Certains champs sont invalides.', errors: { telephone: 'Saisissez un numéro de téléphone valide (7 à 20 caractères).' } }
-    })));
+    auth.inscription.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: {
+              message: 'Certains champs sont invalides.',
+              errors: { telephone: 'Saisissez un numéro de téléphone valide (7 à 20 caractères).' },
+            },
+          }),
+      ),
+    );
     const component = creerComposant();
     remplirFormulaire(component);
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toBe('Certains champs sont invalides.');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toBe('Certains champs sont invalides.');
     expect(component.erreurChamp('telephone')).toContain('numéro de téléphone');
   });
 
@@ -262,15 +354,15 @@ describe('InscriptionComponent', () => {
 
     component.inscrire();
 
-    expect(component.envoi).toBe(false);
-    expect(component.erreur).toContain('Une erreur technique');
+    expect(component.envoi()).toBe(false);
+    expect(component.erreur()).toContain('Une erreur technique');
   });
 
   it('ne renvoie pas plusieurs demandes simultanément', () => {
     auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
     const component = creerComposant();
-    component.emailInscrit = 'camille@example.test';
-    component.envoi = true;
+    component.emailInscrit.set('camille@example.test');
+    component.envoi.set(true);
 
     component.renvoyerLien();
 

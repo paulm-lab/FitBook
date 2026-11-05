@@ -11,3 +11,6 @@
 
 # Rapports générés
 postman/reports/*.html
+
+# Variables de docker-compose (mots de passe) : seul .env.example est versionné
+/.env

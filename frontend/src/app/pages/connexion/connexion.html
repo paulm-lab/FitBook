@@ -1,32 +1,82 @@
-<main class="login-page">
+<main class="login-page" id="contenu">
   <section class="login-card" aria-labelledby="login-title">
     <span class="section-kicker">HEUREUX DE VOUS REVOIR</span>
     <h1 id="login-title">Connexion</h1>
-    <p>Connectez-vous pour réserver votre prochaine séance.</p>
+    <p>Connectez-vous pour réserver votre prochaine séance ou gérer votre espace.</p>
 
     <form [formGroup]="formulaire" (ngSubmit)="connecter()" novalidate>
       <label for="login-email">E-mail</label>
-      <input id="login-email" type="email" formControlName="email" autocomplete="email" inputmode="email"
+      <input
+        id="login-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        inputmode="email"
         [attr.aria-invalid]="formulaire.controls.email.touched && formulaire.controls.email.invalid"
-        [attr.aria-describedby]="formulaire.controls.email.touched && formulaire.controls.email.invalid ? 'email-error' : null">
+        [attr.aria-describedby]="
+          formulaire.controls.email.touched && formulaire.controls.email.invalid
+            ? 'email-error'
+            : null
+        "
+      />
       @if (formulaire.controls.email.touched && formulaire.controls.email.invalid) {
-        <small id="email-error">{{ formulaire.controls.email.hasError('required') ? 'Saisissez votre adresse e-mail.' : 'Saisissez une adresse e-mail valide.' }}</small>
+        <small id="email-error">{{
+          formulaire.controls.email.hasError('required')
+            ? 'Saisissez votre adresse e-mail.'
+            : 'Saisissez une adresse e-mail valide.'
+        }}</small>
       }
 
       <label for="login-password">Mot de passe</label>
-      <input id="login-password" type="password" formControlName="password" autocomplete="current-password"
-        [attr.aria-invalid]="formulaire.controls.password.touched && formulaire.controls.password.invalid"
-        [attr.aria-describedby]="formulaire.controls.password.touched && formulaire.controls.password.invalid ? 'password-error' : null">
+      <input
+        id="login-password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+        [attr.aria-invalid]="
+          formulaire.controls.password.touched && formulaire.controls.password.invalid
+        "
+        [attr.aria-describedby]="
+          formulaire.controls.password.touched && formulaire.controls.password.invalid
+            ? 'password-error'
+            : null
+        "
+      />
       @if (formulaire.controls.password.touched && formulaire.controls.password.invalid) {
-        <small id="password-error">{{ formulaire.controls.password.hasError('required') ? 'Saisissez votre mot de passe.' : '8 caractères minimum.' }}</small>
+        <small id="password-error">{{
+          formulaire.controls.password.hasError('required')
+            ? 'Saisissez votre mot de passe.'
+            : '8 caractères minimum.'
+        }}</small>
+      }
+      <a class="forgot-link" routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+
+      @if (erreur()) {
+        <div class="error-message" role="alert">
+          <p>{{ erreur() }}</p>
+          @if (nonVerifie()) {
+            <button
+              type="button"
+              class="link-btn"
+              (click)="renvoyerLien()"
+              [disabled]="renvoiEnCours()"
+            >
+              {{ renvoiEnCours() ? 'Envoi…' : 'Renvoyer le lien de confirmation' }}
+            </button>
+          }
+        </div>
+      }
+      @if (renvoiMessage()) {
+        <p class="success-message" role="status">{{ renvoiMessage() }}</p>
       }
 
-      @if (erreur) { <p class="error-message" role="alert">{{ erreur }}</p> }
-      <button class="form-action" type="submit" [disabled]="envoi" [attr.aria-busy]="envoi">
-        {{ envoi ? 'Connexion...' : 'Se connecter' }}
+      <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
+        {{ envoi() ? 'Connexion...' : 'Se connecter' }}
       </button>
     </form>
-    <p class="form-switch">Pas encore de compte ? <a routerLink="/inscription">Créer un compte</a></p>
+    <p class="form-switch">
+      Pas encore de compte ? <a routerLink="/inscription">Créer un compte</a>
+    </p>
   </section>
   <app-visual-showcase page="login" [compact]="true"></app-visual-showcase>
 </main>

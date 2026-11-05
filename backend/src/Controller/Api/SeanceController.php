@@ -4,75 +4,265 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
-use App\Entity\Seance;
-use App\Repository\SeanceRepository;
+use App\Dto\SessionInput;
+use App\Entity\Activity;
+use App\Entity\CoachProfile;
+use App\Entity\Gym;
+use App\Entity\Reservation;
+use App\Entity\Session;
+use App\Entity\User;
+use App\Enum\ReservationStatus;
+use App\Enum\SessionStatus;
+use App\Http\ApiException;
+use App\Http\ApiRequest;
+use App\Repository\ReservationRepository;
+use App\Repository\ReviewRepository;
+use App\Repository\SessionRepository;
+use App\Security\Voter\GymVoter;
+use App\Security\Voter\SessionVoter;
+use App\Service\CataloguePresenter;
+use App\Service\ReservationService;
+use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Security;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+/**
+ * Séances : liste et fiche publiques, création / modification / annulation par le coach
+ * qui l'anime, le gestionnaire de la salle ou l'administrateur (RG-09 à RG-12).
+ */
+#[OA\Tag(name: 'Séances')]
 #[Route('/api/seances')]
 final class SeanceController extends AbstractController
 {
+    public function __construct(
+        private readonly SessionRepository $sessions,
+        private readonly CataloguePresenter $presenter,
+        private readonly ApiRequest $api,
+        private readonly EntityManagerInterface $em,
+    ) {
+    }
+
+    /** Séances actives à venir (filtres simples ; la recherche avancée est /api/recherche). */
+    #[OA\Parameter(name: 'activite', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'lieu', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'date', in: 'query', schema: new OA\Schema(type: 'string', format: 'date'))]
+    #[Security(name: null)]
     #[Route('', name: 'api_seances_index', methods: ['GET'])]
-    public function index(Request $request, SeanceRepository $repository): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $query = $repository->createQueryBuilder('seance')
-            ->leftJoin('seance.activite', 'activite')->addSelect('activite')
-            ->leftJoin('seance.coach', 'coach')->addSelect('coach')
-            ->leftJoin('seance.salle', 'salle')->addSelect('salle')
-            ->andWhere('seance.statut = :status')->setParameter('status', 'actif')
-            ->andWhere('seance.dateDebut >= :now')->setParameter('now', new \DateTimeImmutable());
-
-        if ($activity = trim((string) $request->query->get('activite', ''))) {
-            $query->andWhere('LOWER(activite.nom) LIKE :activity')
-                ->setParameter('activity', '%' . mb_strtolower($activity) . '%');
-        }
-        if ($place = trim((string) $request->query->get('lieu', ''))) {
-            $query->andWhere('LOWER(salle.adresse) LIKE :place')
-                ->setParameter('place', '%' . mb_strtolower($place) . '%');
-        }
-        if ($date = $request->query->get('date')) {
-            $dateValue = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
-            if (!$dateValue || $dateValue->format('Y-m-d') !== $date) {
-                return $this->json(['message' => 'Le filtre date doit être au format YYYY-MM-DD.'], 400);
+        $day = null;
+        $date = $request->query->get('date');
+        if ($date !== null && $date !== '') {
+            $day = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
+            if (!$day || $day->format('Y-m-d') !== $date) {
+                throw ApiException::badRequest('Le filtre date doit être au format YYYY-MM-DD.');
             }
-            $query->andWhere('seance.dateSeance = :date')->setParameter('date', $dateValue);
         }
 
-        $items = $query->orderBy('seance.dateSeance', 'ASC')->addOrderBy('seance.heureDebut', 'ASC')->getQuery()->getResult();
-        return $this->json(array_map(fn (Seance $item): array => $this->seanceData($item), $items));
+        $items = $this->sessions->findUpcoming(
+            new \DateTimeImmutable(),
+            trim((string) $request->query->get('activite', '')),
+            trim((string) $request->query->get('lieu', '')),
+            $day,
+        );
+        $counts = $this->sessions->confirmedCounts($items);
+
+        return $this->json(array_map(
+            fn (Session $s): array => $this->presenter->session($s, $counts[$s->getId()] ?? 0),
+            $items,
+        ));
     }
 
+    /**
+     * Fiche d'une séance active et à venir, avec la note du coach (ou de la salle) et les avis
+     * de la séance. Les séances passées ou annulées restent visibles par leurs organisateurs.
+     */
+    #[Security(name: null)]
     #[Route('/{id}', name: 'api_seances_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, SeanceRepository $repository): JsonResponse
+    public function show(int $id, ReviewRepository $reviews): JsonResponse
     {
-        $item = $repository->find($id);
-        return $item ? $this->json($this->seanceData($item)) : $this->json(['message' => 'Séance introuvable.'], 404);
+        $item = $this->sessions->find($id);
+        $public = $item && $item->getStatus() === SessionStatus::Active && $item->getStartAt() > new \DateTimeImmutable();
+        if (!$item || (!$public && !$this->isGranted(SessionVoter::EDIT, $item))) {
+            throw ApiException::notFound('Séance introuvable.');
+        }
+
+        $counts = $this->sessions->confirmedCounts([$item]);
+        $owner = $item->getCoach() ?? $item->getGym();
+
+        return $this->json($this->presenter->session($item, $counts[$item->getId()] ?? 0) + [
+            'noteOrganisateur' => $this->presenter->rating($owner ? $reviews->ratingOf($owner) : null),
+            'note' => $this->presenter->rating($reviews->ratingOf($item)),
+            'avis' => array_map(
+                fn ($review): array => $this->presenter->review($review),
+                $reviews->visibleFor($item)->setMaxResults(20)->getQuery()->getResult(),
+            ),
+            'peutModifier' => $this->isGranted(SessionVoter::EDIT, $item),
+        ]);
     }
 
-    private function seanceData(Seance $item): array
+    /** Création par un coach (séance rattachée à son profil), un gestionnaire (dans une de ses salles) ou l'admin. */
+    #[OA\RequestBody(content: new OA\JsonContent(example: ['titre' => 'Yoga du soir', 'activiteId' => 1, 'salleId' => 2, 'debut' => '2026-11-20T18:30:00+01:00', 'fin' => '2026-11-20T19:30:00+01:00', 'capacite' => 12, 'prix' => 12, 'niveau' => 'debutant']))]
+    #[OA\Response(response: 201, description: 'Séance créée')]
+    #[OA\Response(response: 422, description: 'Champs invalides')]
+    #[Route('', name: 'api_seances_create', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
     {
-        $coach = $item->getCoach();
-        $salle = $item->getSalle();
-        $activite = $item->getActivite();
+        $user = $this->currentUser();
+        if (!$this->isGranted(User::ROLE_COACH) && !$this->isGranted(User::ROLE_GESTIONNAIRE)) {
+            throw ApiException::forbidden('Seuls les coachs et les gestionnaires créent des séances.');
+        }
 
-        return [
-            'id' => $item->getId(),
-            'titre' => $item->getTitre(),
-            'description' => $item->getDescription(),
-            'dateDebut' => $item->getDateDebut()?->format('Y-m-d H:i:s'),
-            'dateFin' => $item->getDateFin()?->format('Y-m-d H:i:s'),
-            'dateSeance' => $item->getDateSeance()?->format('Y-m-d'),
-            'heureDebut' => $item->getHeureDebut()?->format('H:i:s'),
-            'heureFin' => $item->getHeureFin()?->format('H:i:s'),
-            'capaciteMax' => $item->getCapaciteMax(),
-            'placesDisponibles' => $item->getPlacesDisponibles(),
-            'prix' => $item->getPrix(),
-            'statut' => $item->getStatut(),
-            'activite' => $activite ? ['id' => $activite->getId(), 'nom' => $activite->getNom()] : null,
-            'coach' => $coach ? ['id' => $coach->getId(), 'nom' => $coach->getNom(), 'prenom' => $coach->getPrenom()] : null,
-            'salle' => $salle ? ['id' => $salle->getId(), 'nom' => $salle->getNom(), 'adresse' => $salle->getAdresse()] : null,
-        ];
+        $input = $this->api->validate(SessionInput::fromArray($this->api->json($request)));
+        $session = $this->apply(new Session(), $input, $user);
+        $this->em->persist($session);
+        $this->em->flush();
+
+        return $this->json($this->presenter->session($session, 0), 201);
+    }
+
+    #[Route('/{id}', name: 'api_seances_update', requirements: ['id' => '\d+'], methods: ['PUT'])]
+    public function update(int $id, Request $request): JsonResponse
+    {
+        $session = $this->find($id);
+        $this->denyAccessUnlessGranted(SessionVoter::EDIT, $session);
+        if ($session->getStatus() === SessionStatus::Annulee) {
+            throw ApiException::conflict('Une séance annulée ne peut plus être modifiée.');
+        }
+
+        $input = $this->api->validate(SessionInput::fromArray($this->api->json($request)));
+        $taken = $this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0;
+        if ($input->capacite !== null && $input->capacite < $taken) {
+            throw ApiException::validation(['capacite' => sprintf('%d sportifs sont déjà inscrits : la capacité ne peut pas être inférieure.', $taken)]);
+        }
+
+        $this->apply($session, $input, $this->currentUser());
+        $this->em->flush();
+
+        return $this->json($this->presenter->session($session, $taken));
+    }
+
+    /**
+     * Suppression définitive, seulement sans inscrit : une séance qui a des réservations
+     * confirmées doit être annulée (les sportifs sont alors prévenus).
+     */
+    #[Route('/{id}', name: 'api_seances_delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
+    public function delete(int $id): JsonResponse
+    {
+        $session = $this->find($id);
+        $this->denyAccessUnlessGranted(SessionVoter::DELETE, $session);
+        if (($this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0) > 0) {
+            throw ApiException::conflict('Des sportifs sont inscrits : annulez la séance pour les prévenir.');
+        }
+
+        $this->em->remove($session);
+        $this->em->flush();
+
+        return new JsonResponse(null, 204);
+    }
+
+    /** Annulation (RG-12) : réservations confirmées annulées et sportifs prévenus par e-mail. */
+    #[Route('/{id}/annuler', name: 'api_seances_cancel', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function cancel(int $id, ReservationService $reservations): JsonResponse
+    {
+        $session = $this->find($id);
+        $this->denyAccessUnlessGranted(SessionVoter::EDIT, $session);
+        $notified = $reservations->cancelSession($session);
+
+        return $this->json($this->presenter->session($session, 0) + ['sportifsPrevenus' => $notified]);
+    }
+
+    /** Liste des inscrits (US-C05, US-G04). */
+    #[Route('/{id}/inscrits', name: 'api_seances_attendees', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function attendees(int $id, ReservationRepository $reservations): JsonResponse
+    {
+        $session = $this->find($id);
+        $this->denyAccessUnlessGranted(SessionVoter::VIEW_RESERVATIONS, $session);
+        $now = new \DateTimeImmutable();
+        $count = $this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0;
+
+        $items = $reservations->createQueryBuilder('r')
+            ->join('r.user', 'u')->addSelect('u')
+            ->andWhere('r.session = :session')->setParameter('session', $session)
+            ->orderBy('r.status', 'ASC')->addOrderBy('u.lastName', 'ASC')
+            ->getQuery()->getResult();
+
+        return $this->json([
+            'seance' => $this->presenter->session($session, $count),
+            'inscrits' => array_map(
+                fn (Reservation $r): array => $this->presenter->reservation($r, $now, withUser: true, confirmedCount: $count),
+                $items,
+            ),
+            'nbConfirmes' => \count(array_filter($items, static fn (Reservation $r): bool => $r->getStatus() !== ReservationStatus::Annulee)),
+        ]);
+    }
+
+    /**
+     * Applique les champs validés à la séance et contrôle les rattachements :
+     * - coach : la séance est la sienne (son profil), salle facultative ;
+     * - gestionnaire : la salle doit être une de ses salles ;
+     * - administrateur : libre, mais une salle ou un coach (RG-10).
+     */
+    private function apply(Session $session, SessionInput $input, User $user): Session
+    {
+        $activity = $this->em->find(Activity::class, (int) $input->activiteId)
+            ?? throw ApiException::validation(['activiteId' => 'Cette activité n’existe pas.']);
+        $gym = $input->salleId !== null
+            ? ($this->em->find(Gym::class, $input->salleId) ?? throw ApiException::validation(['salleId' => 'Cette salle n’existe pas.']))
+            : null;
+        $coach = $input->coachId !== null
+            ? ($this->em->find(CoachProfile::class, $input->coachId) ?? throw ApiException::validation(['coachId' => 'Ce coach n’existe pas.']))
+            : null;
+
+        $isAdmin = $this->isGranted(User::ROLE_ADMIN);
+        if (!$isAdmin && $user->hasRole(User::ROLE_COACH)) {
+            // Un coach ne crée que ses propres séances (une séance existante garde son coach).
+            $coach = $session->getId() !== null ? $session->getCoach() : $user->getCoachProfile();
+            if ($coach === null || $coach->getUser() !== $user) {
+                throw ApiException::forbidden('Complétez d’abord votre profil de coach.');
+            }
+        }
+        if (!$isAdmin && $user->hasRole(User::ROLE_GESTIONNAIRE)) {
+            if ($gym === null) {
+                throw ApiException::validation(['salleId' => 'Choisissez une de vos salles.']);
+            }
+            if (!$this->isGranted(GymVoter::EDIT, $gym)) {
+                throw ApiException::forbidden('Vous ne gérez pas cette salle.');
+            }
+        }
+        if ($gym === null && $coach === null) {
+            throw ApiException::validation(['salleId' => 'Une séance a lieu dans une salle et/ou avec un coach.']);
+        }
+
+        return $session
+            ->setTitle($input->titre)
+            ->setDescription($input->description)
+            ->setActivity($activity)
+            ->setGym($gym)
+            ->setCoach($coach)
+            ->setStartAt($input->debut)
+            ->setEndAt($input->fin)
+            ->setCapacity((int) $input->capacite)
+            ->setPrice(number_format((float) $input->prix, 2, '.', ''))
+            ->setLevel($input->level());
+    }
+
+    private function find(int $id): Session
+    {
+        return $this->sessions->find($id) ?? throw ApiException::notFound('Séance introuvable.');
+    }
+
+    private function currentUser(): User
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw new ApiException(401, 'Authentification requise.');
+        }
+
+        return $user;
     }
 }

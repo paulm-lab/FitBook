@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://fitbook.test/schemas/reservation.schema.json",
+    "title": "Réservation d'une séance",
+    "description": "Corps de POST /api/reservations. Une réservation correspond à une seule place (décision D3).",
+    "type": "object",
+    "required": ["seanceId"],
+    "properties": {
+        "seanceId": {
+            "description": "Identifiant de la séance à réserver.",
+            "type": "integer",
+            "minimum": 1
+        },
+        "nombrePlaces": {
+            "description": "Toujours 1 : accepté pour compatibilité avec l'ancien formulaire.",
+            "const": 1
+        }
+    },
+    "additionalProperties": false
+}

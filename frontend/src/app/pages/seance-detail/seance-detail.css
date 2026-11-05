@@ -1,0 +1,86 @@
+/* Fiche séance : contenu à gauche, encadré de réservation à droite (en bas sur mobile). */
+.breadcrumb {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.breadcrumb a {
+  color: var(--text);
+}
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+.detail-hero {
+  overflow: hidden;
+  aspect-ratio: 16 / 7;
+  border-radius: var(--radius-card);
+  background: #10213a;
+}
+.detail-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.detail-head h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 40px);
+}
+.pre {
+  white-space: pre-line;
+}
+.infos {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px 16px;
+  margin: 0;
+}
+.infos dt {
+  color: var(--muted);
+  font-weight: 700;
+}
+.infos dd {
+  margin: 0;
+}
+.booking {
+  position: sticky;
+  top: 96px;
+  display: grid;
+  gap: 12px;
+}
+.booking p {
+  margin: 0;
+}
+.booking-date {
+  color: var(--ink);
+  text-transform: capitalize;
+}
+.booking-price {
+  color: var(--ink);
+  font-size: 30px;
+  font-weight: 800;
+}
+.full {
+  color: var(--danger);
+  font-weight: 700;
+}
+.small {
+  font-size: 13px;
+}
+@media (max-width: 900px) {
+  .detail {
+    grid-template-columns: 1fr;
+  }
+  .booking {
+    position: static;
+  }
+  .infos {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .infos dd {
+    margin-bottom: 10px;
+  }
+}

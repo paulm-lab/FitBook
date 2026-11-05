@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
-use App\Entity\Utilisateur;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use App\Tests\Support\JwtLoginTrait;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
+/**
+ * Profil de l'utilisateur connecté (/api/me/profile) et liste des comptes réservée à l'admin.
+ */
 final class ProfileControllerTest extends WebTestCase
 {
+    use JwtLoginTrait;
+
     public function testAnonymousVisitorCannotReadOwnProfile(): void
     {
         $client = $this->clientWithSchema();
@@ -29,8 +35,18 @@ final class ProfileControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $response = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['id' => $user->getId(), 'nom' => 'Martin', 'prenom' => 'Lea', 'email' => 'lea@example.test', 'telephone' => '0612345678'], $response);
-        self::assertArrayNotHasKey('motDePasse', json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame([
+            'id' => $user->getId(),
+            'nom' => 'Martin',
+            'prenom' => 'Lea',
+            'email' => 'lea@example.test',
+            'telephone' => '0612345678',
+            'avatar' => null,
+            'roles' => [User::ROLE_SPORTIF],
+            'role' => 'sportif',
+            'coachId' => null,
+        ], $response);
+        self::assertArrayNotHasKey('password', $response);
     }
 
     public function testAnonymousVisitorCannotUpdateProfile(): void
@@ -51,10 +67,13 @@ final class ProfileControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $response = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['id' => $user->getId(), 'nom' => 'Nouveau', 'prenom' => 'Profil', 'email' => 'lea@example.test', 'telephone' => '0712345678'], $response);
+        self::assertSame($user->getId(), $response['id']);
+        self::assertSame('Nouveau', $response['nom']);
+        self::assertSame('0712345678', $response['telephone']);
+
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->clear();
-        self::assertSame('Durand', $em->find(Utilisateur::class, $other->getId())->getNom());
+        self::assertSame('Durand', $em->find(User::class, $other->getId())->getLastName());
     }
 
     public function testInvalidProfileUpdateIsRejectedBeforePersistence(): void
@@ -70,48 +89,63 @@ final class ProfileControllerTest extends WebTestCase
         self::assertArrayHasKey('telephone', $errors);
     }
 
-    public function testUserDirectoryRequiresAdministratorRole(): void
+    public function testUserDirectoryRequiresAuthentication(): void
     {
         $client = $this->clientWithSchema();
-        $client->request('GET', '/api/utilisateurs');
+        $client->request('GET', '/api/admin/utilisateurs');
 
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testRegularUserCannotListAllUsers(): void
+    public function testSportifCannotListAllUsers(): void
     {
         $client = $this->clientWithSchema();
         $this->createUser('member@example.test', 'Martin', 'Lea', $client);
-        $client->request('GET', '/api/utilisateurs');
+        $client->request('GET', '/api/admin/utilisateurs');
 
         self::assertResponseStatusCodeSame(403);
     }
+
+    public function testAdministratorListsUsers(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->createUser('admin@example.test', 'Admin', 'Root', $client, User::ROLE_ADMIN);
+        $this->createUser('member@example.test', 'Martin', 'Lea');
+
+        $client->request('GET', '/api/admin/utilisateurs');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(2, json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['items']);
+    }
+
     private function clientWithSchema(): KernelBrowser
     {
         $client = static::createClient();
         $em = static::getContainer()->get(EntityManagerInterface::class);
-        if (!$em->getConnection()->createSchemaManager()->tablesExist(['utilisateur'])) {
-            (new SchemaTool($em))->createSchema([$em->getClassMetadata(Utilisateur::class)]);
+        // Base SQLite en mémoire : le schéma complet est créé à chaque client.
+        if (!$em->getConnection()->createSchemaManager()->tablesExist(['user'])) {
+            (new SchemaTool($em))->createSchema($em->getMetadataFactory()->getAllMetadata());
         }
 
         return $client;
     }
 
-    private function createUser(string $email, string $nom, string $prenom, ?KernelBrowser $client = null): Utilisateur
+    private function createUser(string $email, string $nom, string $prenom, ?KernelBrowser $client = null, string $role = User::ROLE_SPORTIF): User
     {
-        $user = (new Utilisateur())
-            ->setNom($nom)
-            ->setPrenom($prenom)
+        $user = (new User())
+            ->setLastName($nom)
+            ->setFirstName($prenom)
             ->setEmail($email)
-            ->setMotDePasse('test-hash')
-            ->setTelephone('0612345678')
-            ->setRole('ROLE_USER')
-            ->setDateInscription(new \DateTimeImmutable())
-            ->setStatut('actif');
+            ->setPassword('test-hash')
+            ->setPhone('0612345678')
+            ->setRoles([$role])
+            ->setIsVerified(true);
         $em = static::getContainer()->get(EntityManagerInterface::class);
         $em->persist($user);
         $em->flush();
-        $client?->loginUser($user);
+        if ($client !== null) {
+            $this->loginWithJwt($client, $user);
+        }
 
         return $user;
     }

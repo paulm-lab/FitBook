@@ -1,6 +1,20 @@
 framework:
     rate_limiter:
+        # Envoi des e-mails par le worker Messenger (limite des serveurs SMTP de test).
         mailtrap_sandbox:
             policy: 'fixed_window'
             limit: 1
             interval: '15 seconds'
+
+        # POST /api/inscription : 5 comptes par adresse IP et par heure.
+        inscription:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 hour'
+
+        # Renvoi du lien de vérification et mot de passe oublié :
+        # 3 demandes par adresse e-mail et par IP en 15 minutes (évite d'inonder une boîte).
+        email_request:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '15 minutes'

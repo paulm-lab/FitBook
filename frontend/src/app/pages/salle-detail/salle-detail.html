@@ -1,0 +1,146 @@
+<main class="container page" id="contenu">
+  @switch (etat()) {
+    @case ('chargement') {
+      <app-loader texte="Chargement de la salle…" />
+    }
+    @case ('introuvable') {
+      <app-etat-vide
+        titre="Salle introuvable"
+        icone="?"
+        message="Cette salle n’existe pas ou n’est plus référencée sur FitBook."
+      >
+        <a class="btn" [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }"
+          >Voir les salles</a
+        >
+      </app-etat-vide>
+    }
+    @case ('erreur') {
+      <app-etat-vide
+        titre="Chargement impossible"
+        icone="!"
+        message="La salle n’a pas pu être chargée. Vérifiez votre connexion."
+      >
+        <button type="button" class="btn" (click)="charger(id())">Réessayer</button>
+      </app-etat-vide>
+    }
+    @case ('ok') {
+      @let s = salle()!;
+      <nav class="breadcrumb" aria-label="Fil d’Ariane">
+        <a [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }">Salles</a> ›
+        <span>{{ s.nom }}</span>
+      </nav>
+
+      <header class="row row--between salle-head">
+        <div>
+          <span class="section-kicker">Salle · {{ s.ville }}</span>
+          <h1>{{ s.nom }}</h1>
+          <app-etoiles [note]="s.note.note" [nbAvis]="s.note.nbAvis" />
+        </div>
+        <div class="row">
+          <app-favori type="salle" [cibleId]="s.id" [avecTexte]="true" />
+          @if (s.peutModifier) {
+            <a class="btn btn--sm btn--ghost" [routerLink]="lienModifier()">Modifier la salle</a>
+          }
+        </div>
+      </header>
+
+      <!-- Galerie : grande photo et vignettes cliquables. -->
+      <section class="gallery" aria-label="Photos de la salle">
+        <img
+          class="gallery-main"
+          [src]="photos()[photo()]"
+          [alt]="'Photo ' + (photo() + 1) + ' de ' + s.nom"
+          appSecours
+        />
+        @if (photos().length > 1) {
+          <div class="gallery-thumbs">
+            @for (p of photos(); track $index) {
+              <button
+                type="button"
+                [class.active]="$index === photo()"
+                (click)="photo.set($index)"
+                [attr.aria-label]="'Afficher la photo ' + ($index + 1)"
+              >
+                <img [src]="p" alt="" loading="lazy" appSecours />
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <div class="salle-grid">
+        <div class="stack">
+          @if (s.description) {
+            <section class="panel">
+              <h2>Présentation</h2>
+              <p class="text pre">{{ s.description }}</p>
+            </section>
+          }
+
+          <section class="panel">
+            <h2>Prochaines séances</h2>
+            @if (s.prochainesSeances.length) {
+              <div class="grid">
+                @for (seance of s.prochainesSeances; track seance.id) {
+                  <app-seance-card [seance]="seance" />
+                }
+              </div>
+            } @else {
+              <p class="muted">Aucune séance programmée pour le moment.</p>
+            }
+          </section>
+
+          <app-avis-section
+            type="salle"
+            [cibleId]="s.id"
+            [note]="s.note"
+            [avis]="s.avis"
+            (avisModifie)="charger(id(), true)"
+          />
+        </div>
+
+        <aside class="stack">
+          <section class="panel">
+            <h2>Infos pratiques</h2>
+            <p class="text">{{ s.adresse }}</p>
+            @if (s.telephone) {
+              <p>
+                <a [href]="'tel:' + s.telephone">{{ s.telephone }}</a>
+              </p>
+            }
+            @if (s.email) {
+              <p>
+                <a [href]="'mailto:' + s.email">{{ s.email }}</a>
+              </p>
+            }
+            @if (point().length) {
+              <app-carte [points]="point()" hauteur="260px" />
+            }
+          </section>
+
+          <section class="panel">
+            <h2>Horaires d’ouverture</h2>
+            <table class="hours">
+              <caption class="sr-only">
+                Horaires d’ouverture par jour
+              </caption>
+              <tbody>
+                @for (h of horaires(); track h.jour) {
+                  <tr [class.today]="h.jour === aujourdhui">
+                    <th scope="row">{{ h.jour }}</th>
+                    <td>{{ h.heures ? h.heures.replace('-', ' – ') : 'Fermé' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel">
+            <h2>Créneaux disponibles</h2>
+            <app-disponibilites-liste [disponibilites]="s.disponibilites" />
+          </section>
+        </aside>
+      </div>
+    }
+  }
+</main>

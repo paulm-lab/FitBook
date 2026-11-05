@@ -18,3 +18,16 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###
+
+###> fitbook ###
+# Avatars envoyés par les utilisateurs (jamais versionnés).
+/public/uploads/
+###< fitbook ###
+
+###> outils qualité ###
+/.php-cs-fixer.cache
+###< outils qualité ###
