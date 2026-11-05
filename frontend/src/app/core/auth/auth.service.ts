@@ -70,7 +70,7 @@ export class AuthService {
   verifierSession(): Observable<Utilisateur | null> {
     return this.http.get<Utilisateur>(`${API_URL}/me`).pipe(
       catchError(() => of(null)),
-      tap(user => {
+      tap((user) => {
         this.utilisateurCourant.set(user);
         this.sessionVerifiee.set(true);
       }),
@@ -78,14 +78,16 @@ export class AuthService {
   }
 
   connexion(email: string, password: string): Observable<Utilisateur> {
-    return this.http.post<Utilisateur & { token?: string }>(`${API_URL}/login`, { email, password }).pipe(
-      map(({ token, ...user }) => {
-        this.jeton = token ?? null;
-        this.utilisateurCourant.set(user);
-        this.sessionVerifiee.set(true);
-        return user;
-      }),
-    );
+    return this.http
+      .post<Utilisateur & { token?: string }>(`${API_URL}/login`, { email, password })
+      .pipe(
+        map(({ token, ...user }) => {
+          this.jeton = token ?? null;
+          this.utilisateurCourant.set(user);
+          this.sessionVerifiee.set(true);
+          return user;
+        }),
+      );
   }
 
   deconnexion(): Observable<void> {
@@ -107,18 +109,27 @@ export class AuthService {
   }
 
   inscription(data: InscriptionSaisie): Observable<InscriptionResponse> {
-    return this.http.post<InscriptionResponse>(`${API_URL}/inscription`, data).pipe(timeout({ first: 20000 }));
+    return this.http
+      .post<InscriptionResponse>(`${API_URL}/inscription`, data)
+      .pipe(timeout({ first: 20000 }));
   }
 
   renvoyerVerification(email: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${API_URL}/auth/resend-verification`, { email }).pipe(timeout({ first: 20000 }));
+    return this.http
+      .post<{ message: string }>(`${API_URL}/auth/resend-verification`, { email })
+      .pipe(timeout({ first: 20000 }));
   }
 
   motDePasseOublie(email: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${API_URL}/auth/forgot-password`, { email }).pipe(timeout({ first: 20000 }));
+    return this.http
+      .post<{ message: string }>(`${API_URL}/auth/forgot-password`, { email })
+      .pipe(timeout({ first: 20000 }));
   }
 
   reinitialiserMotDePasse(token: string, password: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${API_URL}/auth/reset-password`, { token, password });
+    return this.http.post<{ message: string }>(`${API_URL}/auth/reset-password`, {
+      token,
+      password,
+    });
   }
 }

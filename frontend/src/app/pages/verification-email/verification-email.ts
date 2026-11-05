@@ -10,7 +10,7 @@ import { VisualShowcaseComponent } from '../../components/visual-showcase/visual
   selector: 'app-verification-email',
   imports: [ReactiveFormsModule, RouterLink, VisualShowcaseComponent],
   templateUrl: './verification-email.html',
-  styleUrl: './verification-email.css'
+  styleUrl: './verification-email.css',
 })
 export class VerificationEmailComponent {
   private readonly fb = inject(FormBuilder);
@@ -35,17 +35,21 @@ export class VerificationEmailComponent {
     this.erreur.set('');
     this.confirmation.set('');
     const email = this.formulaire.controls.email.value.trim();
-    defer(() => this.auth.renvoyerVerification(email)).pipe(
-      take(1),
-      catchError((error: unknown) => {
-        this.erreur.set(error instanceof TimeoutError
-          ? 'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.'
-          : error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
-            ? error.error.message
-            : 'La demande de renvoi n’a pas abouti. Réessayez dans quelques instants.');
-        return EMPTY;
-      }),
-      finalize(() => this.envoi.set(false))
-    ).subscribe(response => this.confirmation.set(response.message));
+    defer(() => this.auth.renvoyerVerification(email))
+      .pipe(
+        take(1),
+        catchError((error: unknown) => {
+          this.erreur.set(
+            error instanceof TimeoutError
+              ? 'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.'
+              : error instanceof HttpErrorResponse && typeof error.error?.message === 'string'
+                ? error.error.message
+                : 'La demande de renvoi n’a pas abouti. Réessayez dans quelques instants.',
+          );
+          return EMPTY;
+        }),
+        finalize(() => this.envoi.set(false)),
+      )
+      .subscribe((response) => this.confirmation.set(response.message));
   }
 }

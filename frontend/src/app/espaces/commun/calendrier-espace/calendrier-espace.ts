@@ -6,7 +6,11 @@ import { Disponibilite, Salle, SeanceResume } from '../../../core/models';
 import { CatalogueService } from '../../../core/services/catalogue.service';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { CalendrierComponent, evenementSeance, evenementsDisponibilites } from '../../../shared/calendrier';
+import {
+  CalendrierComponent,
+  evenementSeance,
+  evenementsDisponibilites,
+} from '../../../shared/calendrier';
 import { dateLocale, espaceCourant } from '../espace';
 
 /** Calendrier des séances et disponibilités de l'espace (US-C04). */
@@ -14,9 +18,26 @@ import { dateLocale, espaceCourant } from '../espace';
   selector: 'app-calendrier-espace',
   imports: [CalendrierComponent],
   styles: `
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 0 0 16px; padding: 0; list-style: none; color: var(--text); font-size: 14px; }
-    .legend li { display: flex; align-items: center; gap: 6px; }
-    .legend span { width: 14px; height: 14px; border-radius: 4px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 0 0 16px;
+      padding: 0;
+      list-style: none;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .legend li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend span {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
   `,
   template: `
     <header class="page-header">
@@ -30,7 +51,9 @@ import { dateLocale, espaceCourant } from '../espace';
           <span>Salle</span>
           <select [value]="salleId() ?? ''" (change)="changerSalle($any($event.target).value)">
             <option value="">Toutes mes salles</option>
-            @for (s of salles(); track s.id) { <option [value]="s.id">{{ s.nom }}</option> }
+            @for (s of salles(); track s.id) {
+              <option [value]="s.id">{{ s.nom }}</option>
+            }
           </select>
         </label>
       }
@@ -43,7 +66,12 @@ import { dateLocale, espaceCourant } from '../espace';
       <li><span style="background:rgba(22,112,68,.35)"></span>Disponibilité</li>
     </ul>
 
-    <app-calendrier [evenements]="evenements()" (periode)="charger($event)" (seanceCliquee)="ouvrir($event)" (jourClique)="nouvelle($event)" />
+    <app-calendrier
+      [evenements]="evenements()"
+      (periode)="charger($event)"
+      (seanceCliquee)="ouvrir($event)"
+      (jourClique)="nouvelle($event)"
+    />
   `,
 })
 export class CalendrierEspaceComponent {
@@ -66,9 +94,11 @@ export class CalendrierEspaceComponent {
 
   constructor() {
     if (this.espace === 'coach') {
-      this.gestion.profilCoach().subscribe({ next: p => this.disponibilites.set(p.disponibilites) });
+      this.gestion
+        .profilCoach()
+        .subscribe({ next: (p) => this.disponibilites.set(p.disponibilites) });
     } else if (this.espace === 'gestionnaire') {
-      this.gestion.mesSalles().subscribe({ next: s => this.salles.set(s) });
+      this.gestion.mesSalles().subscribe({ next: (s) => this.salles.set(s) });
     }
   }
 
@@ -76,7 +106,9 @@ export class CalendrierEspaceComponent {
     this.salleId.set(valeur ? Number(valeur) : null);
     const id = this.salleId();
     if (id) {
-      this.catalogue.disponibilites({ salleId: id }).subscribe({ next: d => this.disponibilites.set(d) });
+      this.catalogue
+        .disponibilites({ salleId: id })
+        .subscribe({ next: (d) => this.disponibilites.set(d) });
     } else {
       this.disponibilites.set([]);
     }
@@ -85,10 +117,17 @@ export class CalendrierEspaceComponent {
 
   charger(fenetre: { debut: Date; fin: Date }): void {
     this.fenetre = fenetre;
-    this.gestion.seances(this.espace, { debut: fenetre.debut.toISOString(), fin: fenetre.fin.toISOString(), salleId: this.salleId() ?? undefined }).subscribe({
-      next: reponse => this.seances.set(Array.isArray(reponse) ? reponse : reponse.items),
-      error: error => this.toasts.erreur(messageErreur(error, 'Impossible de charger le calendrier.')),
-    });
+    this.gestion
+      .seances(this.espace, {
+        debut: fenetre.debut.toISOString(),
+        fin: fenetre.fin.toISOString(),
+        salleId: this.salleId() ?? undefined,
+      })
+      .subscribe({
+        next: (reponse) => this.seances.set(Array.isArray(reponse) ? reponse : reponse.items),
+        error: (error) =>
+          this.toasts.erreur(messageErreur(error, 'Impossible de charger le calendrier.')),
+      });
   }
 
   ouvrir(seance: SeanceResume): void {
@@ -97,6 +136,8 @@ export class CalendrierEspaceComponent {
 
   nouvelle(jour: Date): void {
     if (jour < new Date(new Date().setHours(0, 0, 0, 0))) return;
-    void this.router.navigate([`/${this.espace}/seances/nouvelle`], { queryParams: { date: dateLocale(jour) } });
+    void this.router.navigate([`/${this.espace}/seances/nouvelle`], {
+      queryParams: { date: dateLocale(jour) },
+    });
   }
 }

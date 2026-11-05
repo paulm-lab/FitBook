@@ -12,7 +12,14 @@ import { FITBOOK_VIDEO_SOURCES } from './video-sources';
 /** Coquille de l'application : en-tête, contenu routé, pied de page, toasts et confirmations. */
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ToastsComponent, ConfirmDialogComponent, ImageSecoursDirective],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ToastsComponent,
+    ConfirmDialogComponent,
+    ImageSecoursDirective,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -29,11 +36,13 @@ export class AppComponent {
   readonly annee = new Date().getFullYear();
 
   constructor() {
-    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe(() => {
-      this.menuOuvert.set(false);
-      setTimeout(() => this.reparerLecteursVideo(), 0);
-      this.chargerNotifications();
-    });
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.menuOuvert.set(false);
+        setTimeout(() => this.reparerLecteursVideo(), 0);
+        this.chargerNotifications();
+      });
 
     // Compteur de notifications rechargé à la connexion.
     effect(() => {
@@ -64,15 +73,17 @@ export class AppComponent {
 
   /** Remplace la source des vidéos par la liste de secours (CDN Pexels indisponible). */
   private reparerLecteursVideo(): void {
-    this.document.querySelectorAll<HTMLVideoElement>('video').forEach(video => {
+    this.document.querySelectorAll<HTMLVideoElement>('video').forEach((video) => {
       if (video.dataset['fitbookSourcesReparees'] === 'true') return;
 
-      video.replaceChildren(...FITBOOK_VIDEO_SOURCES.map(url => {
-        const source = this.document.createElement('source');
-        source.src = url;
-        source.type = 'video/mp4';
-        return source;
-      }));
+      video.replaceChildren(
+        ...FITBOOK_VIDEO_SOURCES.map((url) => {
+          const source = this.document.createElement('source');
+          source.src = url;
+          source.type = 'video/mp4';
+          return source;
+        }),
+      );
       video.dataset['fitbookSourcesReparees'] = 'true';
       video.preload = 'metadata';
       video.load();

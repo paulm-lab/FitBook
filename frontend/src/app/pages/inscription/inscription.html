@@ -11,24 +11,24 @@
         @if (emailInscrit() && statutEmail() === 'sent') {
           <p>
             L'e-mail de vérification a été envoyé à
-            <strong>{{ emailInscrit() }}</strong>.
-            Vérifiez également vos courriers indésirables.
+            <strong>{{ emailInscrit() }}</strong
+            >. Vérifiez également vos courriers indésirables.
           </p>
         }
 
         @if (emailInscrit() && statutEmail() === 'queued') {
           <p>
             L'e-mail de vérification pour <strong>{{ emailInscrit() }}</strong>
-            est en file d'attente : il n'est pas encore parti et peut mettre
-            quelques minutes à arriver. S'il n'arrive pas, demandez un nouveau lien.
+            est en file d'attente : il n'est pas encore parti et peut mettre quelques minutes à
+            arriver. S'il n'arrive pas, demandez un nouveau lien.
           </p>
         }
 
         @if (emailInscrit() && !lienEnFile()) {
           <p>
-            Le lien n'a pas pu être envoyé.
-            Vous pouvez en demander un nouveau pour
-            <strong>{{ emailInscrit() }}</strong>.
+            Le lien n'a pas pu être envoyé. Vous pouvez en demander un nouveau pour
+            <strong>{{ emailInscrit() }}</strong
+            >.
           </p>
         }
 
@@ -37,27 +37,28 @@
         }
 
         @if (emailInscrit()) {
-          <button
-            class="form-action"
-            type="button"
-            [disabled]="envoi()"
-            (click)="renvoyerLien()">
+          <button class="form-action" type="button" [disabled]="envoi()" (click)="renvoyerLien()">
             {{ envoi() ? 'Envoi...' : 'Renvoyer le lien de vérification' }}
           </button>
         }
       </div>
     } @else {
-      <form
-        [formGroup]="formulaire"
-        (ngSubmit)="inscrire()"
-        novalidate>
-
+      <form [formGroup]="formulaire" (ngSubmit)="inscrire()" novalidate>
         <fieldset class="role-choice" aria-describedby="signup-role-error">
           <legend>Je m'inscris en tant que</legend>
           <div class="role-options">
             @for (option of roles; track option.valeur) {
-              <label class="role-option" [class.selected]="formulaire.controls.role.value === option.valeur">
-                <input type="radio" formControlName="role" [value]="option.valeur" [attr.value]="option.valeur" name="role">
+              <label
+                class="role-option"
+                [class.selected]="formulaire.controls.role.value === option.valeur"
+              >
+                <input
+                  type="radio"
+                  formControlName="role"
+                  [value]="option.valeur"
+                  [attr.value]="option.valeur"
+                  name="role"
+                />
                 <span class="role-title">{{ option.titre }}</span>
                 <span class="role-text">{{ option.description }}</span>
               </label>
@@ -78,7 +79,8 @@
               autocomplete="given-name"
               [attr.aria-invalid]="!!erreurChamp('prenom')"
               aria-describedby="signup-prenom-error"
-              (input)="effacerErreurServeur('prenom')">
+              (input)="effacerErreurServeur('prenom')"
+            />
 
             @if (erreurChamp('prenom')) {
               <small class="field-error" id="signup-prenom-error">
@@ -96,7 +98,8 @@
               autocomplete="family-name"
               [attr.aria-invalid]="!!erreurChamp('nom')"
               aria-describedby="signup-nom-error"
-              (input)="effacerErreurServeur('nom')">
+              (input)="effacerErreurServeur('nom')"
+            />
 
             @if (erreurChamp('nom')) {
               <small class="field-error" id="signup-nom-error">
@@ -115,7 +118,8 @@
             autocomplete="email"
             [attr.aria-invalid]="!!erreurChamp('email')"
             aria-describedby="signup-email-error"
-            (input)="effacerErreurServeur('email')">
+            (input)="effacerErreurServeur('email')"
+          />
 
           @if (erreurChamp('email')) {
             <small class="field-error" id="signup-email-error">
@@ -133,7 +137,8 @@
             autocomplete="tel"
             [attr.aria-invalid]="!!erreurChamp('telephone')"
             aria-describedby="signup-telephone-error"
-            (input)="effacerErreurServeur('telephone')">
+            (input)="effacerErreurServeur('telephone')"
+          />
 
           @if (erreurChamp('telephone')) {
             <small class="field-error" id="signup-telephone-error">
@@ -151,11 +156,10 @@
             autocomplete="new-password"
             aria-describedby="signup-password-hint signup-password-error"
             [attr.aria-invalid]="!!erreurChamp('password')"
-            (input)="effacerErreurServeur('password')">
+            (input)="effacerErreurServeur('password')"
+          />
 
-          <small id="signup-password-hint">
-            8 caractères minimum.
-          </small>
+          <small id="signup-password-hint"> 8 caractères minimum. </small>
 
           @if (erreurChamp('password')) {
             <small class="field-error" id="signup-password-error">
@@ -168,10 +172,7 @@
           <p class="error-message" role="alert">{{ erreur() }}</p>
         }
 
-        <button
-          class="form-action"
-          type="submit"
-          [disabled]="envoi()">
+        <button class="form-action" type="submit" [disabled]="envoi()">
           {{ envoi() ? 'Création...' : 'Créer mon compte' }}
         </button>
       </form>
@@ -183,8 +184,5 @@
     </p>
   </section>
 
-  <app-visual-showcase
-    page="signup"
-    [compact]="true">
-  </app-visual-showcase>
+  <app-visual-showcase page="signup" [compact]="true"> </app-visual-showcase>
 </main>

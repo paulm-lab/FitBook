@@ -3,8 +3,19 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL, params } from '../http';
 import {
-  Activite, Avis, Coach, CoachDetail, CriteresRecherche, Disponibilite, Note, Page, Salle, SalleDetail,
-  SeanceDetail, SeanceResume, TypeCible,
+  Activite,
+  Avis,
+  Coach,
+  CoachDetail,
+  CriteresRecherche,
+  Disponibilite,
+  Note,
+  Page,
+  Salle,
+  SalleDetail,
+  SeanceDetail,
+  SeanceResume,
+  TypeCible,
 } from '../models';
 
 /** Catalogue public : recherche, fiches, activités, avis et disponibilités. */
@@ -41,10 +52,17 @@ export class CatalogueService {
   }
 
   avis(type: TypeCible, cibleId: number, page = 1): Observable<Page<Avis> & { note: Note }> {
-    return this.http.get<Page<Avis> & { note: Note }>(`${API_URL}/avis`, { params: params({ type, cibleId, page }) });
+    return this.http.get<Page<Avis> & { note: Note }>(`${API_URL}/avis`, {
+      params: params({ type, cibleId, page }),
+    });
   }
 
-  disponibilites(proprietaire: { coachId?: number; salleId?: number }): Observable<Disponibilite[]> {
-    return this.http.get<Disponibilite[]>(`${API_URL}/disponibilites`, { params: params(proprietaire) });
+  disponibilites(proprietaire: {
+    coachId?: number;
+    salleId?: number;
+  }): Observable<Disponibilite[]> {
+    return this.http.get<Disponibilite[]>(`${API_URL}/disponibilites`, {
+      params: params(proprietaire),
+    });
   }
 }

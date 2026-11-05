@@ -5,7 +5,12 @@ import { Activite } from '../../../core/models';
 import { CatalogueService } from '../../../core/services/catalogue.service';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService, EtatVideComponent, ImageSecoursDirective, LoaderComponent } from '../../../shared/ui';
+import {
+  ConfirmService,
+  EtatVideComponent,
+  ImageSecoursDirective,
+  LoaderComponent,
+} from '../../../shared/ui';
 
 /** Catalogue des activités (US-A03) : ajout, modification, suppression. */
 @Component({
@@ -18,42 +23,84 @@ import { ConfirmService, EtatVideComponent, ImageSecoursDirective, LoaderCompone
         <h1>Activités</h1>
         <p>Les disciplines proposées sur FitBook.</p>
       </div>
-      @if (!formOuvert()) { <button type="button" class="btn" (click)="ouvrir(null)">+ Nouvelle activité</button> }
+      @if (!formOuvert()) {
+        <button type="button" class="btn" (click)="ouvrir(null)">+ Nouvelle activité</button>
+      }
     </header>
 
     @if (formOuvert()) {
       <section class="panel edit" aria-labelledby="form-titre">
-        <h2 id="form-titre">{{ edition() ? 'Modifier « ' + edition()!.nom + ' »' : 'Nouvelle activité' }}</h2>
+        <h2 id="form-titre">
+          {{ edition() ? 'Modifier « ' + edition()!.nom + ' »' : 'Nouvelle activité' }}
+        </h2>
         <form class="form" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
           <div class="form-row">
             <label class="field">
               <span>Nom</span>
-              <input formControlName="nom" maxlength="50" [attr.aria-invalid]="!!erreur('nom')" [attr.aria-describedby]="erreur('nom') ? 'err-nom' : null">
-              @if (erreur('nom')) { <small class="field-error" id="err-nom" role="alert">{{ erreur('nom') }}</small> }
+              <input
+                formControlName="nom"
+                maxlength="50"
+                [attr.aria-invalid]="!!erreur('nom')"
+                [attr.aria-describedby]="erreur('nom') ? 'err-nom' : null"
+              />
+              @if (erreur('nom')) {
+                <small class="field-error" id="err-nom" role="alert">{{ erreur('nom') }}</small>
+              }
             </label>
             <label class="field">
               <span>Catégorie</span>
-              <input formControlName="categorie" maxlength="50" placeholder="Bien-être, Cardio…" [attr.aria-invalid]="!!erreur('categorie')" [attr.aria-describedby]="erreur('categorie') ? 'err-cat' : null">
-              @if (erreur('categorie')) { <small class="field-error" id="err-cat" role="alert">{{ erreur('categorie') }}</small> }
+              <input
+                formControlName="categorie"
+                maxlength="50"
+                placeholder="Bien-être, Cardio…"
+                [attr.aria-invalid]="!!erreur('categorie')"
+                [attr.aria-describedby]="erreur('categorie') ? 'err-cat' : null"
+              />
+              @if (erreur('categorie')) {
+                <small class="field-error" id="err-cat" role="alert">{{
+                  erreur('categorie')
+                }}</small>
+              }
             </label>
           </div>
           <label class="field">
             <span>Description</span>
-            <textarea formControlName="description" maxlength="2000" [attr.aria-invalid]="!!erreur('description')"></textarea>
-            @if (erreur('description')) { <small class="field-error" role="alert">{{ erreur('description') }}</small> }
+            <textarea
+              formControlName="description"
+              maxlength="2000"
+              [attr.aria-invalid]="!!erreur('description')"
+            ></textarea>
+            @if (erreur('description')) {
+              <small class="field-error" role="alert">{{ erreur('description') }}</small>
+            }
           </label>
           <div class="image-row">
             <label class="field">
               <span>Adresse de l'image (URL)</span>
-              <input type="url" formControlName="image" placeholder="https://…" [attr.aria-invalid]="!!erreur('image')" [attr.aria-describedby]="erreur('image') ? 'err-img' : null">
-              @if (erreur('image')) { <small class="field-error" id="err-img" role="alert">{{ erreur('image') }}</small> }
+              <input
+                type="url"
+                formControlName="image"
+                placeholder="https://…"
+                [attr.aria-invalid]="!!erreur('image')"
+                [attr.aria-describedby]="erreur('image') ? 'err-img' : null"
+              />
+              @if (erreur('image')) {
+                <small class="field-error" id="err-img" role="alert">{{ erreur('image') }}</small>
+              }
             </label>
             @if (form.controls.image.value) {
-              <img class="preview" [src]="form.controls.image.value" alt="Aperçu de l'image" appSecours>
+              <img
+                class="preview"
+                [src]="form.controls.image.value"
+                alt="Aperçu de l'image"
+                appSecours
+              />
             }
           </div>
           <div class="row">
-            <button type="submit" class="btn" [disabled]="envoi()" [attr.aria-busy]="envoi()">{{ envoi() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+            <button type="submit" class="btn" [disabled]="envoi()" [attr.aria-busy]="envoi()">
+              {{ envoi() ? 'Enregistrement…' : 'Enregistrer' }}
+            </button>
             <button type="button" class="btn btn--ghost" (click)="fermer()">Annuler</button>
           </div>
         </form>
@@ -65,24 +112,48 @@ import { ConfirmService, EtatVideComponent, ImageSecoursDirective, LoaderCompone
     } @else if (!activites()) {
       <app-loader />
     } @else if (activites()!.length === 0) {
-      <app-etat-vide titre="Aucune activité" message="Ajoutez la première discipline de la plateforme." />
+      <app-etat-vide
+        titre="Aucune activité"
+        message="Ajoutez la première discipline de la plateforme."
+      />
     } @else {
       <div class="table-wrap">
         <table class="table">
           <thead>
-            <tr><th scope="col"><span class="sr-only">Image</span></th><th scope="col">Nom</th><th scope="col">Catégorie</th><th scope="col">Description</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+            <tr>
+              <th scope="col"><span class="sr-only">Image</span></th>
+              <th scope="col">Nom</th>
+              <th scope="col">Catégorie</th>
+              <th scope="col">Description</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
           </thead>
           <tbody>
             @for (a of activites(); track a.id) {
               <tr>
-                <td><img class="thumb" [src]="a.image || '/assets/fitbook-media-fallback.svg'" alt="" appSecours></td>
-                <td><strong>{{ a.nom }}</strong></td>
-                <td><span class="badge">{{ a.categorie }}</span></td>
+                <td>
+                  <img
+                    class="thumb"
+                    [src]="a.image || '/assets/fitbook-media-fallback.svg'"
+                    alt=""
+                    appSecours
+                  />
+                </td>
+                <td>
+                  <strong>{{ a.nom }}</strong>
+                </td>
+                <td>
+                  <span class="badge">{{ a.categorie }}</span>
+                </td>
                 <td class="desc">{{ court(a.description) }}</td>
                 <td>
                   <div class="actions">
-                    <button type="button" class="btn btn--sm btn--ghost" (click)="ouvrir(a)">Modifier</button>
-                    <button type="button" class="btn btn--sm btn--danger" (click)="supprimer(a)">Supprimer</button>
+                    <button type="button" class="btn btn--sm btn--ghost" (click)="ouvrir(a)">
+                      Modifier
+                    </button>
+                    <button type="button" class="btn btn--sm btn--danger" (click)="supprimer(a)">
+                      Supprimer
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -93,12 +164,38 @@ import { ConfirmService, EtatVideComponent, ImageSecoursDirective, LoaderCompone
     }
   `,
   styles: `
-    .edit { margin-bottom: 24px; }
-    .image-row { display: grid; grid-template-columns: 1fr 160px; align-items: end; gap: 14px; }
-    .preview { width: 160px; height: 100px; border-radius: 10px; object-fit: cover; background: var(--surface-alt); }
-    .thumb { width: 64px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--surface-alt); }
-    .desc { max-width: 360px; color: var(--text); }
-    @media (max-width: 600px) { .image-row { grid-template-columns: 1fr; } }
+    .edit {
+      margin-bottom: 24px;
+    }
+    .image-row {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      align-items: end;
+      gap: 14px;
+    }
+    .preview {
+      width: 160px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--surface-alt);
+    }
+    .thumb {
+      width: 64px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--surface-alt);
+    }
+    .desc {
+      max-width: 360px;
+      color: var(--text);
+    }
+    @media (max-width: 600px) {
+      .image-row {
+        grid-template-columns: 1fr;
+      }
+    }
   `,
 })
 export class ActivitesAdminComponent {
@@ -165,17 +262,25 @@ export class ActivitesAdminComponent {
       return;
     }
     const v = this.form.getRawValue();
-    const data = { nom: v.nom.trim(), categorie: v.categorie.trim(), description: v.description.trim() || null, image: v.image.trim() || null };
+    const data = {
+      nom: v.nom.trim(),
+      categorie: v.categorie.trim(),
+      description: v.description.trim() || null,
+      image: v.image.trim() || null,
+    };
     const edition = this.edition();
     this.envoi.set(true);
-    (edition ? this.gestion.modifierActivite(edition.id, data) : this.gestion.creerActivite(data)).subscribe({
+    (edition
+      ? this.gestion.modifierActivite(edition.id, data)
+      : this.gestion.creerActivite(data)
+    ).subscribe({
       next: () => {
         this.envoi.set(false);
         this.toasts.succes(edition ? 'Activité modifiée.' : 'Activité ajoutée.');
         this.fermer();
         this.charger();
       },
-      error: e => {
+      error: (e) => {
         this.envoi.set(false);
         const champs = erreursChamps(e);
         this.erreurs.set(champs);
@@ -194,17 +299,18 @@ export class ActivitesAdminComponent {
     if (!ok) return;
     this.gestion.supprimerActivite(a.id).subscribe({
       next: () => {
-        this.activites.update(liste => liste?.filter(i => i.id !== a.id) ?? null);
+        this.activites.update((liste) => liste?.filter((i) => i.id !== a.id) ?? null);
         this.toasts.succes('Activité supprimée.');
       },
-      error: e => this.toasts.erreur(messageErreur(e)),
+      error: (e) => this.toasts.erreur(messageErreur(e)),
     });
   }
 
   private charger(): void {
     this.catalogue.activites().subscribe({
-      next: a => this.activites.set(a),
-      error: e => this.chargementErreur.set(messageErreur(e, 'Impossible de charger les activités.')),
+      next: (a) => this.activites.set(a),
+      error: (e) =>
+        this.chargementErreur.set(messageErreur(e, 'Impossible de charger les activités.')),
     });
   }
 }

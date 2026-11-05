@@ -14,13 +14,21 @@ function decider(decision: (auth: AuthService) => boolean | ReturnType<Router['c
   if (auth.pret()) {
     return decision(auth);
   }
-  return toObservable(auth.pret).pipe(filter(Boolean), take(1), map(() => decision(auth)));
+  return toObservable(auth.pret).pipe(
+    filter(Boolean),
+    take(1),
+    map(() => decision(auth)),
+  );
 }
 
 /** Page réservée aux comptes connectés : sinon /connexion?returnUrl=… */
 export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
-  return decider(auth => auth.estConnecte() || router.createUrlTree(['/connexion'], { queryParams: { returnUrl: state.url } }));
+  return decider(
+    (auth) =>
+      auth.estConnecte() ||
+      router.createUrlTree(['/connexion'], { queryParams: { returnUrl: state.url } }),
+  );
 };
 
 /**
@@ -30,7 +38,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
 export function roleGuard(...roles: Role[]): CanActivateFn {
   return (_route, state) => {
     const router = inject(Router);
-    return decider(auth => {
+    return decider((auth) => {
       if (!auth.estConnecte()) {
         return router.createUrlTree(['/connexion'], { queryParams: { returnUrl: state.url } });
       }
@@ -42,5 +50,5 @@ export function roleGuard(...roles: Role[]): CanActivateFn {
 /** Pages connexion / inscription : inutiles une fois connecté. */
 export const invitesGuard: CanActivateFn = () => {
   const router = inject(Router);
-  return decider(auth => !auth.estConnecte() || router.createUrlTree([auth.espace()]));
+  return decider((auth) => !auth.estConnecte() || router.createUrlTree([auth.espace()]));
 };

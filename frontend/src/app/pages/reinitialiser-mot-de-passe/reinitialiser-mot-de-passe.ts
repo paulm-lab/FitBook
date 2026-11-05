@@ -1,6 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
@@ -24,31 +30,63 @@ function identiques(groupe: AbstractControl): ValidationErrors | null {
         <h1 id="reset-title">Choisir un nouveau mot de passe</h1>
 
         @if (!token) {
-          <p class="error-message" role="alert">Ce lien est incomplet. Utilisez le lien reçu par e-mail ou faites une nouvelle demande.</p>
+          <p class="error-message" role="alert">
+            Ce lien est incomplet. Utilisez le lien reçu par e-mail ou faites une nouvelle demande.
+          </p>
           <a class="form-action" routerLink="/mot-de-passe-oublie">Nouvelle demande</a>
         } @else if (succes()) {
-          <div class="alert alert--success" role="status"><p>{{ succes() }}</p></div>
+          <div class="alert alert--success" role="status">
+            <p>{{ succes() }}</p>
+          </div>
           <a class="form-action" routerLink="/connexion">Se connecter</a>
         } @else if (lienInvalide()) {
-          <p class="error-message" role="alert">Ce lien de réinitialisation est invalide ou a expiré.</p>
+          <p class="error-message" role="alert">
+            Ce lien de réinitialisation est invalide ou a expiré.
+          </p>
           <a class="form-action" routerLink="/mot-de-passe-oublie">Faire une nouvelle demande</a>
         } @else {
-          <p>8 caractères minimum. Après la modification, connectez-vous avec ce nouveau mot de passe.</p>
+          <p>
+            8 caractères minimum. Après la modification, connectez-vous avec ce nouveau mot de
+            passe.
+          </p>
           <form [formGroup]="formulaire" (ngSubmit)="valider()" novalidate>
             <label for="reset-password">
               Nouveau mot de passe
-              <input id="reset-password" type="password" formControlName="password" autocomplete="new-password"
-                [attr.aria-invalid]="!!erreurPassword()" [attr.aria-describedby]="erreurPassword() ? 'reset-password-error' : null">
-              @if (erreurPassword()) { <small id="reset-password-error">{{ erreurPassword() }}</small> }
+              <input
+                id="reset-password"
+                type="password"
+                formControlName="password"
+                autocomplete="new-password"
+                [attr.aria-invalid]="!!erreurPassword()"
+                [attr.aria-describedby]="erreurPassword() ? 'reset-password-error' : null"
+              />
+              @if (erreurPassword()) {
+                <small id="reset-password-error">{{ erreurPassword() }}</small>
+              }
             </label>
             <label for="reset-confirmation">
               Confirmez le mot de passe
-              <input id="reset-confirmation" type="password" formControlName="confirmation" autocomplete="new-password"
-                [attr.aria-invalid]="!!erreurConfirmation()" [attr.aria-describedby]="erreurConfirmation() ? 'reset-confirmation-error' : null">
-              @if (erreurConfirmation()) { <small id="reset-confirmation-error">{{ erreurConfirmation() }}</small> }
+              <input
+                id="reset-confirmation"
+                type="password"
+                formControlName="confirmation"
+                autocomplete="new-password"
+                [attr.aria-invalid]="!!erreurConfirmation()"
+                [attr.aria-describedby]="erreurConfirmation() ? 'reset-confirmation-error' : null"
+              />
+              @if (erreurConfirmation()) {
+                <small id="reset-confirmation-error">{{ erreurConfirmation() }}</small>
+              }
             </label>
-            @if (erreur()) { <p class="error-message" role="alert">{{ erreur() }}</p> }
-            <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
+            @if (erreur()) {
+              <p class="error-message" role="alert">{{ erreur() }}</p>
+            }
+            <button
+              class="form-action"
+              type="submit"
+              [disabled]="envoi()"
+              [attr.aria-busy]="envoi()"
+            >
               {{ envoi() ? 'Enregistrement…' : 'Enregistrer le mot de passe' }}
             </button>
           </form>
@@ -79,7 +117,8 @@ export class ReinitialiserMotDePasseComponent {
   erreurPassword(): string {
     const champ = this.formulaire.controls.password;
     if (champ.touched && champ.hasError('required')) return 'Saisissez un mot de passe.';
-    if (champ.touched && champ.hasError('minlength')) return 'Le mot de passe doit contenir au moins 8 caractères.';
+    if (champ.touched && champ.hasError('minlength'))
+      return 'Le mot de passe doit contenir au moins 8 caractères.';
     return this.erreurServeur();
   }
 
@@ -87,7 +126,9 @@ export class ReinitialiserMotDePasseComponent {
     const champ = this.formulaire.controls.confirmation;
     if (!champ.touched) return '';
     if (champ.hasError('required')) return 'Confirmez le mot de passe.';
-    return this.formulaire.hasError('differents') ? 'Les deux mots de passe ne sont pas identiques.' : '';
+    return this.formulaire.hasError('differents')
+      ? 'Les deux mots de passe ne sont pas identiques.'
+      : '';
   }
 
   valider(): void {
@@ -99,19 +140,24 @@ export class ReinitialiserMotDePasseComponent {
       return;
     }
     this.envoi.set(true);
-    this.auth.reinitialiserMotDePasse(this.token, this.formulaire.controls.password.value).pipe(finalize(() => this.envoi.set(false))).subscribe({
-      next: response => {
-        this.succes.set(response.message);
-        this.toasts.succes('Mot de passe modifié. Vous pouvez vous connecter.');
-      },
-      error: (error: unknown) => {
-        if (error instanceof HttpErrorResponse && error.status === 400) {
-          this.lienInvalide.set(true);
-          return;
-        }
-        this.erreurServeur.set(erreursChamps(error)['password'] ?? '');
-        this.erreur.set(messageErreur(error, 'Le mot de passe n’a pas pu être modifié. Réessayez.'));
-      },
-    });
+    this.auth
+      .reinitialiserMotDePasse(this.token, this.formulaire.controls.password.value)
+      .pipe(finalize(() => this.envoi.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.succes.set(response.message);
+          this.toasts.succes('Mot de passe modifié. Vous pouvez vous connecter.');
+        },
+        error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 400) {
+            this.lienInvalide.set(true);
+            return;
+          }
+          this.erreurServeur.set(erreursChamps(error)['password'] ?? '');
+          this.erreur.set(
+            messageErreur(error, 'Le mot de passe n’a pas pu être modifié. Réessayez.'),
+          );
+        },
+      });
   }
 }

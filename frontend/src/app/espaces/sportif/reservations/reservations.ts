@@ -6,11 +6,20 @@ import { messageErreur } from '../../../core/http';
 import { Page, Reservation } from '../../../core/models';
 import { CompteService } from '../../../core/services/compte.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService, EtatVideComponent, LoaderComponent, PaginationComponent } from '../../../shared/ui';
+import {
+  ConfirmService,
+  EtatVideComponent,
+  LoaderComponent,
+  PaginationComponent,
+} from '../../../shared/ui';
 
 type Periode = 'a_venir' | 'historique';
 
-export const STATUTS: Record<string, string> = { confirmee: 'Confirmée', annulee: 'Annulée', terminee: 'Terminée' };
+export const STATUTS: Record<string, string> = {
+  confirmee: 'Confirmée',
+  annulee: 'Annulée',
+  terminee: 'Terminée',
+};
 
 /**
  * Annule une réservation après confirmation (US-S03). Renvoie true si l'annulation a abouti.
@@ -31,15 +40,20 @@ export async function annulerAvecConfirmation(
   });
   if (!ok) return;
   compte.annulerReservation(reservation.id).subscribe({
-    next: r => {
+    next: (r) => {
       toasts.succes('Réservation annulée. Un e-mail de confirmation vous a été envoyé.');
       apres(r);
     },
     error: (error: unknown) => {
       // 409 : séance dans moins de 2 h, ou déjà annulée (RG-05).
-      toasts.erreur(error instanceof HttpErrorResponse && error.status === 409
-        ? messageErreur(error, 'Il est trop tard pour annuler : la séance commence dans moins de 2 heures.')
-        : messageErreur(error, 'L’annulation n’a pas pu aboutir.'));
+      toasts.erreur(
+        error instanceof HttpErrorResponse && error.status === 409
+          ? messageErreur(
+              error,
+              'Il est trop tard pour annuler : la séance commence dans moins de 2 heures.',
+            )
+          : messageErreur(error, 'L’annulation n’a pas pu aboutir.'),
+      );
     },
   });
 }
@@ -47,7 +61,14 @@ export async function annulerAvecConfirmation(
 /** Mes réservations : onglets « À venir » et « Historique » (US-S04), annulation (US-S03). */
 @Component({
   selector: 'app-mes-reservations',
-  imports: [RouterLink, DatePipe, DecimalPipe, LoaderComponent, EtatVideComponent, PaginationComponent],
+  imports: [
+    RouterLink,
+    DatePipe,
+    DecimalPipe,
+    LoaderComponent,
+    EtatVideComponent,
+    PaginationComponent,
+  ],
   template: `
     <header class="page-header">
       <div>
@@ -58,8 +79,24 @@ export async function annulerAvecConfirmation(
     </header>
 
     <div class="tabs" role="tablist" aria-label="Période">
-      <button type="button" class="tab" role="tab" [attr.aria-selected]="periode() === 'a_venir'" (click)="changerPeriode('a_venir')">À venir</button>
-      <button type="button" class="tab" role="tab" [attr.aria-selected]="periode() === 'historique'" (click)="changerPeriode('historique')">Historique</button>
+      <button
+        type="button"
+        class="tab"
+        role="tab"
+        [attr.aria-selected]="periode() === 'a_venir'"
+        (click)="changerPeriode('a_venir')"
+      >
+        À venir
+      </button>
+      <button
+        type="button"
+        class="tab"
+        role="tab"
+        [attr.aria-selected]="periode() === 'historique'"
+        (click)="changerPeriode('historique')"
+      >
+        Historique
+      </button>
     </div>
 
     <div role="tabpanel">
@@ -70,30 +107,69 @@ export async function annulerAvecConfirmation(
       } @else if (page(); as p) {
         @if (p.items.length === 0) {
           <app-etat-vide
-            [titre]="periode() === 'a_venir' ? 'Aucune réservation à venir' : 'Aucun historique pour le moment'"
-            message="Réservez une séance en quelques clics depuis la recherche." icone="📅">
+            [titre]="
+              periode() === 'a_venir'
+                ? 'Aucune réservation à venir'
+                : 'Aucun historique pour le moment'
+            "
+            message="Réservez une séance en quelques clics depuis la recherche."
+            icone="📅"
+          >
             <a class="btn" routerLink="/recherche">Trouver une séance</a>
           </app-etat-vide>
         } @else {
           <div class="table-wrap">
             <table class="table">
-              <caption class="sr-only">{{ periode() === 'a_venir' ? 'Réservations à venir' : 'Historique des réservations' }}</caption>
+              <caption class="sr-only">
+                {{
+                  periode() === 'a_venir' ? 'Réservations à venir' : 'Historique des réservations'
+                }}
+              </caption>
               <thead>
-                <tr><th scope="col">Séance</th><th scope="col">Date</th><th scope="col">Lieu</th><th scope="col">Prix</th><th scope="col">Statut</th><th scope="col"><span class="sr-only">Actions</span></th></tr>
+                <tr>
+                  <th scope="col">Séance</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Lieu</th>
+                  <th scope="col">Prix</th>
+                  <th scope="col">Statut</th>
+                  <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
               </thead>
               <tbody>
                 @for (r of p.items; track r.id) {
                   <tr>
-                    <td><a [routerLink]="['/mon-espace/reservations', r.id]"><strong>{{ r.seance?.titre }}</strong></a><br><span class="muted">{{ r.seance?.activite?.nom }}</span></td>
+                    <td>
+                      <a [routerLink]="['/mon-espace/reservations', r.id]"
+                        ><strong>{{ r.seance?.titre }}</strong></a
+                      ><br /><span class="muted">{{ r.seance?.activite?.nom }}</span>
+                    </td>
                     <td>{{ r.seance?.dateDebut | date: 'EEE d MMM y · HH:mm' }}</td>
                     <td>{{ r.seance?.salle?.nom ?? 'Avec le coach' }}</td>
-                    <td>{{ +(r.seance?.prix ?? 0) === 0 ? 'Gratuit' : (r.seance?.prix | number: '1.2-2') + ' €' }}</td>
-                    <td><span class="badge badge--{{ r.statut }}">{{ statuts[r.statut] }}</span></td>
+                    <td>
+                      {{
+                        +(r.seance?.prix ?? 0) === 0
+                          ? 'Gratuit'
+                          : (r.seance?.prix | number: '1.2-2') + ' €'
+                      }}
+                    </td>
+                    <td>
+                      <span class="badge badge--{{ r.statut }}">{{ statuts[r.statut] }}</span>
+                    </td>
                     <td>
                       <div class="actions">
-                        <a class="btn btn--sm btn--ghost" [routerLink]="['/mon-espace/reservations', r.id]">Détail</a>
+                        <a
+                          class="btn btn--sm btn--ghost"
+                          [routerLink]="['/mon-espace/reservations', r.id]"
+                          >Détail</a
+                        >
                         @if (r.annulable) {
-                          <button type="button" class="btn btn--sm btn--danger" (click)="annuler(r)">Annuler</button>
+                          <button
+                            type="button"
+                            class="btn btn--sm btn--danger"
+                            (click)="annuler(r)"
+                          >
+                            Annuler
+                          </button>
                         }
                       </div>
                     </td>
@@ -133,7 +209,7 @@ export class MesReservationsComponent {
     this.chargement.set(true);
     this.erreur.set('');
     this.compte.reservations(this.periode(), page).subscribe({
-      next: resultat => {
+      next: (resultat) => {
         this.page.set(resultat);
         this.chargement.set(false);
       },
@@ -145,6 +221,8 @@ export class MesReservationsComponent {
   }
 
   annuler(reservation: Reservation): void {
-    void annulerAvecConfirmation(reservation, this.confirm, this.compte, this.toasts, () => this.charger(this.page()?.page ?? 1));
+    void annulerAvecConfirmation(reservation, this.confirm, this.compte, this.toasts, () =>
+      this.charger(this.page()?.page ?? 1),
+    );
   }
 }

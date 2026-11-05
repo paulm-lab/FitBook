@@ -1,1 +1,103 @@
-:host{display:block;color:var(--ink)}.verification-page{display:grid;grid-template-columns:minmax(0,620px) minmax(0,1fr);align-items:center;gap:34px;min-height:70vh;padding:52px 6%;background:var(--surface-alt)}.verification-card{width:100%;min-width:0;padding:36px;border-radius:18px;background:var(--surface);box-shadow:0 10px 30px rgba(16,33,58,.07)}.verification-card h1{margin:10px 0;color:var(--ink);font-size:clamp(32px,5vw,46px)}.verification-card p{color:var(--text);line-height:1.6}.verification-card form{display:grid;gap:10px;margin-top:24px}.verification-card label{margin-top:8px;color:var(--text);font-size:14px;font-weight:700}.verification-card input{box-sizing:border-box;width:100%;min-width:0;height:49px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}.verification-card input:focus{border-color:var(--primary);outline:0;box-shadow:0 0 0 3px rgba(255,100,45,.14)}.verification-card input[aria-invalid=true]{border-color:var(--danger-border)}.verification-card small,.verification-card .error-message{color:var(--danger)}.verification-card .form-action{display:inline-flex;align-items:center;justify-content:center;min-height:50px;margin-top:8px;text-decoration:none}.verification-card .form-switch{margin-bottom:0}.verification-page app-visual-showcase{min-width:0;max-width:520px;width:100%;justify-self:center}@media(max-width:900px){.verification-page{grid-template-columns:minmax(0,680px);justify-content:center;gap:24px}.verification-page app-visual-showcase{max-width:680px}}@media(max-width:520px){.verification-page{padding:34px 5%}.verification-card{padding:24px}.verification-card input{height:48px}}
+:host {
+  display: block;
+  color: var(--ink);
+}
+.verification-page {
+  display: grid;
+  grid-template-columns: minmax(0, 620px) minmax(0, 1fr);
+  align-items: center;
+  gap: 34px;
+  min-height: 70vh;
+  padding: 52px 6%;
+  background: var(--surface-alt);
+}
+.verification-card {
+  width: 100%;
+  min-width: 0;
+  padding: 36px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(16, 33, 58, 0.07);
+}
+.verification-card h1 {
+  margin: 10px 0;
+  color: var(--ink);
+  font-size: clamp(32px, 5vw, 46px);
+}
+.verification-card p {
+  color: var(--text);
+  line-height: 1.6;
+}
+.verification-card form {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.verification-card label {
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.verification-card input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 49px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+.verification-card input:focus {
+  border-color: var(--primary);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(255, 100, 45, 0.14);
+}
+.verification-card input[aria-invalid='true'] {
+  border-color: var(--danger-border);
+}
+.verification-card small,
+.verification-card .error-message {
+  color: var(--danger);
+}
+.verification-card .form-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  margin-top: 8px;
+  text-decoration: none;
+}
+.verification-card .form-switch {
+  margin-bottom: 0;
+}
+.verification-page app-visual-showcase {
+  min-width: 0;
+  max-width: 520px;
+  width: 100%;
+  justify-self: center;
+}
+@media (max-width: 900px) {
+  .verification-page {
+    grid-template-columns: minmax(0, 680px);
+    justify-content: center;
+    gap: 24px;
+  }
+  .verification-page app-visual-showcase {
+    max-width: 680px;
+  }
+}
+@media (max-width: 520px) {
+  .verification-page {
+    padding: 34px 5%;
+  }
+  .verification-card {
+    padding: 24px;
+  }
+  .verification-card input {
+    height: 48px;
+  }
+}

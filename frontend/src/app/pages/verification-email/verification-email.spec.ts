@@ -15,8 +15,15 @@ describe('VerificationEmailComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: auth },
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: (key: string) => key === 'status' ? status : null } } } }
-      ]
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: { get: (key: string) => (key === 'status' ? status : null) },
+            },
+          },
+        },
+      ],
     }).compileComponents();
     return TestBed.createComponent(VerificationEmailComponent);
   }
@@ -25,7 +32,9 @@ describe('VerificationEmailComponent', () => {
     const fixture = await creerComposant('success');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Votre adresse e-mail est vérifiée. Votre compte FitBook est actif.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Votre adresse e-mail est vérifiée. Votre compte FitBook est actif.',
+    );
     expect(fixture.nativeElement.querySelector('a[routerLink="/connexion"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
   });
@@ -34,7 +43,9 @@ describe('VerificationEmailComponent', () => {
     const fixture = await creerComposant('error');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Le lien de vérification est invalide ou expiré. Demandez un nouveau lien.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Le lien de vérification est invalide ou expiré. Demandez un nouveau lien.',
+    );
     expect(fixture.nativeElement.querySelector('form')).not.toBeNull();
   });
 
@@ -53,7 +64,9 @@ describe('VerificationEmailComponent', () => {
 
   it('réactive le bouton et affiche une erreur si le renvoi échoue', async () => {
     const fixture = await creerComposant('error');
-    auth.renvoyerVerification.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 503 })));
+    auth.renvoyerVerification.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 503 })),
+    );
     const component = fixture.componentInstance;
     component.formulaire.controls.email.setValue('camille@example.test');
 
@@ -65,7 +78,9 @@ describe('VerificationEmailComponent', () => {
 
   it('réactive le bouton si le service de renvoi lève une exception synchrone', async () => {
     const fixture = await creerComposant('error');
-    auth.renvoyerVerification.mockImplementation(() => { throw new Error('service unavailable'); });
+    auth.renvoyerVerification.mockImplementation(() => {
+      throw new Error('service unavailable');
+    });
     const component = fixture.componentInstance;
     component.formulaire.controls.email.setValue('camille@example.test');
 

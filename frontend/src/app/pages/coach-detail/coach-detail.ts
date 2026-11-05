@@ -7,7 +7,12 @@ import { CatalogueService } from '../../core/services/catalogue.service';
 import { AvisSectionComponent } from '../../shared/avis-section';
 import { FavoriButtonComponent } from '../../shared/favori-button';
 import { SeanceCardComponent } from '../../shared/seance-card';
-import { EtatVideComponent, EtoilesComponent, ImageSecoursDirective, LoaderComponent } from '../../shared/ui';
+import {
+  EtatVideComponent,
+  EtoilesComponent,
+  ImageSecoursDirective,
+  LoaderComponent,
+} from '../../shared/ui';
 import { DisponibilitesListeComponent } from '../salle-detail/disponibilites-liste';
 
 type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
@@ -15,7 +20,18 @@ type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 /** Fiche publique d'un coach (US-V04, US-C01). */
 @Component({
   selector: 'app-coach-detail',
-  imports: [DecimalPipe, RouterLink, LoaderComponent, EtatVideComponent, EtoilesComponent, ImageSecoursDirective, FavoriButtonComponent, SeanceCardComponent, AvisSectionComponent, DisponibilitesListeComponent],
+  imports: [
+    DecimalPipe,
+    RouterLink,
+    LoaderComponent,
+    EtatVideComponent,
+    EtoilesComponent,
+    ImageSecoursDirective,
+    FavoriButtonComponent,
+    SeanceCardComponent,
+    AvisSectionComponent,
+    DisponibilitesListeComponent,
+  ],
   templateUrl: './coach-detail.html',
   styleUrl: './coach-detail.css',
 })
@@ -26,7 +42,9 @@ export class CoachDetailComponent {
 
   readonly etat = signal<Etat>('chargement');
   readonly coach = signal<CoachDetail | null>(null);
-  readonly initiales = computed(() => `${this.coach()?.prenom?.[0] ?? ''}${this.coach()?.nom?.[0] ?? ''}`.toUpperCase());
+  readonly initiales = computed(() =>
+    `${this.coach()?.prenom?.[0] ?? ''}${this.coach()?.nom?.[0] ?? ''}`.toUpperCase(),
+  );
 
   constructor() {
     effect(() => this.charger(this.id()));
@@ -35,12 +53,14 @@ export class CoachDetailComponent {
   charger(id: string, silencieux = false): void {
     if (!silencieux) this.etat.set('chargement');
     this.catalogue.coach(Number(id)).subscribe({
-      next: coach => {
+      next: (coach) => {
         this.coach.set(coach);
         this.etat.set('ok');
       },
       error: (error: unknown) => {
-        this.etat.set(error instanceof HttpErrorResponse && error.status === 404 ? 'introuvable' : 'erreur');
+        this.etat.set(
+          error instanceof HttpErrorResponse && error.status === 404 ? 'introuvable' : 'erreur',
+        );
       },
     });
   }

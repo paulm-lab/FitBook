@@ -5,7 +5,12 @@ import { messageErreur } from '../../../core/http';
 import { Avis, Cible, Page } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { EtatVideComponent, EtoilesComponent, LoaderComponent, PaginationComponent } from '../../../shared/ui';
+import {
+  EtatVideComponent,
+  EtoilesComponent,
+  LoaderComponent,
+  PaginationComponent,
+} from '../../../shared/ui';
 
 type Filtre = 'non_moderes' | 'masques' | 'tous';
 
@@ -21,7 +26,14 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
 /** Modération des avis (US-A04, UC-21) : valider, masquer ou réafficher. */
 @Component({
   selector: 'app-moderation',
-  imports: [DatePipe, RouterLink, LoaderComponent, EtatVideComponent, EtoilesComponent, PaginationComponent],
+  imports: [
+    DatePipe,
+    RouterLink,
+    LoaderComponent,
+    EtatVideComponent,
+    EtoilesComponent,
+    PaginationComponent,
+  ],
   template: `
     <header class="page-header">
       <div>
@@ -33,7 +45,15 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
 
     <div class="tabs" role="tablist" aria-label="Filtre des avis">
       @for (o of onglets; track o.code) {
-        <button type="button" class="tab" role="tab" [attr.aria-selected]="filtre() === o.code" (click)="choisir(o.code)">{{ o.libelle }}</button>
+        <button
+          type="button"
+          class="tab"
+          role="tab"
+          [attr.aria-selected]="filtre() === o.code"
+          (click)="choisir(o.code)"
+        >
+          {{ o.libelle }}
+        </button>
       }
     </div>
 
@@ -42,8 +62,15 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
     } @else if (!page()) {
       <app-loader />
     } @else if (page()!.items.length === 0) {
-      <app-etat-vide [titre]="filtre() === 'non_moderes' ? 'Aucun avis en attente' : 'Aucun avis'" icone="✓"
-        [message]="filtre() === 'non_moderes' ? 'Tous les avis publiés ont été modérés.' : 'Aucun avis ne correspond à ce filtre.'" />
+      <app-etat-vide
+        [titre]="filtre() === 'non_moderes' ? 'Aucun avis en attente' : 'Aucun avis'"
+        icone="✓"
+        [message]="
+          filtre() === 'non_moderes'
+            ? 'Tous les avis publiés ont été modérés.'
+            : 'Aucun avis ne correspond à ce filtre.'
+        "
+      />
     } @else {
       <ul class="reviews">
         @for (a of page()!.items; track a.id) {
@@ -52,13 +79,24 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
               <div>
                 @if (a.cible; as c) {
                   <span class="card-kicker">{{ typeLibelle(c) }}</span>
-                  <a class="review-target" [routerLink]="[lien(c), c.id]">{{ c.nom ?? 'Cible supprimée' }}</a>
+                  <a class="review-target" [routerLink]="[lien(c), c.id]">{{
+                    c.nom ?? 'Cible supprimée'
+                  }}</a>
                 }
-                <p class="muted review-meta">{{ a.auteur ?? 'Auteur inconnu' }} · <time [attr.datetime]="a.date">{{ a.date | date: 'd MMMM y, HH:mm' }}</time></p>
+                <p class="muted review-meta">
+                  {{ a.auteur ?? 'Auteur inconnu' }} ·
+                  <time [attr.datetime]="a.date">{{ a.date | date: 'd MMMM y, HH:mm' }}</time>
+                </p>
               </div>
               <div class="chips">
-                @if (a.estModere) { <span class="badge badge--ok">Modéré</span> } @else { <span class="badge badge--primary">En attente</span> }
-                @if (!a.estVisible) { <span class="badge badge--full">Masqué</span> }
+                @if (a.estModere) {
+                  <span class="badge badge--ok">Modéré</span>
+                } @else {
+                  <span class="badge badge--primary">En attente</span>
+                }
+                @if (!a.estVisible) {
+                  <span class="badge badge--full">Masqué</span>
+                }
               </div>
             </div>
             <app-etoiles [note]="a.note" [avecTexte]="false" />
@@ -69,12 +107,33 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
             }
             <div class="row">
               @if (!a.estModere || !a.estVisible) {
-                <button type="button" class="btn btn--sm" [disabled]="enCours() === a.id" (click)="moderer(a, 'valider')">Valider</button>
+                <button
+                  type="button"
+                  class="btn btn--sm"
+                  [disabled]="enCours() === a.id"
+                  (click)="moderer(a, 'valider')"
+                >
+                  Valider
+                </button>
               }
               @if (a.estVisible) {
-                <button type="button" class="btn btn--sm btn--danger" [disabled]="enCours() === a.id" (click)="moderer(a, 'masquer')">Masquer</button>
+                <button
+                  type="button"
+                  class="btn btn--sm btn--danger"
+                  [disabled]="enCours() === a.id"
+                  (click)="moderer(a, 'masquer')"
+                >
+                  Masquer
+                </button>
               } @else {
-                <button type="button" class="btn btn--sm btn--ghost" [disabled]="enCours() === a.id" (click)="moderer(a, 'afficher')">Réafficher</button>
+                <button
+                  type="button"
+                  class="btn btn--sm btn--ghost"
+                  [disabled]="enCours() === a.id"
+                  (click)="moderer(a, 'afficher')"
+                >
+                  Réafficher
+                </button>
               }
             </div>
           </li>
@@ -84,12 +143,37 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
     }
   `,
   styles: `
-    .reviews { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
-    .review { display: grid; gap: 10px; }
-    .review-target { display: block; color: var(--ink); font-size: 17px; font-weight: 700; text-decoration: none; }
-    .review-target:hover { color: var(--primary); }
-    .review-meta { margin: 2px 0 0; font-size: 13px; }
-    .review-text { margin: 0; color: var(--ink); white-space: pre-line; overflow-wrap: anywhere; }
+    .reviews {
+      display: grid;
+      gap: 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .review {
+      display: grid;
+      gap: 10px;
+    }
+    .review-target {
+      display: block;
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .review-target:hover {
+      color: var(--primary);
+    }
+    .review-meta {
+      margin: 2px 0 0;
+      font-size: 13px;
+    }
+    .review-text {
+      margin: 0;
+      color: var(--ink);
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
   `,
 })
 export class ModerationComponent {
@@ -105,7 +189,8 @@ export class ModerationComponent {
 
   constructor() {
     const demande = inject(ActivatedRoute).snapshot.queryParamMap.get('filtre');
-    if (demande === 'masques' || demande === 'tous' || demande === 'non_moderes') this.filtre.set(demande);
+    if (demande === 'masques' || demande === 'tous' || demande === 'non_moderes')
+      this.filtre.set(demande);
     this.charger(1);
   }
 
@@ -129,25 +214,38 @@ export class ModerationComponent {
     this.page.set(null);
     const filtre = this.filtre() === 'tous' ? undefined : this.filtre();
     this.gestion.avisModeration({ filtre, page: numero }).subscribe({
-      next: p => this.page.set(p),
-      error: e => this.erreur.set(messageErreur(e, 'Impossible de charger les avis.')),
+      next: (p) => this.page.set(p),
+      error: (e) => this.erreur.set(messageErreur(e, 'Impossible de charger les avis.')),
     });
   }
 
   moderer(a: Avis, action: 'valider' | 'masquer' | 'afficher'): void {
     this.enCours.set(a.id);
     this.gestion.moderer(a.id, action).subscribe({
-      next: maj => {
+      next: (maj) => {
         this.enCours.set(null);
         const garder = this.correspond(maj);
-        this.page.update(p => p && {
-          ...p,
-          total: garder ? p.total : p.total - 1,
-          items: garder ? p.items.map(i => (i.id === maj.id ? { ...maj, cible: maj.cible ?? i.cible } : i)) : p.items.filter(i => i.id !== maj.id),
-        });
-        this.toasts.succes(action === 'valider' ? 'Avis validé.' : action === 'masquer' ? 'Avis masqué.' : 'Avis réaffiché.');
+        this.page.update(
+          (p) =>
+            p && {
+              ...p,
+              total: garder ? p.total : p.total - 1,
+              items: garder
+                ? p.items.map((i) =>
+                    i.id === maj.id ? { ...maj, cible: maj.cible ?? i.cible } : i,
+                  )
+                : p.items.filter((i) => i.id !== maj.id),
+            },
+        );
+        this.toasts.succes(
+          action === 'valider'
+            ? 'Avis validé.'
+            : action === 'masquer'
+              ? 'Avis masqué.'
+              : 'Avis réaffiché.',
+        );
       },
-      error: e => {
+      error: (e) => {
         this.enCours.set(null);
         this.toasts.erreur(messageErreur(e));
       },
@@ -157,9 +255,12 @@ export class ModerationComponent {
   /** L'avis appartient-il encore à l'onglet affiché ? */
   private correspond(a: Avis): boolean {
     switch (this.filtre()) {
-      case 'non_moderes': return !a.estModere && a.estVisible;
-      case 'masques': return !a.estVisible;
-      default: return true;
+      case 'non_moderes':
+        return !a.estModere && a.estVisible;
+      case 'masques':
+        return !a.estVisible;
+      default:
+        return true;
     }
   }
 }

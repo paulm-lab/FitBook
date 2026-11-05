@@ -17,7 +17,10 @@ export function params(values: object = {}): HttpParams {
 }
 
 /** Message lisible d'une erreur HTTP, pour un toast ou un bandeau. */
-export function messageErreur(error: unknown, defaut = 'Une erreur est survenue. Réessayez.'): string {
+export function messageErreur(
+  error: unknown,
+  defaut = 'Une erreur est survenue. Réessayez.',
+): string {
   if (!(error instanceof HttpErrorResponse)) return defaut;
   if (error.status === 0) return 'Le serveur FitBook est injoignable. Vérifiez votre connexion.';
   const body = error.error as ApiErreur | null;

@@ -29,12 +29,28 @@ import { messageErreur } from '../../core/http';
           <form [formGroup]="formulaire" (ngSubmit)="envoyer()" novalidate>
             <label for="forgot-email">
               E-mail
-              <input id="forgot-email" type="email" formControlName="email" autocomplete="email" inputmode="email"
-                [attr.aria-invalid]="invalide()" [attr.aria-describedby]="invalide() ? 'forgot-email-error' : null">
-              @if (invalide()) { <small id="forgot-email-error">Saisissez une adresse e-mail valide.</small> }
+              <input
+                id="forgot-email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                inputmode="email"
+                [attr.aria-invalid]="invalide()"
+                [attr.aria-describedby]="invalide() ? 'forgot-email-error' : null"
+              />
+              @if (invalide()) {
+                <small id="forgot-email-error">Saisissez une adresse e-mail valide.</small>
+              }
             </label>
-            @if (erreur()) { <p class="error-message" role="alert">{{ erreur() }}</p> }
-            <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
+            @if (erreur()) {
+              <p class="error-message" role="alert">{{ erreur() }}</p>
+            }
+            <button
+              class="form-action"
+              type="submit"
+              [disabled]="envoi()"
+              [attr.aria-busy]="envoi()"
+            >
               {{ envoi() ? 'Envoi…' : 'Recevoir le lien' }}
             </button>
           </form>
@@ -66,9 +82,15 @@ export class MotDePasseOublieComponent {
     }
     this.envoi.set(true);
     this.erreur.set('');
-    this.auth.motDePasseOublie(this.formulaire.controls.email.value.trim()).pipe(finalize(() => this.envoi.set(false))).subscribe({
-      next: response => this.message.set(response.message),
-      error: (error: unknown) => this.erreur.set(messageErreur(error, 'La demande n’a pas abouti. Réessayez dans quelques instants.')),
-    });
+    this.auth
+      .motDePasseOublie(this.formulaire.controls.email.value.trim())
+      .pipe(finalize(() => this.envoi.set(false)))
+      .subscribe({
+        next: (response) => this.message.set(response.message),
+        error: (error: unknown) =>
+          this.erreur.set(
+            messageErreur(error, 'La demande n’a pas abouti. Réessayez dans quelques instants.'),
+          ),
+      });
   }
 }

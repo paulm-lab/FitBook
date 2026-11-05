@@ -27,7 +27,7 @@ export function evenementSeance(seance: SeanceResume): EventInput {
  * FullCalendar numérote les jours de 0 (dimanche) à 6 ; l'API de 1 (lundi) à 7.
  */
 export function evenementsDisponibilites(disponibilites: Disponibilite[]): EventInput[] {
-  return disponibilites.map(d => ({
+  return disponibilites.map((d) => ({
     id: `dispo-${d.id}`,
     display: 'background',
     classNames: ['fc-ev--dispo'],
@@ -55,7 +55,11 @@ export class CalendrierComponent {
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
     locale: frLocale,
     initialView: this.vue(),
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth,listWeek' },
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'timeGridWeek,dayGridMonth,listWeek',
+    },
     slotMinTime: '06:00:00',
     slotMaxTime: '23:00:00',
     allDaySlot: false,

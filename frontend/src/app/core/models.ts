@@ -64,7 +64,14 @@ export interface SeanceResume {
   image?: string | null;
   activite: { id: number; nom: string; categorie?: string } | null;
   coach: { id: number; nom: string; prenom: string; photo?: string | null } | null;
-  salle: { id: number; nom: string; adresse: string; ville?: string; latitude?: string | null; longitude?: string | null } | null;
+  salle: {
+    id: number;
+    nom: string;
+    adresse: string;
+    ville?: string;
+    latitude?: string | null;
+    longitude?: string | null;
+  } | null;
   // Présents dans les résultats de recherche.
   noteMoyenne?: number | null;
   nbAvis?: number;
@@ -172,7 +179,13 @@ export interface Reservation {
   annulable: boolean;
   qrToken: string | null;
   seance: SeanceResume | null;
-  sportif?: { id: number; nom: string; prenom: string; email: string; telephone: string | null } | null;
+  sportif?: {
+    id: number;
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string | null;
+  } | null;
 }
 
 export interface Favori {

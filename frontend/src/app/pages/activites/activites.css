@@ -1,3 +1,12 @@
-.activity-search { width: min(320px, 100%); }
-.card-title { font-size: 20px; }
-app-visual-showcase { display: block; width: min(1200px, 100%); margin: 0 auto 64px; padding: 0 24px; }
+.activity-search {
+  width: min(320px, 100%);
+}
+.card-title {
+  font-size: 20px;
+}
+app-visual-showcase {
+  display: block;
+  width: min(1200px, 100%);
+  margin: 0 auto 64px;
+  padding: 0 24px;
+}

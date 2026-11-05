@@ -8,7 +8,13 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
 /** Carte d'un coach : photo (ou initiales), spécialités, tarif horaire, note. */
 @Component({
   selector: 'app-coach-card',
-  imports: [RouterLink, DecimalPipe, FavoriButtonComponent, EtoilesComponent, ImageSecoursDirective],
+  imports: [
+    RouterLink,
+    DecimalPipe,
+    FavoriButtonComponent,
+    EtoilesComponent,
+    ImageSecoursDirective,
+  ],
   template: `
     @let c = coach();
     <article class="card card--link coach-card">
@@ -19,23 +25,33 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
         </div>
         <div class="row">
           @if (c.photo) {
-            <img class="avatar avatar--lg" [src]="c.photo" alt="" loading="lazy" appSecours>
+            <img class="avatar avatar--lg" [src]="c.photo" alt="" loading="lazy" appSecours />
           } @else {
-            <span class="avatar avatar--lg avatar--initiales" aria-hidden="true">{{ initiales() }}</span>
+            <span class="avatar avatar--lg avatar--initiales" aria-hidden="true">{{
+              initiales()
+            }}</span>
           }
           <div>
-            <h3 class="card-title"><a [routerLink]="['/coachs', c.id]">{{ c.prenom }} {{ c.nom }}</a></h3>
-            @if (c.experienceAnnees != null) { <p class="card-meta">{{ c.experienceAnnees }} ans d’expérience</p> }
+            <h3 class="card-title">
+              <a [routerLink]="['/coachs', c.id]">{{ c.prenom }} {{ c.nom }}</a>
+            </h3>
+            @if (c.experienceAnnees != null) {
+              <p class="card-meta">{{ c.experienceAnnees }} ans d’expérience</p>
+            }
           </div>
         </div>
         @if (c.specialites.length) {
           <div class="chips">
-            @for (s of c.specialites.slice(0, 4); track s) { <span class="chip">{{ s }}</span> }
+            @for (s of c.specialites.slice(0, 4); track s) {
+              <span class="chip">{{ s }}</span>
+            }
           </div>
         }
         <div class="card-footer">
           <app-etoiles [note]="c.noteMoyenne" [nbAvis]="c.nbAvis ?? null" />
-          @if (c.tarifHoraire) { <strong class="price">{{ c.tarifHoraire | number: '1.0-2' }} €/h</strong> }
+          @if (c.tarifHoraire) {
+            <strong class="price">{{ c.tarifHoraire | number: '1.0-2' }} €/h</strong>
+          }
         </div>
       </div>
     </article>
@@ -43,5 +59,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
 })
 export class CoachCardComponent {
   readonly coach = input.required<Coach>();
-  readonly initiales = computed(() => `${this.coach().prenom?.[0] ?? ''}${this.coach().nom?.[0] ?? ''}`.toUpperCase());
+  readonly initiales = computed(() =>
+    `${this.coach().prenom?.[0] ?? ''}${this.coach().nom?.[0] ?? ''}`.toUpperCase(),
+  );
 }

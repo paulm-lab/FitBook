@@ -28,13 +28,13 @@ export class ToastService {
   }
 
   fermer(id: number): void {
-    this.liste.update(toasts => toasts.filter(t => t.id !== id));
+    this.liste.update((toasts) => toasts.filter((t) => t.id !== id));
   }
 
   private afficher(type: TypeToast, message: string, duree = 4500): void {
     const id = this.prochainId++;
     // Au plus 4 messages à l'écran : les plus anciens disparaissent.
-    this.liste.update(toasts => [...toasts.slice(-3), { id, type, message }]);
+    this.liste.update((toasts) => [...toasts.slice(-3), { id, type, message }]);
     setTimeout(() => this.fermer(id), duree);
   }
 }
