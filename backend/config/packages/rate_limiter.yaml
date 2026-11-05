@@ -1,0 +1,6 @@
+framework:
+    rate_limiter:
+        mailtrap_sandbox:
+            policy: 'fixed_window'
+            limit: 1
+            interval: '15 seconds'
