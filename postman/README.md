@@ -5,7 +5,8 @@
 | `fitbook.postman_collection.json` | 60 requêtes, 106 assertions, en 6 dossiers : authentification, catalogue et recherche, réservation (favoris, avis), coach, gestionnaire, administrateur |
 | `fitbook.postman_environment.json` | Environnement local : `baseUrl` = `http://127.0.0.1:8000`, compte sportif de démonstration |
 | `generer_collection.py` | Source de la collection : modifier ce script puis `python postman/generer_collection.py` |
-| `rapport-newman.txt`, `rapport-newman.xml` | Dernier rapport (sortie console et JUnit) |
+| `rapport-newman.txt`, `rapport-newman.xml` | Rapport sur la base de démonstration SQLite (console et JUnit) |
+| `rapport-newman-mysql.txt`, `rapport-newman-mysql.xml` | Rapport sur MySQL : réservations par les procédures stockées |
 
 La collection est un **parcours** : les requêtes s'enchaînent (jetons, identifiants de séance,
 de réservation… conservés dans les variables de collection). Elle couvre les cas nominaux et
@@ -29,11 +30,16 @@ Autre adresse de l'API : `--env-var baseUrl=http://127.0.0.1:8001`.
 Dans Postman : *Import* des deux fichiers JSON, choisir l'environnement « FitBook — local »,
 puis *Run collection*.
 
-## Dernier rapport
+## Derniers rapports
 
-Exécuté le 5 novembre 2026 sur la base de démonstration (fixtures) : **60 requêtes,
-106 assertions, 0 échec**, temps de réponse moyen ≈ 430 ms (serveur PHP intégré, un seul
-processus). Cette exécution a utilisé une copie SQLite de la base ; sur MySQL, les
-réservations passent par les procédures stockées `sp_reserver_seance` et
-`sp_annuler_reservation` (mêmes codes de réponse, couverts aussi par les tests PHPUnit du
-groupe `mysql`).
+| Base | Date | Requêtes | Assertions | Échecs | Temps moyen |
+|------|------|----------|------------|--------|-------------|
+| SQLite (copie des fixtures) | 5 novembre 2026 | 60 | 106 | 0 | ≈ 430 ms |
+| MySQL 9.1 (WAMP), procédures `sp_reserver_seance` / `sp_annuler_reservation` | 5 novembre 2026 | 60 | 106 | 0 | ≈ 520 ms |
+
+Serveur PHP intégré (un seul processus), d'où des temps supérieurs à ceux d'un serveur réel.
+
+**Limitation des inscriptions** : la collection envoie deux inscriptions (refusées en 422). Le
+limiteur accepte 5 inscriptions par IP et par heure : après plusieurs passages rapprochés, ces
+requêtes reçoivent 429. Vider le compteur avant de relancer :
+`php bin/console cache:pool:clear cache.rate_limiter`.

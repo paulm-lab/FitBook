@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="FitBook API" tests="60" time="31.124">
+  <testsuite name="1. Authentification / Connexion sportif" id="22f2f2bb-8ffb-4998-bd0d-133b4362b268" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="1.565">
+    <testcase name="Statut 200" time="1.565" classname="1AuthentificationConnexionSportif"/>
+    <testcase name="Jeton JWT renvoyé" time="1.565" classname="1AuthentificationConnexionSportif"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Connexion — mauvais mot de passe (401)" id="797e9bd6-a34c-410a-ae56-fe7da80cf08c" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="1.232">
+    <testcase name="Statut 401" time="1.232" classname="1AuthentificationConnexionMauvaisMotDePasse401"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Connexion — adresse non confirmée (403)" id="ad6e57a4-6d51-438f-940d-97e98a19323f" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="1.498">
+    <testcase name="Statut 403" time="1.498" classname="1AuthentificationConnexionAdresseNonConfirmee403"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Connexion — compte bloqué (403)" id="db7a7cc7-dc5e-4cdf-8995-af3baf770dbb" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="1.536">
+    <testcase name="Statut 403" time="1.536" classname="1AuthentificationConnexionCompteBloque403"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Utilisateur courant" id="a7dea3e5-ebfa-4518-a95e-55e50ad9bb5c" timestamp="2026-11-05T20:54:55.473Z" tests="3" failures="0" errors="0" time="1.005">
+    <testcase name="Statut 200" time="1.005" classname="1AuthentificationUtilisateurCourant"/>
+    <testcase name="Rôle sportif" time="1.005" classname="1AuthentificationUtilisateurCourant"/>
+    <testcase name="Mot de passe jamais exposé" time="1.005" classname="1AuthentificationUtilisateurCourant"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Utilisateur courant sans jeton (401)" id="57726444-1801-4633-a9a4-31e9a34fad73" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.565">
+    <testcase name="Statut 401" time="0.565" classname="1AuthentificationUtilisateurCourantSansJeton401"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Inscription — rôle admin refusé (422)" id="59e5c8e4-a24f-4c3c-8cb4-63d76188318a" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.870">
+    <testcase name="Statut 422" time="0.870" classname="1AuthentificationInscriptionRoleAdminRefuse422"/>
+    <testcase name="Erreurs par champ : role" time="0.870" classname="1AuthentificationInscriptionRoleAdminRefuse422"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Inscription — champs invalides (422)" id="b5ecbdee-57c8-4459-b7c7-956fd75cd95e" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.835">
+    <testcase name="Statut 422" time="0.835" classname="1AuthentificationInscriptionChampsInvalides422"/>
+    <testcase name="Erreurs par champ : prenom, email, password" time="0.835" classname="1AuthentificationInscriptionChampsInvalides422"/>
+  </testsuite>
+  <testsuite name="1. Authentification / Mot de passe oublié — réponse neutre" id="2bf4e02e-b3b9-4c39-9b09-c62a7b0004d4" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.547">
+    <testcase name="Statut 200" time="0.547" classname="1AuthentificationMotDePasseOublieReponseNeutre"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Activités" id="1a8ec097-7d1a-46a7-9b1a-58a3d26d18c4" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.517">
+    <testcase name="Statut 200" time="0.517" classname="2CatalogueEtRechercheActivites"/>
+    <testcase name="Liste non vide" time="0.517" classname="2CatalogueEtRechercheActivites"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Recherche de séances (yoga)" id="87ee765e-1033-4d63-8c42-5694a8b35548" timestamp="2026-11-05T20:54:55.473Z" tests="3" failures="0" errors="0" time="0.957">
+    <testcase name="Statut 200" time="0.957" classname="2CatalogueEtRechercheRechercheDeSeancesYoga"/>
+    <testcase name="Réponse paginée" time="0.957" classname="2CatalogueEtRechercheRechercheDeSeancesYoga"/>
+    <testcase name="Uniquement du yoga" time="0.957" classname="2CatalogueEtRechercheRechercheDeSeancesYoga"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Recherche triée par prix" id="b3ada811-1d93-4c29-be71-7679760ccee0" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.999">
+    <testcase name="Statut 200" time="0.999" classname="2CatalogueEtRechercheRechercheTrieeParPrix"/>
+    <testcase name="Prix croissants" time="0.999" classname="2CatalogueEtRechercheRechercheTrieeParPrix"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Salles autour de Bruxelles (5 km)" id="7de867ef-9b62-44cd-810a-02a8ffa3c87d" timestamp="2026-11-05T20:54:55.473Z" tests="3" failures="0" errors="0" time="1.074">
+    <testcase name="Statut 200" time="1.074" classname="2CatalogueEtRechercheSallesAutourDeBruxelles5Km"/>
+    <testcase name="Réponse paginée" time="1.074" classname="2CatalogueEtRechercheSallesAutourDeBruxelles5Km"/>
+    <testcase name="Distances croissantes et ≤ 5 km" time="1.074" classname="2CatalogueEtRechercheSallesAutourDeBruxelles5Km"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Recherche de coachs" id="c2dbd268-3e8a-45e2-ba56-432f154a3446" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.826">
+    <testcase name="Statut 200" time="0.826" classname="2CatalogueEtRechercheRechercheDeCoachs"/>
+    <testcase name="Réponse paginée" time="0.826" classname="2CatalogueEtRechercheRechercheDeCoachs"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Recherche — critères invalides (422)" id="eb8a9502-15cd-44c4-a265-04f27d549f0b" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.622">
+    <testcase name="Statut 422" time="0.622" classname="2CatalogueEtRechercheRechercheCriteresInvalides422"/>
+    <testcase name="Erreurs par champ : type, du, noteMin" time="0.622" classname="2CatalogueEtRechercheRechercheCriteresInvalides422"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Fiche salle" id="221ec25c-4be2-42c5-bbd7-21357349a41d" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.584">
+    <testcase name="Statut 200" time="0.584" classname="2CatalogueEtRechercheFicheSalle"/>
+    <testcase name="Note, avis, séances, créneaux" time="0.584" classname="2CatalogueEtRechercheFicheSalle"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Fiche coach" id="02d7de14-0b1b-4537-ba0d-73fb7844af4c" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.637">
+    <testcase name="Statut 200" time="0.637" classname="2CatalogueEtRechercheFicheCoach"/>
+    <testcase name="Spécialités" time="0.637" classname="2CatalogueEtRechercheFicheCoach"/>
+  </testsuite>
+  <testsuite name="2. Catalogue et recherche / Fiche séance introuvable (404)" id="dba67367-25e3-4f71-a6fa-4ee162726ee1" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.497">
+    <testcase name="Statut 404" time="0.497" classname="2CatalogueEtRechercheFicheSeanceIntrouvable404"/>
+    <testcase name="Message JSON" time="0.497" classname="2CatalogueEtRechercheFicheSeanceIntrouvable404"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Connexion d'un second sportif" id="f518fc74-0c45-4bc9-be7e-3806b18d7db3" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="1.074">
+    <testcase name="Statut 200" time="1.074" classname="3ReservationFavorisAvisSportifConnexionDunSecondSportif"/>
+    <testcase name="Jeton JWT renvoyé" time="1.074" classname="3ReservationFavorisAvisSportifConnexionDunSecondSportif"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Mes réservations à venir" id="8c7ca6a8-b7ca-4caa-96c5-359328a6be09" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.350">
+    <testcase name="Statut 200" time="0.350" classname="3ReservationFavorisAvisSportifMesReservationsAVenir"/>
+    <testcase name="Réponse paginée" time="0.350" classname="3ReservationFavorisAvisSportifMesReservationsAVenir"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Choix d'une séance réservable (demain ou plus tard)" id="3b7ee4a6-0ddc-4da4-8bbb-6f74b432a6cd" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.474">
+    <testcase name="Statut 200" time="0.474" classname="3ReservationFavorisAvisSportifChoixDuneSeanceReservableDemainOuPlusTard"/>
+    <testcase name="Une séance libre existe" time="0.474" classname="3ReservationFavorisAvisSportifChoixDuneSeanceReservableDemainOuPlusTard"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Réserver — corps refusé par le JSON Schema (422)" id="6669b48c-c14a-4ec2-ad42-fdd63d6ea68d" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.294">
+    <testcase name="Statut 422" time="0.294" classname="3ReservationFavorisAvisSportifReserverCorpsRefuseParLeJsonSchema422"/>
+    <testcase name="Erreurs par champ : seanceId, nombrePlaces" time="0.294" classname="3ReservationFavorisAvisSportifReserverCorpsRefuseParLeJsonSchema422"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Réserver sans être connecté (401)" id="f18e9a06-36ff-474a-932e-61d2e0e11b7d" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.180">
+    <testcase name="Statut 401" time="0.180" classname="3ReservationFavorisAvisSportifReserverSansEtreConnecte401"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Réserver la séance (201)" id="ff0b3e72-90fc-413a-890e-52a22d961462" timestamp="2026-11-05T20:54:55.473Z" tests="4" failures="0" errors="0" time="0.343">
+    <testcase name="Statut 201" time="0.343" classname="3ReservationFavorisAvisSportifReserverLaSeance201"/>
+    <testcase name="Réservation confirmée" time="0.343" classname="3ReservationFavorisAvisSportifReserverLaSeance201"/>
+    <testcase name="QR code généré" time="0.343" classname="3ReservationFavorisAvisSportifReserverLaSeance201"/>
+    <testcase name="Une place de moins" time="0.343" classname="3ReservationFavorisAvisSportifReserverLaSeance201"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Réserver deux fois la même séance (409)" id="550245cb-acaa-4f2f-9d1d-adcbb8c1f0c3" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.236">
+    <testcase name="Statut 409" time="0.236" classname="3ReservationFavorisAvisSportifReserverDeuxFoisLaMemeSeance409"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Détail de ma réservation" id="acc31c13-0cfd-48f5-ab34-b94a69e07f30" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.271">
+    <testcase name="Statut 200" time="0.271" classname="3ReservationFavorisAvisSportifDetailDeMaReservation"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Réservation lue par un autre sportif (403)" id="ec61e1af-dbf8-42c5-b6c5-b64372e4aebd" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.307">
+    <testcase name="Statut 403" time="0.307" classname="3ReservationFavorisAvisSportifReservationLueParUnAutreSportif403"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Annuler ma réservation" id="05d6af9b-18ce-4ff9-8326-f42323fe075c" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.334">
+    <testcase name="Statut 200 ou 409" time="0.334" classname="3ReservationFavorisAvisSportifAnnulerMaReservation"/>
+    <testcase name="Statut annulée" time="0.334" classname="3ReservationFavorisAvisSportifAnnulerMaReservation"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Annuler une seconde fois (409)" id="85f8b602-96eb-4a48-9efd-581b6f00e419" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.257">
+    <testcase name="Statut 409" time="0.257" classname="3ReservationFavorisAvisSportifAnnulerUneSecondeFois409"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Historique" id="20bbd834-bff6-4aeb-84e1-a8d00cf874e5" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.328">
+    <testcase name="Statut 200" time="0.328" classname="3ReservationFavorisAvisSportifHistorique"/>
+    <testcase name="Réponse paginée" time="0.328" classname="3ReservationFavorisAvisSportifHistorique"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Ajouter la séance aux favoris" id="36c5c5f6-6bb2-42da-9158-20b02b09ffb3" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.299">
+    <testcase name="Statut 201 ou 409" time="0.299" classname="3ReservationFavorisAvisSportifAjouterLaSeanceAuxFavoris"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Mes favoris" id="dfb3000d-ff6a-4a60-b58f-ec246759f3db" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.336">
+    <testcase name="Statut 200" time="0.336" classname="3ReservationFavorisAvisSportifMesFavoris"/>
+    <testcase name="Liste" time="0.336" classname="3ReservationFavorisAvisSportifMesFavoris"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Retirer le favori" id="99e4017c-c6dc-4635-b0f1-30fe329fce85" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.178">
+    <testcase name="Statut 204 ou 404" time="0.178" classname="3ReservationFavorisAvisSportifRetirerLeFavori"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Avis sans participation (403)" id="64bdaa98-2600-4c3d-a41d-86f6495dc554" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.289">
+    <testcase name="Statut 403" time="0.289" classname="3ReservationFavorisAvisSportifAvisSansParticipation403"/>
+  </testsuite>
+  <testsuite name="3. Réservation, favoris, avis (sportif) / Notifications" id="594da15b-ffd2-405f-8be2-cb9e1e10a0fd" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.258">
+    <testcase name="Statut 200" time="0.258" classname="3ReservationFavorisAvisSportifNotifications"/>
+    <testcase name="Compteur de non lues" time="0.258" classname="3ReservationFavorisAvisSportifNotifications"/>
+  </testsuite>
+  <testsuite name="4. Coach / Connexion coach" id="c40a8b96-5d52-4ca0-9da8-03991f361aa8" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.837">
+    <testcase name="Statut 200" time="0.837" classname="4CoachConnexionCoach"/>
+    <testcase name="Jeton JWT renvoyé" time="0.837" classname="4CoachConnexionCoach"/>
+  </testsuite>
+  <testsuite name="4. Coach / Créer une séance — fin avant début (422)" id="6447fe7d-6380-4889-bbdc-80fac198f803" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.302">
+    <testcase name="Statut 422" time="0.302" classname="4CoachCreerUneSeanceFinAvantDebut422"/>
+    <testcase name="Erreurs par champ : fin" time="0.302" classname="4CoachCreerUneSeanceFinAvantDebut422"/>
+  </testsuite>
+  <testsuite name="4. Coach / Créer une séance (201)" id="2ff5162b-80f5-4cb3-9ae9-3ea6e090599f" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.312">
+    <testcase name="Statut 201" time="0.312" classname="4CoachCreerUneSeance201"/>
+    <testcase name="Rattachée au coach connecté" time="0.312" classname="4CoachCreerUneSeance201"/>
+  </testsuite>
+  <testsuite name="4. Coach / Modifier ma séance" id="4425a164-f6ec-43fb-948f-ebe6344c20b7" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.475">
+    <testcase name="Statut 200" time="0.475" classname="4CoachModifierMaSeance"/>
+    <testcase name="Capacité 10" time="0.475" classname="4CoachModifierMaSeance"/>
+  </testsuite>
+  <testsuite name="4. Coach / Un sportif modifie la séance d'un coach (403)" id="4eee6fed-710a-4094-86c4-c6ba862bc550" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.305">
+    <testcase name="Statut 403" time="0.305" classname="4CoachUnSportifModifieLaSeanceDunCoach403"/>
+  </testsuite>
+  <testsuite name="4. Coach / Inscrits de ma séance" id="1668d359-4c12-4eb2-bd5f-d420f4fb26d1" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.379">
+    <testcase name="Statut 200" time="0.379" classname="4CoachInscritsDeMaSeance"/>
+    <testcase name="Liste des inscrits" time="0.379" classname="4CoachInscritsDeMaSeance"/>
+  </testsuite>
+  <testsuite name="4. Coach / Mes séances à venir" id="2fd7aba4-5977-4ee8-9669-1d78a4fe1c98" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.296">
+    <testcase name="Statut 200" time="0.296" classname="4CoachMesSeancesAVenir"/>
+    <testcase name="Réponse paginée" time="0.296" classname="4CoachMesSeancesAVenir"/>
+  </testsuite>
+  <testsuite name="4. Coach / Mes statistiques" id="71db0b92-d0ec-4542-8c5d-b7c730d1f2b7" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.393">
+    <testcase name="Statut 200" time="0.393" classname="4CoachMesStatistiques"/>
+    <testcase name="Évolution sur 12 semaines" time="0.393" classname="4CoachMesStatistiques"/>
+  </testsuite>
+  <testsuite name="4. Coach / Annuler ma séance (RG-12)" id="d70c57a8-903b-4e75-8921-191c0a93be36" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.283">
+    <testcase name="Statut 200" time="0.283" classname="4CoachAnnulerMaSeanceRg12"/>
+    <testcase name="Séance annulée" time="0.283" classname="4CoachAnnulerMaSeanceRg12"/>
+  </testsuite>
+  <testsuite name="4. Coach / Réserver une séance annulée (409)" id="87f5fa7f-e9c4-450d-a7e8-3b2eb6b2de65" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.274">
+    <testcase name="Statut 409" time="0.274" classname="4CoachReserverUneSeanceAnnulee409"/>
+  </testsuite>
+  <testsuite name="4. Coach / Supprimer ma séance" id="1e270522-1c70-401b-9975-644428d84b15" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.201">
+    <testcase name="Statut 204" time="0.201" classname="4CoachSupprimerMaSeance"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Connexion gestionnaire" id="231e9ee8-b248-43e0-9241-ac55c2c50d93" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.854">
+    <testcase name="Statut 200" time="0.854" classname="5GestionnaireConnexionGestionnaire"/>
+    <testcase name="Jeton JWT renvoyé" time="0.854" classname="5GestionnaireConnexionGestionnaire"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Mes salles (sp_stats_salle)" id="ceea023e-2a22-4a94-9406-e84b311f391b" timestamp="2026-11-05T20:54:55.473Z" tests="3" failures="0" errors="0" time="0.258">
+    <testcase name="Statut 200" time="0.258" classname="5GestionnaireMesSallesSpStatsSalle"/>
+    <testcase name="Au moins une salle" time="0.258" classname="5GestionnaireMesSallesSpStatsSalle"/>
+    <testcase name="Statistiques de la procédure" time="0.258" classname="5GestionnaireMesSallesSpStatsSalle"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Statistiques d'une salle" id="47e197bd-f474-428c-b058-54ec8a2494d5" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.287">
+    <testcase name="Statut 200" time="0.287" classname="5GestionnaireStatistiquesDuneSalle"/>
+    <testcase name="Évolution" time="0.287" classname="5GestionnaireStatistiquesDuneSalle"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Statistiques de salle par un sportif (403)" id="e2b3845d-868a-4a20-8ac0-1ded7f12f119" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.256">
+    <testcase name="Statut 403" time="0.256" classname="5GestionnaireStatistiquesDeSalleParUnSportif403"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Créer une salle — champs invalides (422)" id="3d5220dc-2ab0-4b9b-a28d-1720e1d355e1" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.319">
+    <testcase name="Statut 422" time="0.319" classname="5GestionnaireCreerUneSalleChampsInvalides422"/>
+    <testcase name="Erreurs par champ : nom, codePostal" time="0.319" classname="5GestionnaireCreerUneSalleChampsInvalides422"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Réservations de mes salles" id="5eb84370-143c-4760-b865-318a96a411ea" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.380">
+    <testcase name="Statut 200" time="0.380" classname="5GestionnaireReservationsDeMesSalles"/>
+    <testcase name="Réponse paginée" time="0.380" classname="5GestionnaireReservationsDeMesSalles"/>
+  </testsuite>
+  <testsuite name="5. Gestionnaire / Tableau de bord" id="85247fd3-4e04-4310-8e3b-7a78cd074111" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.323">
+    <testcase name="Statut 200" time="0.323" classname="5GestionnaireTableauDeBord"/>
+    <testcase name="Par salle" time="0.323" classname="5GestionnaireTableauDeBord"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Connexion administrateur" id="08759b6e-8117-4660-ba21-4da174921995" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.800">
+    <testcase name="Statut 200" time="0.800" classname="6AdministrateurConnexionAdministrateur"/>
+    <testcase name="Jeton JWT renvoyé" time="0.800" classname="6AdministrateurConnexionAdministrateur"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Tableau de bord global" id="565ae652-0ca8-4fc9-bed8-9cc666c59ec3" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.253">
+    <testcase name="Statut 200" time="0.253" classname="6AdministrateurTableauDeBordGlobal"/>
+    <testcase name="Utilisateurs par rôle" time="0.253" classname="6AdministrateurTableauDeBordGlobal"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Recherche d'utilisateurs" id="c966b95d-603b-48af-a5a6-2cd0d07ef4c1" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.234">
+    <testcase name="Statut 200" time="0.234" classname="6AdministrateurRechercheDutilisateurs"/>
+    <testcase name="Réponse paginée" time="0.234" classname="6AdministrateurRechercheDutilisateurs"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Avis non modérés" id="b92bb85d-f588-43f4-8562-c3270db8f512" timestamp="2026-11-05T20:54:55.473Z" tests="2" failures="0" errors="0" time="0.302">
+    <testcase name="Statut 200" time="0.302" classname="6AdministrateurAvisNonModeres"/>
+    <testcase name="Réponse paginée" time="0.302" classname="6AdministrateurAvisNonModeres"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Espace admin ouvert par un sportif (403)" id="11ac0a11-c419-454b-a23a-238e533c45ce" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.237">
+    <testcase name="Statut 403" time="0.237" classname="6AdministrateurEspaceAdminOuvertParUnSportif403"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Activité déjà existante (409)" id="aa270a03-d9ad-4d83-a06c-f617387086fb" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.260">
+    <testcase name="Statut 409" time="0.260" classname="6AdministrateurActiviteDejaExistante409"/>
+  </testsuite>
+  <testsuite name="6. Administrateur / Déconnexion" id="f3bb3b41-26e9-4b0b-92b5-eb6b4fc5bb7d" timestamp="2026-11-05T20:54:55.473Z" tests="1" failures="0" errors="0" time="0.130">
+    <testcase name="Statut 204" time="0.130" classname="6AdministrateurDeconnexion"/>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,315 @@
+newman
+
+FitBook API
+
+□ 1. Authentification
+└ Connexion sportif
+  POST http://127.0.0.1:8001/api/login [200 OK, 1.6kB, 1565ms]
+  √  Statut 200
+  √  Jeton JWT renvoyé
+
+└ Connexion — mauvais mot de passe (401)
+  POST http://127.0.0.1:8001/api/login [401 Unauthorized, 360B, 1232ms]
+  √  Statut 401
+
+└ Connexion — adresse non confirmée (403)
+  POST http://127.0.0.1:8001/api/login [403 Forbidden, 371B, 1498ms]
+  √  Statut 403
+
+└ Connexion — compte bloqué (403)
+  POST http://127.0.0.1:8001/api/login [403 Forbidden, 387B, 1536ms]
+  √  Statut 403
+
+└ Utilisateur courant
+  GET http://127.0.0.1:8001/api/me [200 OK, 464B, 1005ms]
+  √  Statut 200
+  √  Rôle sportif
+  √  Mot de passe jamais exposé
+
+└ Utilisateur courant sans jeton (401)
+  GET http://127.0.0.1:8001/api/me [401 Unauthorized, 344B, 565ms]
+  √  Statut 401
+
+└ Inscription — rôle admin refusé (422)
+  POST http://127.0.0.1:8001/api/inscription [422 Unprocessable Content, 437B, 870ms]
+  √  Statut 422
+  √  Erreurs par champ : role
+
+└ Inscription — champs invalides (422)
+  POST http://127.0.0.1:8001/api/inscription [422 Unprocessable Content, 663B, 835ms]
+  √  Statut 422
+  √  Erreurs par champ : prenom, email, password
+
+└ Mot de passe oublié — réponse neutre
+  POST http://127.0.0.1:8001/api/auth/forgot-password [200 OK, 417B, 547ms]
+  √  Statut 200
+
+□ 2. Catalogue et recherche
+└ Activités
+  GET http://127.0.0.1:8001/api/activites [200 OK, 3.45kB, 517ms]
+  √  Statut 200
+  √  Liste non vide
+
+└ Recherche de séances (yoga)
+  GET http://127.0.0.1:8001/api/recherche?type=seances&activite=yoga&parPage=5 [200 OK, 4.66kB, 957ms]
+  √  Statut 200
+  √  Réponse paginée
+  √  Uniquement du yoga
+
+└ Recherche triée par prix
+  GET http://127.0.0.1:8001/api/recherche?tri=prix&parPage=20 [200 OK, 17.07kB, 999ms]
+  √  Statut 200
+  √  Prix croissants
+
+└ Salles autour de Bruxelles (5 km)
+  GET http://127.0.0.1:8001/api/recherche?type=salles&lat=50.8466&lng=4.3528&rayon=5&tri=distance [200 OK, 8.98kB, 1074ms]
+  √  Statut 200
+  √  Réponse paginée
+  √  Distances croissantes et ≤ 5 km
+
+└ Recherche de coachs
+  GET http://127.0.0.1:8001/api/recherche?type=coachs [200 OK, 9.04kB, 826ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Recherche — critères invalides (422)
+  GET http://127.0.0.1:8001/api/recherche?type=planetes&du=2026-13-45&noteMin=9 [422 Unprocessable Content, 545B, 622ms]
+  √  Statut 422
+  √  Erreurs par champ : type, du, noteMin
+
+└ Fiche salle
+  GET http://127.0.0.1:8001/api/salles/8 [200 OK, 4.16kB, 584ms]
+  √  Statut 200
+  √  Note, avis, séances, créneaux
+
+└ Fiche coach
+  GET http://127.0.0.1:8001/api/coaches/11 [200 OK, 4.44kB, 637ms]
+  √  Statut 200
+  √  Spécialités
+
+└ Fiche séance introuvable (404)
+  GET http://127.0.0.1:8001/api/seances/999999 [404 Not Found, 340B, 497ms]
+  √  Statut 404
+  √  Message JSON
+
+□ 3. Réservation, favoris, avis (sportif)
+└ Connexion d'un second sportif
+  POST http://127.0.0.1:8001/api/login [200 OK, 1.6kB, 1074ms]
+  √  Statut 200
+  √  Jeton JWT renvoyé
+
+└ Mes réservations à venir
+  GET http://127.0.0.1:8001/api/reservations?periode=a_venir&parPage=50 [200 OK, 11.46kB, 350ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Choix d'une séance réservable (demain ou plus tard)
+  GET http://127.0.0.1:8001/api/recherche?type=seances&du=2026-11-06&parPage=50 [200 OK, 42.13kB, 474ms]
+  √  Statut 200
+  √  Une séance libre existe
+
+└ Réserver — corps refusé par le JSON Schema (422)
+  POST http://127.0.0.1:8001/api/reservations [422 Unprocessable Content, 471B, 294ms]
+  √  Statut 422
+  √  Erreurs par champ : seanceId, nombrePlaces
+
+└ Réserver sans être connecté (401)
+  POST http://127.0.0.1:8001/api/reservations [401 Unauthorized, 344B, 180ms]
+  √  Statut 401
+
+└ Réserver la séance (201)
+  POST http://127.0.0.1:8001/api/reservations [201 Created, 1.94kB, 343ms]
+  √  Statut 201
+  √  Réservation confirmée
+  √  QR code généré
+  √  Une place de moins
+
+└ Réserver deux fois la même séance (409)
+  POST http://127.0.0.1:8001/api/reservations [409 Conflict, 477B, 236ms]
+  √  Statut 409
+
+└ Détail de ma réservation
+  GET http://127.0.0.1:8001/api/reservations/506 [200 OK, 1.36kB, 271ms]
+  √  Statut 200
+
+└ Réservation lue par un autre sportif (403)
+  GET http://127.0.0.1:8001/api/reservations/506 [403 Forbidden, 339B, 307ms]
+  √  Statut 403
+
+└ Annuler ma réservation
+  POST http://127.0.0.1:8001/api/reservations/506/annuler [200 OK, 1.35kB, 334ms]
+  √  Statut 200 ou 409
+  √  Statut annulée
+
+└ Annuler une seconde fois (409)
+  POST http://127.0.0.1:8001/api/reservations/506/annuler [409 Conflict, 387B, 257ms]
+  √  Statut 409
+
+└ Historique
+  GET http://127.0.0.1:8001/api/reservations?periode=historique [200 OK, 3.08kB, 328ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Ajouter la séance aux favoris
+  POST http://127.0.0.1:8001/api/favoris [201 Created, 1.1kB, 299ms]
+  √  Statut 201 ou 409
+
+└ Mes favoris
+  GET http://127.0.0.1:8001/api/favoris [200 OK, 908B, 336ms]
+  √  Statut 200
+  √  Liste
+
+└ Retirer le favori
+  DELETE http://127.0.0.1:8001/api/favoris/80 [204 No Content, 271B, 178ms]
+  √  Statut 204 ou 404
+
+└ Avis sans participation (403)
+  POST http://127.0.0.1:8001/api/avis [403 Forbidden, 391B, 289ms]
+  √  Statut 403
+
+└ Notifications
+  GET http://127.0.0.1:8001/api/me/notifications [200 OK, 1.9kB, 258ms]
+  √  Statut 200
+  √  Compteur de non lues
+
+□ 4. Coach
+└ Connexion coach
+  POST http://127.0.0.1:8001/api/login [200 OK, 1.7kB, 837ms]
+  √  Statut 200
+  √  Jeton JWT renvoyé
+
+└ Créer une séance — fin avant début (422)
+  POST http://127.0.0.1:8001/api/seances [422 Unprocessable Content, 432B, 302ms]
+  √  Statut 422
+  √  Erreurs par champ : fin
+
+└ Créer une séance (201)
+  POST http://127.0.0.1:8001/api/seances [201 Created, 1.48kB, 312ms]
+  √  Statut 201
+  √  Rattachée au coach connecté
+
+└ Modifier ma séance
+  PUT http://127.0.0.1:8001/api/seances/105 [200 OK, 1.07kB, 475ms]
+  √  Statut 200
+  √  Capacité 10
+
+└ Un sportif modifie la séance d'un coach (403)
+  PUT http://127.0.0.1:8001/api/seances/105 [403 Forbidden, 339B, 305ms]
+  √  Statut 403
+
+└ Inscrits de ma séance
+  GET http://127.0.0.1:8001/api/seances/105/inscrits [200 OK, 1.01kB, 379ms]
+  √  Statut 200
+  √  Liste des inscrits
+
+└ Mes séances à venir
+  GET http://127.0.0.1:8001/api/coach/seances?periode=a_venir [200 OK, 6.03kB, 296ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Mes statistiques
+  GET http://127.0.0.1:8001/api/coach/stats [200 OK, 908B, 393ms]
+  √  Statut 200
+  √  Évolution sur 12 semaines
+
+└ Annuler ma séance (RG-12)
+  POST http://127.0.0.1:8001/api/seances/105/annuler [200 OK, 993B, 283ms]
+  √  Statut 200
+  √  Séance annulée
+
+└ Réserver une séance annulée (409)
+  POST http://127.0.0.1:8001/api/reservations [409 Conflict, 360B, 274ms]
+  √  Statut 409
+
+└ Supprimer ma séance
+  DELETE http://127.0.0.1:8001/api/seances/105 [204 No Content, 271B, 201ms]
+  √  Statut 204
+
+□ 5. Gestionnaire
+└ Connexion gestionnaire
+  POST http://127.0.0.1:8001/api/login [200 OK, 1.63kB, 854ms]
+  √  Statut 200
+  √  Jeton JWT renvoyé
+
+└ Mes salles (sp_stats_salle)
+  GET http://127.0.0.1:8001/api/gestionnaire/salles [200 OK, 2.63kB, 258ms]
+  √  Statut 200
+  √  Au moins une salle
+  √  Statistiques de la procédure
+
+└ Statistiques d'une salle
+  GET http://127.0.0.1:8001/api/salles/1/stats [200 OK, 961B, 287ms]
+  √  Statut 200
+  √  Évolution
+
+└ Statistiques de salle par un sportif (403)
+  GET http://127.0.0.1:8001/api/salles/1/stats [403 Forbidden, 339B, 256ms]
+  √  Statut 403
+
+└ Créer une salle — champs invalides (422)
+  POST http://127.0.0.1:8001/api/salles [422 Unprocessable Content, 543B, 319ms]
+  √  Statut 422
+  √  Erreurs par champ : nom, codePostal
+
+└ Réservations de mes salles
+  GET http://127.0.0.1:8001/api/gestionnaire/reservations?periode=a_venir [200 OK, 22.92kB, 380ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Tableau de bord
+  GET http://127.0.0.1:8001/api/gestionnaire/stats [200 OK, 1.2kB, 323ms]
+  √  Statut 200
+  √  Par salle
+
+□ 6. Administrateur
+└ Connexion administrateur
+  POST http://127.0.0.1:8001/api/login [200 OK, 1.58kB, 800ms]
+  √  Statut 200
+  √  Jeton JWT renvoyé
+
+└ Tableau de bord global
+  GET http://127.0.0.1:8001/api/admin/stats [200 OK, 1.07kB, 253ms]
+  √  Statut 200
+  √  Utilisateurs par rôle
+
+└ Recherche d'utilisateurs
+  GET http://127.0.0.1:8001/api/admin/utilisateurs?q=sportif&role=sportif [200 OK, 5.5kB, 234ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Avis non modérés
+  GET http://127.0.0.1:8001/api/admin/avis?filtre=non_moderes [200 OK, 7.63kB, 302ms]
+  √  Statut 200
+  √  Réponse paginée
+
+└ Espace admin ouvert par un sportif (403)
+  GET http://127.0.0.1:8001/api/admin/stats [403 Forbidden, 339B, 237ms]
+  √  Statut 403
+
+└ Activité déjà existante (409)
+  POST http://127.0.0.1:8001/api/activites [409 Conflict, 361B, 260ms]
+  √  Statut 409
+
+└ Déconnexion
+  POST http://127.0.0.1:8001/api/logout [204 No Content, 381B, 130ms]
+  √  Statut 204
+
+┌─────────────────────────┬─────────────────────┬─────────────────────┐
+│                         │            executed │              failed │
+├─────────────────────────┼─────────────────────┼─────────────────────┤
+│              iterations │                   1 │                   0 │
+├─────────────────────────┼─────────────────────┼─────────────────────┤
+│                requests │                  60 │                   0 │
+├─────────────────────────┼─────────────────────┼─────────────────────┤
+│            test-scripts │                  60 │                   0 │
+├─────────────────────────┼─────────────────────┼─────────────────────┤
+│      prerequest-scripts │                   2 │                   0 │
+├─────────────────────────┼─────────────────────┼─────────────────────┤
+│              assertions │                 106 │                   0 │
+├─────────────────────────┴─────────────────────┴─────────────────────┤
+│ total run duration: 36s                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│ total data received: 165.98kB (approx)                              │
+├─────────────────────────────────────────────────────────────────────┤
+│ average response time: 518ms [min: 130ms, max: 1565ms, s.d.: 356ms] │
+└─────────────────────────────────────────────────────────────────────┘
