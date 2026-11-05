@@ -60,6 +60,19 @@ final class FitBookMailer
         );
     }
 
+    /** Lien de réinitialisation du mot de passe (à usage unique, valable 1 heure). */
+    public function sendPasswordReset(User $user, string $resetUrl): EmailDeliveryStatus
+    {
+        return $this->send(
+            (string) $user->getEmail(),
+            'Réinitialisation de votre mot de passe FitBook',
+            'Choisissez un nouveau mot de passe',
+            sprintf('Bonjour %s, une réinitialisation de votre mot de passe a été demandée. Ce lien est valable 1 heure et ne peut servir qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe actuel reste valable.', $user->getFirstName()),
+            $resetUrl,
+            'Réinitialiser mon mot de passe',
+        );
+    }
+
     public function sendReservationConfirmation(Reservation $reservation): EmailDeliveryStatus
     {
         return $this->sendReservationNotice(
