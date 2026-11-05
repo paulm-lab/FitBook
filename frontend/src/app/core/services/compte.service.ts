@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
 import { API_URL, params } from '../http';
 import { Avis, Favori, NotificationFitBook, Page, Reservation, TypeCible, Utilisateur } from '../models';
 
@@ -8,6 +8,9 @@ import { Avis, Favori, NotificationFitBook, Page, Reservation, TypeCible, Utilis
 @Injectable({ providedIn: 'root' })
 export class CompteService {
   private readonly http = inject(HttpClient);
+
+  /** Nombre de notifications non lues, partagé avec le badge de l'en-tête. */
+  readonly nonLues = signal(0);
 
   // --- Réservations -------------------------------------------------------
 
@@ -78,10 +81,12 @@ export class CompteService {
   // --- Notifications ------------------------------------------------------
 
   notifications(): Observable<{ nonLues: number; items: NotificationFitBook[] }> {
-    return this.http.get<{ nonLues: number; items: NotificationFitBook[] }>(`${API_URL}/me/notifications`);
+    return this.http.get<{ nonLues: number; items: NotificationFitBook[] }>(`${API_URL}/me/notifications`).pipe(
+      tap(reponse => this.nonLues.set(reponse.nonLues)),
+    );
   }
 
   marquerNotificationsLues(): Observable<void> {
-    return this.http.post<void>(`${API_URL}/me/notifications/lues`, {});
+    return this.http.post<void>(`${API_URL}/me/notifications/lues`, {}).pipe(tap(() => this.nonLues.set(0)));
   }
 }

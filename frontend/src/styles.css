@@ -115,7 +115,8 @@ img { max-width: 100%; }
 .card-title a { color: var(--ink); text-decoration: none; }
 .card-title a:hover { color: var(--primary); }
 .card-meta { margin: 0; color: var(--text); font-size: 14px; }
-.card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 10px; }
+.card-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 10px; }
+.card-footer .btn, .stars-text { white-space: nowrap; }
 .price { color: var(--ink); font-size: 18px; }
 .panel { padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow); }
 .panel h2 { margin-top: 0; font-size: 21px; }
@@ -136,7 +137,9 @@ img { max-width: 100%; }
 .form { display: grid; gap: 18px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-row--3 { grid-template-columns: repeat(3, 1fr); }
-.field { display: grid; gap: 6px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+/* Les champs ne dépassent jamais leur colonne de grille (min-width: auto par défaut). */
+.form-row > *, .form > *, .stack > * { min-width: 0; }
 .field > span, .field > label, .form-card label, .booking-summary label { color: var(--text); font-size: 14px; font-weight: 700; }
 .form-card label { display: grid; gap: 8px; }
 .field input, .field select, .field textarea, .form-card input, .form-card select, .booking-summary input, .input {

@@ -20,12 +20,12 @@ export class AppComponent {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
   private readonly compte = inject(CompteService);
+  readonly nonLues = this.compte.nonLues;
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
 
   readonly menuOuvert = signal(false);
-  readonly nonLues = signal(0);
   readonly annee = new Date().getFullYear();
 
   constructor() {
@@ -40,7 +40,7 @@ export class AppComponent {
       if (this.auth.estConnecte()) {
         this.chargerNotifications();
       } else {
-        this.nonLues.set(0);
+        this.compte.nonLues.set(0);
       }
     });
   }
@@ -59,7 +59,7 @@ export class AppComponent {
 
   private chargerNotifications(): void {
     if (!this.auth.estConnecte()) return;
-    this.compte.notifications().subscribe({ next: n => this.nonLues.set(n.nonLues), error: () => this.nonLues.set(0) });
+    this.compte.notifications().subscribe({ error: () => this.compte.nonLues.set(0) });
   }
 
   /** Remplace la source des vidéos par la liste de secours (CDN Pexels indisponible). */
