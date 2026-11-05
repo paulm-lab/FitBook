@@ -3,7 +3,7 @@
 Plateforme web de réservation de **salles de sport**, de **cours** et de **coachs sportifs**.
 Projet de formation **UAA MI08 — Produire un projet Web**.
 
-> 🚧 **Phase 3 — Authentification, rôles et voters** terminée.
+> 🚧 **Phase 4 — API métier, recherche, réservations, e-mails** terminée.
 > Le guide d'installation complet (frontend compris) sera finalisé en Phase 10.
 
 ---
@@ -19,6 +19,7 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | [MLD](docs/mld.md) | Modèle logique MySQL, contraintes, procédures stockées, choix techniques |
 | [Cas d'utilisation](docs/use-cases.md) | Acteurs, diagramme et scénarios détaillés (à reproduire dans StarUML) |
 | [Diagramme de classes](docs/diagramme-classes.md) | Domaine et architecture backend (à reproduire dans StarUML) |
+| [API](docs/api.md) | Routes REST, codes d'erreur, recherche, commandes planifiées (Swagger : `/api/doc`) |
 
 ## Stack
 
@@ -192,7 +193,7 @@ types : `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 | 1 | Analyse : GitFlow, arborescence, documentation | ✅ Terminée |
 | 2 | Base de données et socle backend | ✅ Terminée |
 | 3 | Authentification, rôles, voters | ✅ Terminée |
-| 4 | API métier, recherche, réservations, e-mails | ⏳ |
+| 4 | API métier, recherche, réservations, e-mails | ✅ Terminée |
 | 5 | Socle frontend, design system | ⏳ |
 | 6 | Pages publiques et espace sportif | ⏳ |
 | 7 | Espaces coach, gestionnaire, admin | ⏳ |
