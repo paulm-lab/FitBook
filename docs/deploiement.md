@@ -11,7 +11,7 @@ Navigateur ──HTTPS──> serveur web
                        ├── /            → frontend/dist/fitbook-front/browser (fichiers statiques Angular)
                        ├── /api, /uploads → backend/public/index.php (Symfony, PHP-FPM)
                        └── MySQL 8 (utilisateur fitbook_user)
-Tâches : worker Messenger (e-mails) + commandes horaires (rappels, réservations terminées)
+Tâches : commandes horaires (rappels, réservations terminées) ; e-mails envoyés directement en SMTP
 ```
 
 Servir le front et l'API **sur le même domaine** garde le cookie HttpOnly du JWT sur la même
@@ -130,7 +130,7 @@ Sous Windows (WAMP), les mêmes commandes se planifient avec le Planificateur de
 2. `git fetch && git checkout vX.Y.Z`
 3. Backend : `composer install --no-dev -o`, `doctrine:migrations:migrate -n`, `cache:clear`
 4. Frontend : `npm ci && npm run build`, copie de `dist/`
-5. Redémarrer le worker Messenger
+5. Vérifier l'envoi d'un e-mail (inscription de test)
 6. Vérifier : `curl -I https://fitbook.exemple/api/activites` (200) et une connexion de test
 
 Retour arrière : `git checkout` de la version précédente, restauration du dump si une migration

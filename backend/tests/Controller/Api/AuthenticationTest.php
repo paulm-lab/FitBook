@@ -48,9 +48,9 @@ final class AuthenticationTest extends WebTestCase
         $response = $this->json($client);
         self::assertSame('camille@example.test', $response['email']);
         self::assertSame('sportif', $response['role']);
-        self::assertSame('queued', $response['verificationEmailStatus']);
+        self::assertSame('sent', $response['verificationEmailStatus']);
         self::assertTrue($response['verificationEmailQueued']);
-        self::assertSame('Compte créé. L’e-mail de vérification est en file d’attente d’envoi : il n’est pas encore parti.', $response['message']);
+        self::assertSame('Compte créé. L’e-mail de vérification a été envoyé.', $response['message']);
 
         $user = $this->findUser('camille@example.test');
         self::assertSame('Camille', $user->getFirstName());
@@ -59,7 +59,7 @@ final class AuthenticationTest extends WebTestCase
         self::assertFalse($user->isVerified());
         self::assertNotSame(self::PASSWORD, $user->getPassword());
         self::assertTrue(static::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, self::PASSWORD));
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
         self::assertSame('Vérifiez votre adresse e-mail FitBook', self::getMailerMessage()?->getSubject());
         self::assertStringContainsString('signature=', $this->linkFromEmail('verify-email'));
     }
@@ -231,19 +231,19 @@ final class AuthenticationTest extends WebTestCase
         $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
         self::assertResponseIsSuccessful();
         self::assertSame('Si le compte doit être vérifié, la demande de renvoi a été prise en compte.', $this->json($client)['message']);
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
 
         // Adresse inconnue : même réponse, aucun e-mail (pas d'énumération).
         $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
         self::assertResponseIsSuccessful();
-        self::assertQueuedEmailCount(0);
+        self::assertEmailCount(0);
 
         // Compte déjà vérifié : même réponse, aucun e-mail.
         $this->findUser('camille@example.test')->setIsVerified(true);
         $this->entityManager()->flush();
         $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
         self::assertResponseIsSuccessful();
-        self::assertQueuedEmailCount(0);
+        self::assertEmailCount(0);
     }
 
     public function testResendVerificationIsRateLimited(): void
@@ -425,7 +425,7 @@ final class AuthenticationTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Si un compte correspond', $this->json($client)['message']);
-        self::assertQueuedEmailCount(0);
+        self::assertEmailCount(0);
     }
 
     public function testResetRejectsInvalidTokensAndShortPasswords(): void

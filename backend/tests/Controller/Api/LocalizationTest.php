@@ -105,11 +105,11 @@ final class LocalizationTest extends ApiTestCase
         ], self::EN);
 
         self::assertResponseStatusCodeSame(201);
-        self::assertSame('Account created. The verification email is queued for sending: it has not been sent yet.', $this->json()['message']);
-        self::assertSame('queued', $this->json()['verificationEmailStatus']);
+        self::assertSame('Account created. The verification email has been sent.', $this->json()['message']);
+        self::assertSame('sent', $this->json()['verificationEmailStatus']);
         self::assertSame('en', $this->em()->getRepository(User::class)->findOneBy(['email' => 'camille@example.test'])?->getLocale());
 
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
         $email = self::getMailerMessage();
         self::assertInstanceOf(TemplatedEmail::class, $email);
         self::assertSame('Verify your FitBook email address', $email->getSubject());

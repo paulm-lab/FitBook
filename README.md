@@ -129,7 +129,7 @@ symfony console lexik:jwt:generate-keypair      # clés RSA dans config/jwt/ (ja
 symfony console doctrine:migrations:migrate     # tables, contraintes CHECK, procédures stockées
 symfony console doctrine:fixtures:load          # jeu de démonstration (Bruxelles)
 symfony serve                                   # API sur http://127.0.0.1:8000 (HTTP, voir .symfony.local.yaml)
-# Le worker d'e-mails (messenger:consume async) démarre avec le serveur.
+# Les e-mails partent directement vers Mailpit (aucun worker nécessaire).
 ```
 
 > **Windows** : si `lexik:jwt:generate-keypair` échoue avec `error:80000003:system library`,
@@ -184,8 +184,8 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
   `failed`). Le lien active le compte puis redirige vers `/verification-email?status=success|error`
   du front. Tant que l'adresse n'est pas confirmée, `/api/login` répond `403`
   `{ "message": "Confirmez votre adresse e-mail avant de vous connecter.", "code": "email_non_verifie" }`.
-  En développement, les e-mails partent vers **Mailpit** (http://127.0.0.1:8025) par le worker
-  Messenger : `demarrer.ps1` (ou `demarrer.cmd`) doit être lancé pour qu'ils soient envoyés.
+  Les e-mails partent **directement** (sans file d'attente) ; en développement, ils arrivent dans
+  **Mailpit** (http://127.0.0.1:8025), que `demarrer.ps1` (ou `demarrer.cmd`) lance.
 
 - **JWT** (LexikJWTAuthenticationBundle), valable 1 h, accepté dans `Authorization: Bearer <jeton>`
   ou dans le cookie `BEARER` (HttpOnly, SameSite=Lax). L'API est sans état : aucune session PHP.
