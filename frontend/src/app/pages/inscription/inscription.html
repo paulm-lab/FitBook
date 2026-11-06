@@ -152,10 +152,13 @@
       </form>
     }
 
-    <p class="form-switch">
-      {{ 'Déjà membre ?' | t }}
-      <a routerLink="/connexion">{{ 'Se connecter' | t }}</a>
-    </p>
+    <!-- Après l'inscription, le bouton « Se connecter » du message suffit : pas de doublon. -->
+    @if (!confirmation()) {
+      <p class="form-switch">
+        {{ 'Déjà membre ?' | t }}
+        <a routerLink="/connexion">{{ 'Se connecter' | t }}</a>
+      </p>
+    }
   </section>
 
   <app-visual-showcase page="signup" [compact]="true"> </app-visual-showcase>
