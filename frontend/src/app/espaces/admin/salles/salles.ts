@@ -53,7 +53,7 @@ import {
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">{{ 'Nom' | t }}</th>
+              <th scope="col">{{ 'Nom de la salle' | t }}</th>
               <th scope="col">{{ 'Ville' | t }}</th>
               <th scope="col">{{ 'Note' | t }}</th>
               <th scope="col">

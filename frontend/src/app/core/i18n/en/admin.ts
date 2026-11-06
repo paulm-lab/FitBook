@@ -1,5 +1,8 @@
 /** Traductions anglaises — Espace administrateur (espaces/admin/). Clé : texte français exact. */
 export const EN_ADMIN: Record<string, string> = {
+  'Nom de l’activité': 'Activity name',
+  'Nom de la salle': 'Gym name',
+  Utilisateur: 'User',
   // Commun à l'espace
   Administration: 'Administration',
   Actions: 'Actions',
@@ -9,7 +12,6 @@ export const EN_ADMIN: Record<string, string> = {
   Modifier: 'Edit',
   Supprimer: 'Delete',
   Rechercher: 'Search',
-  Nom: 'Name',
   Tous: 'All',
   Statut: 'Status',
   'Ce champ est obligatoire.': 'This field is required.',
@@ -98,7 +100,6 @@ export const EN_ADMIN: Record<string, string> = {
   'Nom ou ville': 'Name or town',
   'Aucune salle': 'No gyms',
   'Aucune salle ne correspond à cette recherche.': 'No gyms match this search.',
-  Ville: 'Town',
   Note: 'Rating',
   'Impossible de charger les salles.': 'Unable to load gyms.',
   'Supprimer la salle': 'Delete gym',

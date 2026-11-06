@@ -142,7 +142,7 @@ flowchart LR
 3. Le système valide les champs côté client, puis côté serveur.
 4. Le système crée le compte actif (`isVerified = true`) avec le mot de passe haché.
 5. Le système envoie un e-mail de bienvenue (un échec d'envoi ne bloque rien).
-6. Le système affiche « Compte créé avec succès. Vous pouvez maintenant vous connecter. » et un lien vers la connexion.
+6. Le système connecte automatiquement le nouveau compte et ouvre son espace (« Compte créé avec succès. Bienvenue sur FitBook ! »).
 
 **Scénarios alternatifs**
 - 3a. Un champ est invalide → **422** ; le système affiche l'erreur sous le champ ; retour à l'étape 2.

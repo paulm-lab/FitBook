@@ -216,7 +216,6 @@ export const EN_PRO: Record<string, string> = {
   'À venir': 'Upcoming',
   Passées: 'Past',
   'Aucune séance': 'No sessions',
-  'Aucune séance programmée pour le moment.': 'No sessions scheduled yet.',
   'Aucune séance passée.': 'No past sessions.',
   'Lieu / coach': 'Venue / coach',
   Prix: 'Price',
