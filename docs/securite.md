@@ -9,7 +9,7 @@
 |--------|---------------------|
 | Navigateur (Angular) | Échappement automatique des templates, aucun `innerHTML`, jeton dans un cookie HttpOnly + mémoire (jamais `localStorage`), guards par rôle |
 | API (Symfony) | JWT sans état, rôles + Voters, Validator + JSON Schema, limitation des tentatives, erreurs JSON sans détail technique, CORS restreint, `TRUSTED_HOSTS` |
-| Base (MySQL) | Utilisateur dédié `fitbook_user` limité à `fitbook` et `fitbook_test`, requêtes paramétrées, contraintes `CHECK`, clés étrangères, procédures stockées transactionnelles |
+| Base (MySQL) | Utilisateur dédié `fitbook_user` limité à `fitbookdata` et `fitbookdata_test`, requêtes paramétrées, contraintes `CHECK`, clés étrangères, procédures stockées transactionnelles |
 | Exploitation | Secrets hors dépôt (`.env.local`, clés JWT), sauvegardes `mysqldump` par `fitbook_user`, journaux sans données sensibles |
 
 ## 2. OWASP Top 10
@@ -112,8 +112,8 @@ par les requêtes `POST`/`PUT`/`DELETE` d'un autre site, et l'API n'accepte que 
 
 ## 4. Base de données
 
-- L'application se connecte avec `fitbook_user` (droits limités aux bases `fitbook` et
-  `fitbook_test`, `database/scripts/create_user.sql`), jamais `root`.
+- L'application se connecte avec `fitbook_user` (droits limités aux bases `fitbookdata` et
+  `fitbookdata_test`, `database/scripts/create_user.sql`), jamais `root`.
 - Tables InnoDB, clés étrangères, contraintes `CHECK` (dates, capacité, prix, note 1-5,
   exactement une cible pour un favori ou un avis).
 

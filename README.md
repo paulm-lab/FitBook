@@ -105,13 +105,13 @@ mysql -u root -p -e "SET @fitbook_password = 'mot-de-passe-fort'; SOURCE databas
 docker compose up -d      # MySQL sur 127.0.0.1:3307, phpMyAdmin sur :8080, Mailpit sur :8025
 ```
 
-Le script crée les bases `fitbook` et `fitbook_test` et l'utilisateur `fitbook_user`, dont les droits
+Le script crée les bases `fitbookdata` et `fitbookdata_test` et l'utilisateur `fitbook_user`, dont les droits
 sont limités à ces deux bases. L'application ne se connecte jamais en `root`.
 
 #### 2. Configuration locale (`backend/.env.local`, jamais versionné)
 
 ```dotenv
-DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 MAILER_DSN=smtp://127.0.0.1:1025
 # Passphrase de la clé privée JWT : une longue chaîne aléatoire.
 JWT_PASSPHRASE=une-longue-phrase-secrete-aleatoire
@@ -233,11 +233,11 @@ symfony php bin/phpunit --group mysql   # procédures stockées et contraintes C
 
 Les tests fonctionnels utilisent SQLite en mémoire et des clés JWT de test générées
 automatiquement dans `backend/var/jwt-test/`. Les tests d'intégration du groupe `mysql`
-reconstruisent la base `fitbook_test` à partir des migrations ; ils nécessitent, dans
+reconstruisent la base `fitbookdata_test` à partir des migrations ; ils nécessitent, dans
 `backend/.env.test.local` (non versionné) :
 
 ```dotenv
-MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook_test?serverVersion=8.0.32&charset=utf8mb4"
+MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata_test?serverVersion=8.0.32&charset=utf8mb4"
 ```
 
 Frontend : `cd frontend && npm test -- --watch=false` (50 tests).

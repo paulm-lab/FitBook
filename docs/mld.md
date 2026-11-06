@@ -224,7 +224,7 @@ Exemple : `CALL sp_reserver_seance(12, 34, @code, @id); SELECT @code, @id;`
 |-------|--------|
 | **Moteur InnoDB imposé** (`default_table_options` dans `doctrine.yaml`) | Le MySQL de WAMP crée les tables en **MyISAM** par défaut : ce moteur ignore silencieusement les clés étrangères, les transactions et les verrous `FOR UPDATE`. L'ancienne version du site en était victime : son verrou de réservation ne protégeait rien. |
 | **Dates stockées en UTC** | PHP (UTC) et MySQL (heure de Paris) n'avaient pas le même fuseau : `NOW()` aurait décalé la règle des 2 h. Le Kernel fixe PHP en UTC, les procédures utilisent `UTC_TIMESTAMP()` et l'API renvoie des dates ISO 8601 avec décalage (`2026-11-10T09:00:00+00:00`), que le navigateur affiche à l'heure locale. |
-| **Utilisateur `fitbook_user`** | Droits limités à `fitbook` et `fitbook_test`, aucun droit global (`database/scripts/create_user.sql`). |
+| **Utilisateur `fitbook_user`** | Droits limités à `fitbookdata` et `fitbookdata_test`, aucun droit global (`database/scripts/create_user.sql`). |
 
 ## 6. Diagramme
 
