@@ -58,8 +58,10 @@ puis trier les résultats *afin de* comparer les offres.
 *En tant que* visiteur inscrit, *je veux* me connecter immédiatement après mon inscription
 *afin d'*utiliser mon compte sans attendre d'e-mail.
 
-- La confirmation affiche « Compte créé avec succès. Vous pouvez maintenant vous connecter. »
-- Un lien mène à la connexion, avec l'adresse déjà saisie.
+- Après l'inscription, je suis connecté automatiquement et j'arrive dans mon espace
+  (« Compte créé avec succès. Bienvenue sur FitBook ! »).
+- Si la connexion automatique échoue, la confirmation « Compte créé avec succès. Vous pouvez
+  maintenant vous connecter. » propose un lien vers la connexion, avec l'adresse déjà saisie.
 - Un e-mail de bienvenue est envoyé, mais son échec n'empêche ni l'inscription ni la connexion.
 
 ### US-V07 — Réinitialiser mon mot de passe · M · Phase 3

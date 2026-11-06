@@ -107,14 +107,65 @@
           }
         },
         {
-          "name": "Connexion — adresse non confirmée (403)",
+          "name": "Inscription — compte actif immédiatement (201)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Statut 403\", () => pm.expect(pm.response.code).to.be.oneOf([403]));"
+                  "pm.test(\"Statut 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Message de succès\", () => pm.expect(j.message).to.include(\"Vous pouvez maintenant vous connecter\"));",
+                  "pm.collectionVariables.set(\"nouvelEmail\", j.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inscription"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prenom\": \"Nina\",\n  \"nom\": \"Directe\",\n  \"email\": \"nina.{{$timestamp}}@exemple.test\",\n  \"telephone\": \"0470123456\",\n  \"password\": \"MotDePasse123!\",\n  \"role\": \"sportif\"\n}"
+            }
+          },
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "Connexion juste après l'inscription (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Statut 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test(\"Jeton JWT renvoyé\", () => pm.expect(pm.response.json().token).to.be.a(\"string\"));"
                 ]
               }
             }
@@ -146,7 +197,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"sportif39@fitbook.test\",\n  \"password\": \"Sportif123!\"\n}"
+              "raw": "{\n  \"email\": \"{{nouvelEmail}}\",\n  \"password\": \"MotDePasse123!\"\n}"
             }
           },
           "protocolProfileBehavior": {

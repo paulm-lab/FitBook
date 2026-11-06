@@ -55,7 +55,14 @@ def connexion(nom, email, mdp, variable):
 authentification = [
     connexion("Connexion sportif", "{{sportifEmail}}", "Sportif123!", "tokenSportif"),
     requete("Connexion — mauvais mot de passe (401)", "POST", "/api/login", {"email": "{{sportifEmail}}", "password": "faux-mot-de-passe"}, [statut(401)]),
-    requete("Connexion — adresse non confirmée (403)", "POST", "/api/login", {"email": "sportif39@fitbook.test", "password": "Sportif123!"}, [statut(403)]),
+    # Inscription directe : le compte créé peut se connecter immédiatement.
+    requete("Inscription — compte actif immédiatement (201)", "POST", "/api/inscription",
+            {"prenom": "Nina", "nom": "Directe", "email": "nina.{{$timestamp}}@exemple.test", "telephone": "0470123456", "password": "MotDePasse123!", "role": "sportif"},
+            [statut(201), "const j = pm.response.json();",
+             'pm.test("Message de succès", () => pm.expect(j.message).to.include("Vous pouvez maintenant vous connecter"));',
+             'pm.collectionVariables.set("nouvelEmail", j.email);']),
+    requete("Connexion juste après l'inscription (200)", "POST", "/api/login", {"email": "{{nouvelEmail}}", "password": "MotDePasse123!"},
+            [statut(200), 'pm.test("Jeton JWT renvoyé", () => pm.expect(pm.response.json().token).to.be.a("string"));']),
     requete("Connexion — compte bloqué (403)", "POST", "/api/login", {"email": "sportif40@fitbook.test", "password": "Sportif123!"}, [statut(403)]),
     requete("Utilisateur courant", "GET", "/api/me", None, [
         statut(200), 'pm.test("Rôle sportif", () => pm.expect(pm.response.json().role).to.eql("sportif"));',

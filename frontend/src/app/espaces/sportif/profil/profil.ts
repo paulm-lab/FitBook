@@ -49,7 +49,7 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
           }}</span>
         }
         <label class="btn btn--sm btn--ghost file-btn" [class.disabled]="envoiAvatar()">
-          {{ (envoiAvatar() ? 'Envoi…' : 'Choisir une image') | t }}
+          {{ (envoiAvatar() ? 'Envoi de la photo…' : 'Choisir une image') | t }}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
