@@ -1,27 +1,26 @@
-import { DatePipe } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
+import { LangueService } from '../../core/i18n/langue.service';
 import { Disponibilite, JOURS } from '../../core/models';
+import { I18N } from '../../core/i18n/pipes';
 
 /** Créneaux de disponibilité d'une salle ou d'un coach : récurrents puis ponctuels. */
 @Component({
   selector: 'app-disponibilites-liste',
-  imports: [DatePipe],
+  imports: [...I18N],
   template: `
     @if (creneaux().length) {
       <ul class="slots">
         @for (d of creneaux(); track d.id) {
           <li>
             <strong>{{
-              d.recurrent
-                ? 'Chaque ' + jour(d.jourSemaine).toLowerCase()
-                : (d.date | date: 'EEEE d MMMM')
+              d.recurrent ? chaque(d.jourSemaine) : (d.date | dateL: 'EEEE d MMMM')
             }}</strong>
             <span>{{ d.heureDebut }} – {{ d.heureFin }}</span>
           </li>
         }
       </ul>
     } @else {
-      <p class="muted">Aucun créneau communiqué pour le moment.</p>
+      <p class="muted">{{ 'Aucun créneau communiqué pour le moment.' | t }}</p>
     }
   `,
   styles: `
@@ -50,6 +49,7 @@ import { Disponibilite, JOURS } from '../../core/models';
   `,
 })
 export class DisponibilitesListeComponent {
+  private readonly langue = inject(LangueService);
   readonly disponibilites = input<Disponibilite[]>([]);
 
   /** Récurrents (lundi → dimanche), puis ponctuels à venir par date. */
@@ -66,7 +66,11 @@ export class DisponibilitesListeComponent {
       );
   });
 
-  jour(numero: number | null): string {
-    return JOURS[numero ?? 0] ?? '';
+  /** « Chaque lundi » / « Every Monday » (jour en minuscule en français seulement). */
+  chaque(numero: number | null): string {
+    const jour = this.langue.t(JOURS[numero ?? 0] ?? '');
+    return this.langue.t('Chaque {jour}', {
+      jour: this.langue.langue() === 'fr' ? jour.toLowerCase() : jour,
+    });
   }
 }

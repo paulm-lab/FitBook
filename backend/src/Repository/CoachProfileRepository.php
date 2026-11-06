@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Dto\SearchCriteria;
 use App\Entity\CoachProfile;
 use App\Entity\Session;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -25,12 +26,17 @@ class CoachProfileRepository extends ServiceEntityRepository
         parent::__construct($registry, CoachProfile::class);
     }
 
-    /** Coachs publiés (compte vérifié et non bloqué), triés par nom. */
+    /**
+     * Coachs publiés (compte vérifié et non bloqué, rôle coach toujours attribué), triés par nom.
+     * Le profil d'un compte qui a changé de rôle est conservé mais n'est plus publié.
+     */
     public function published(): QueryBuilder
     {
         return $this->createQueryBuilder('c')
             ->join('c.user', 'u')->addSelect('u')
             ->andWhere('u.isVerified = true AND u.isBlocked = false')
+            // Rôles stockés en JSON (une seule valeur par compte) : recherche textuelle.
+            ->andWhere('u.roles LIKE :coachRole')->setParameter('coachRole', '%"' . User::ROLE_COACH . '"%')
             ->orderBy('u.lastName', 'ASC')->addOrderBy('u.firstName', 'ASC');
     }
 

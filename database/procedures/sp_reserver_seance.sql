@@ -93,11 +93,12 @@ BEGIN
                 ROLLBACK;
 
             ELSEIF v_existing_id IS NOT NULL THEN
-                -- Réservation annulée auparavant : réactivée.
+                -- Réservation annulée auparavant : réactivée, avec un nouveau rappel à envoyer.
                 UPDATE reservation
                    SET status = 'confirmee',
                        created_at = UTC_TIMESTAMP(),
-                       cancelled_at = NULL
+                       cancelled_at = NULL,
+                       reminder_sent_at = NULL
                  WHERE id = v_existing_id;
 
                 SET p_reservation_id = v_existing_id;

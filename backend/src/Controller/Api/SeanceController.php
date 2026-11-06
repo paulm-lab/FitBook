@@ -22,6 +22,7 @@ use App\Security\Voter\GymVoter;
 use App\Security\Voter\SessionVoter;
 use App\Service\CataloguePresenter;
 use App\Service\ReservationService;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use OpenApi\Attributes as OA;
@@ -29,6 +30,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Séances : liste et fiche publiques, création / modification / annulation par le coach
@@ -43,6 +45,7 @@ final class SeanceController extends AbstractController
         private readonly CataloguePresenter $presenter,
         private readonly ApiRequest $api,
         private readonly EntityManagerInterface $em,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -57,7 +60,8 @@ final class SeanceController extends AbstractController
         $day = null;
         $date = $request->query->get('date');
         if ($date !== null && $date !== '') {
-            $day = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date);
+            // Jour local (Bruxelles) : SessionRepository en convertit les bornes en UTC.
+            $day = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $date, new \DateTimeZone(CataloguePresenter::LOCAL_TIMEZONE));
             if (!$day || $day->format('Y-m-d') !== $date) {
                 throw ApiException::badRequest('Le filtre date doit être au format YYYY-MM-DD.');
             }
@@ -79,15 +83,20 @@ final class SeanceController extends AbstractController
 
     /**
      * Fiche d'une séance active et à venir, avec la note du coach (ou de la salle) et les avis
-     * de la séance. Les séances passées ou annulées restent visibles par leurs organisateurs.
+     * de la séance. Les séances passées ou annulées (ou dont le coach est bloqué) restent
+     * visibles par leurs organisateurs et par les sportifs qui les ont réservées (pour l'avis).
+     *
+     * « dejaReservee » : le sportif connecté a une réservation confirmée sur cette séance.
      */
     #[Security(name: null)]
     #[Route('/{id}', name: 'api_seances_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, ReviewRepository $reviews): JsonResponse
+    public function show(int $id, ReviewRepository $reviews, ReservationRepository $reservations): JsonResponse
     {
         $item = $this->sessions->find($id);
-        $public = $item && $item->getStatus() === SessionStatus::Active && $item->getStartAt() > new \DateTimeImmutable();
-        if (!$item || (!$public && !$this->isGranted(SessionVoter::EDIT, $item))) {
+        $user = $this->getUser();
+        $reservation = $item && $user instanceof User ? $reservations->findOneBy(['user' => $user, 'session' => $item]) : null;
+        $public = $item && $item->getStatus() === SessionStatus::Active && $item->getStartAt() > new \DateTimeImmutable() && $item->hasAvailableCoach();
+        if (!$item || (!$public && $reservation === null && !$this->isGranted(SessionVoter::EDIT, $item))) {
             throw ApiException::notFound('Séance introuvable.');
         }
 
@@ -102,6 +111,7 @@ final class SeanceController extends AbstractController
                 $reviews->visibleFor($item)->setMaxResults(20)->getQuery()->getResult(),
             ),
             'peutModifier' => $this->isGranted(SessionVoter::EDIT, $item),
+            'dejaReservee' => $reservation?->getStatus() === ReservationStatus::Confirmee,
         ]);
     }
 
@@ -126,37 +136,69 @@ final class SeanceController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_seances_update', requirements: ['id' => '\d+'], methods: ['PUT'])]
-    public function update(int $id, Request $request): JsonResponse
+    public function update(int $id, Request $request, ReservationRepository $reservations): JsonResponse
     {
         $session = $this->find($id);
         $this->denyAccessUnlessGranted(SessionVoter::EDIT, $session);
         if ($session->getStatus() === SessionStatus::Annulee) {
             throw ApiException::conflict('Une séance annulée ne peut plus être modifiée.');
         }
-
         $input = $this->api->validate(SessionInput::fromArray($this->api->json($request)));
-        $taken = $this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0;
-        if ($input->capacite !== null && $input->capacite < $taken) {
-            throw ApiException::validation(['capacite' => sprintf('%d sportifs sont déjà inscrits : la capacité ne peut pas être inférieure.', $taken)]);
-        }
 
-        $this->apply($session, $input, $this->currentUser());
-        $this->em->flush();
+        // Séance verrouillée (même verrou que sp_reserver_seance) : aucune réservation ne peut
+        // s'intercaler entre le comptage des inscrits et la baisse de capacité.
+        $this->em->beginTransaction();
+        try {
+            $this->em->refresh($session, LockMode::PESSIMISTIC_WRITE);
+            if ($session->getStatus() === SessionStatus::Annulee) {
+                throw ApiException::conflict('Une séance annulée ne peut plus être modifiée.');
+            }
+            $taken = $this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0;
+            if ($input->capacite !== null && $input->capacite < $taken) {
+                // Message à paramètre : traduit ici (le listener de traduction ne connaît pas {count}).
+                throw ApiException::validation(['capacite' => $this->translator->trans(
+                    '{count} sportifs sont déjà inscrits : la capacité ne peut pas être inférieure.',
+                    ['{count}' => $taken],
+                )]);
+            }
+
+            $previousStart = $session->getStartAt();
+            $this->apply($session, $input, $this->currentUser());
+            $this->em->flush();
+            // Nouvel horaire : le rappel de 24 h doit repartir pour chaque inscrit.
+            if ($previousStart != $session->getStartAt()) {
+                $reservations->resetReminders($session);
+            }
+            $this->em->commit();
+        } catch (\Throwable $exception) {
+            if ($this->em->getConnection()->isTransactionActive()) {
+                $this->em->rollback();
+            }
+            throw $exception;
+        }
 
         return $this->json($this->presenter->session($session, $taken));
     }
 
     /**
-     * Suppression définitive, seulement sans inscrit : une séance qui a des réservations
-     * confirmées doit être annulée (les sportifs sont alors prévenus).
+     * Suppression définitive d'une séance à venir, sans réservation (hors annulées) ni avis :
+     * sinon la suppression effacerait en cascade l'historique des sportifs. La séance doit
+     * alors être annulée (les sportifs sont prévenus).
      */
     #[Route('/{id}', name: 'api_seances_delete', requirements: ['id' => '\d+'], methods: ['DELETE'])]
     public function delete(int $id): JsonResponse
     {
         $session = $this->find($id);
         $this->denyAccessUnlessGranted(SessionVoter::DELETE, $session);
-        if (($this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0) > 0) {
-            throw ApiException::conflict('Des sportifs sont inscrits : annulez la séance pour les prévenir.');
+        if ($session->getStartAt() <= new \DateTimeImmutable()) {
+            throw ApiException::conflict('Cette séance a déjà commencé : elle fait partie de l’historique et ne peut pas être supprimée.');
+        }
+        ['reservations' => $reserved, 'reviews' => $reviewed] = $this->sessions->historyCounts($session);
+        if ($reserved > 0) {
+            throw ApiException::conflict('Des sportifs ont réservé cette séance : annulez-la plutôt pour les prévenir.');
+        }
+        if ($reviewed > 0) {
+            throw ApiException::conflict('Cette séance a reçu des avis : annulez-la plutôt que de la supprimer.');
         }
 
         $this->em->remove($session);
@@ -203,7 +245,8 @@ final class SeanceController extends AbstractController
 
     /**
      * Applique les champs validés à la séance et contrôle les rattachements :
-     * - coach : la séance est la sienne (son profil), salle facultative ;
+     * - coach : la séance est la sienne (son profil) ; il ne choisit pas la salle (création
+     *   sans salle, salle inchangée en modification) : c'est le rôle du gestionnaire ;
      * - gestionnaire : la salle doit être une de ses salles ;
      * - administrateur : libre, mais une salle ou un coach (RG-10).
      */
@@ -224,6 +267,12 @@ final class SeanceController extends AbstractController
             $coach = $session->getId() !== null ? $session->getCoach() : $user->getCoachProfile();
             if ($coach === null || $coach->getUser() !== $user) {
                 throw ApiException::forbidden('Complétez d’abord votre profil de coach.');
+            }
+            $currentGym = $session->getId() !== null ? $session->getGym() : null;
+            if (!$user->hasRole(User::ROLE_GESTIONNAIRE) && $gym?->getId() !== $currentGym?->getId()) {
+                throw ApiException::validation(['salleId' => $session->getId() === null
+                    ? 'Un coach crée ses séances sans salle : seul le gestionnaire d’une salle y programme des séances.'
+                    : 'Seul le gestionnaire de la salle peut changer la salle de cette séance.']);
             }
         }
         if (!$isAdmin && $user->hasRole(User::ROLE_GESTIONNAIRE)) {

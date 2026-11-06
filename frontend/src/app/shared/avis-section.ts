@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +5,8 @@ import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { messageErreur } from '../core/http';
+import { LangueService } from '../core/i18n/langue.service';
+import { I18N } from '../core/i18n/pipes';
 import { Avis, Note, TypeCible } from '../core/models';
 import { CompteService } from '../core/services/compte.service';
 import { ToastService } from '../core/services/toast.service';
@@ -20,7 +21,7 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
 @Component({
   selector: 'app-avis-section',
   imports: [
-    DatePipe,
+    ...I18N,
     FormsModule,
     RouterLink,
     EtoilesComponent,
@@ -30,23 +31,23 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
   template: `
     <section class="panel avis-section" aria-labelledby="avis-titre">
       <div class="row row--between">
-        <h2 id="avis-titre">Avis</h2>
+        <h2 id="avis-titre">{{ 'Avis' | t }}</h2>
         <app-etoiles [note]="note()?.note" [nbAvis]="note()?.nbAvis ?? 0" />
       </div>
 
-      @if (auth.estConnecte()) {
+      @if (formulaireVisible()) {
         <form class="form avis-form" (ngSubmit)="envoyer()">
-          <h3>{{ monAvis() ? 'Modifier mon avis' : 'Donner mon avis' }}</h3>
+          <h3>{{ (monAvis() ? 'Modifier mon avis' : 'Donner mon avis') | t }}</h3>
           <app-saisie-note [(valeur)]="saisieNote" [nom]="'note-' + type() + '-' + cibleId()" />
           <label class="field">
-            <span>Commentaire (facultatif)</span>
+            <span>{{ 'Commentaire (facultatif)' | t }}</span>
             <textarea
               name="commentaire"
               [ngModel]="commentaire()"
               (ngModelChange)="commentaire.set($event)"
               maxlength="1000"
               rows="3"
-              placeholder="Partagez votre expérience"
+              [placeholder]="'Partagez votre expérience' | t"
             ></textarea>
             <span class="field-hint">{{ commentaire().length }} / 1000</span>
           </label>
@@ -60,7 +61,7 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
               [disabled]="envoi() || saisieNote() < 1"
               [attr.aria-busy]="envoi()"
             >
-              {{ monAvis() ? 'Enregistrer' : 'Publier mon avis' }}
+              {{ (monAvis() ? 'Enregistrer' : 'Publier mon avis') | t }}
             </button>
             @if (monAvis()) {
               <button
@@ -69,25 +70,36 @@ import { ConfirmService, EtatVideComponent, EtoilesComponent, SaisieNoteComponen
                 [disabled]="envoi()"
                 (click)="supprimer()"
               >
-                Supprimer mon avis
+                {{ 'Supprimer mon avis' | t }}
               </button>
             }
           </div>
         </form>
-      } @else {
+      } @else if (!auth.estConnecte()) {
         <p class="text">
-          <a [routerLink]="['/connexion']" [queryParams]="{ returnUrl: router.url }"
-            >Connectez-vous</a
-          >
-          pour donner votre avis.
+          <a [routerLink]="['/connexion']" [queryParams]="{ returnUrl: router.url }">{{
+            'Connectez-vous' | t
+          }}</a>
+          {{ 'pour donner votre avis.' | t }}
+        </p>
+      } @else if (auth.role() !== 'sportif') {
+        <p class="text muted">
+          {{ 'Les avis sont réservés aux sportifs ayant participé à une séance.' | t }}
+        </p>
+      } @else {
+        <p class="text muted">
+          {{
+            'Vous pourrez donner votre avis une fois la séance terminée, si vous y avez participé.'
+              | t
+          }}
         </p>
       }
 
       @for (a of avis(); track a.id) {
         <article class="avis-item">
           <div class="row row--between">
-            <strong>{{ a.auteur ?? 'Membre FitBook' }}</strong>
-            <time class="muted" [attr.datetime]="a.date">{{ a.date | date: 'd MMMM y' }}</time>
+            <strong>{{ a.auteur ?? ('Membre FitBook' | t) }}</strong>
+            <time class="muted" [attr.datetime]="a.date">{{ a.date | dateL: 'd MMMM y' }}</time>
           </div>
           <app-etoiles [note]="a.note" [avecTexte]="false" />
           @if (a.commentaire) {
@@ -134,6 +146,8 @@ export class AvisSectionComponent {
   readonly cibleId = input.required<number>();
   readonly note = input<Note | null>(null);
   readonly avis = input<Avis[]>([]);
+  /** Séance terminée (un avis n'est possible qu'après) ; toujours vrai pour une salle ou un coach. */
+  readonly terminee = input(true);
   /** Un avis a été publié, modifié ou supprimé : le parent recharge la fiche. */
   readonly avisModifie = output<void>();
 
@@ -142,10 +156,20 @@ export class AvisSectionComponent {
   private readonly compte = inject(CompteService);
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  private readonly langue = inject(LangueService);
 
   readonly mesAvis = signal<Avis[]>([]);
   readonly monAvis = computed(() =>
     this.mesAvis().find((a) => a.cible?.type === this.type() && a.cible?.id === this.cibleId()),
+  );
+  /**
+   * Formulaire réservé aux sportifs (seuls à pouvoir réserver, donc à participer) et, pour une
+   * séance, après sa fin ; un avis déjà donné reste modifiable.
+   */
+  readonly formulaireVisible = computed(
+    () =>
+      this.auth.estConnecte() &&
+      (!!this.monAvis() || (this.auth.role() === 'sportif' && this.terminee())),
   );
   readonly saisieNote = signal(0);
   readonly envoi = signal(false);
@@ -178,7 +202,7 @@ export class AvisSectionComponent {
       next: () => {
         this.envoi.set(false);
         this.toasts.succes(
-          existant ? 'Votre avis a été modifié.' : 'Merci, votre avis est publié.',
+          this.langue.t(existant ? 'Votre avis a été modifié.' : 'Merci, votre avis est publié.'),
         );
         this.chargerMesAvis();
         this.avisModifie.emit();
@@ -187,10 +211,14 @@ export class AvisSectionComponent {
         this.envoi.set(false);
         const status = error instanceof HttpErrorResponse ? error.status : 0;
         if (status === 403) {
-          this.erreur.set('Vous devez avoir participé à une séance pour donner un avis.');
+          this.erreur.set(
+            this.langue.t('Vous devez avoir participé à une séance pour donner un avis.'),
+          );
         } else if (status === 409) {
           // Un avis existe déjà sur cette cible : on bascule en modification.
-          this.erreur.set('Vous avez déjà donné votre avis : modifiez-le ci-dessous.');
+          this.erreur.set(
+            this.langue.t('Vous avez déjà donné votre avis : modifiez-le ci-dessous.'),
+          );
           this.chargerMesAvis(false);
         } else {
           this.erreur.set(messageErreur(error));
@@ -216,7 +244,7 @@ export class AvisSectionComponent {
         this.saisieNote.set(0);
         this.commentaire.set('');
         this.mesAvis.update((liste) => liste.filter((a) => a.id !== existant.id));
-        this.toasts.succes('Votre avis a été supprimé.');
+        this.toasts.succes(this.langue.t('Votre avis a été supprimé.'));
         this.avisModifie.emit();
       },
       error: (error: unknown) => {

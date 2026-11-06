@@ -1,0 +1,180 @@
+/** Traductions anglaises — Espace sportif (espaces/sportif/). Clé : texte français exact. */
+export const EN_SPORTIF: Record<string, string> = {
+  // Commun à l'espace
+  'Mon espace': 'My space',
+  'Mon compte': 'My account',
+  'Trouver une séance': 'Find a session',
+  'Rechercher une séance': 'Search for a session',
+  'Élément supprimé': 'Deleted item',
+  Confirmée: 'Confirmed',
+  Annulée: 'Cancelled',
+  Terminée: 'Completed',
+  Débutant: 'Beginner',
+  Intermédiaire: 'Intermediate',
+  Avancé: 'Advanced',
+  Sportif: 'Athlete',
+  Coach: 'Coach',
+  'Gestionnaire de salle': 'Gym manager',
+  Administrateur: 'Administrator',
+  Salle: 'Gym',
+  Séance: 'Session',
+  Salles: 'Gyms',
+  Coachs: 'Coaches',
+  Séances: 'Sessions',
+  Gratuit: 'Free',
+  '{prix} €': '€{prix}',
+  Annuler: 'Cancel',
+  Supprimer: 'Delete',
+  Enregistrer: 'Save',
+  Modifier: 'Edit',
+
+  // Tableau de bord
+  'Bonjour {prenom} !': 'Hello {prenom}!',
+  'Retrouvez vos prochaines séances et votre activité sur FitBook.':
+    'See your upcoming sessions and your activity on FitBook.',
+  'Mes chiffres': 'My figures',
+  'Réservation à venir': 'Upcoming booking',
+  'Réservations à venir': 'Upcoming bookings',
+  Favoris: 'Favourites',
+  'Avis donnés': 'Reviews given',
+  'Mes prochaines séances': 'My upcoming sessions',
+  'Toutes mes réservations →': 'All my bookings →',
+  'Aucune séance réservée': 'No sessions booked',
+  'Yoga, boxe, running… trouvez la séance qui vous motive.':
+    'Yoga, boxing, running… find the session that motivates you.',
+  'Lieu précisé par le coach': 'Venue specified by the coach',
+  'Mon calendrier': 'My calendar',
+
+  // Mes réservations
+  'Mes réservations': 'My bookings',
+  "Annulation possible jusqu'à 2 heures avant le début de la séance.":
+    'Cancellation is possible up to 2 hours before the session starts.',
+  Période: 'Period',
+  'À venir': 'Upcoming',
+  Historique: 'History',
+  'Aucune réservation à venir': 'No upcoming bookings',
+  'Aucun historique pour le moment': 'No history yet',
+  'Réservez une séance en quelques clics depuis la recherche.':
+    'Book a session in a few clicks from the search page.',
+  'Historique des réservations': 'Booking history',
+  Date: 'Date',
+  Lieu: 'Venue',
+  Prix: 'Price',
+  Statut: 'Status',
+  Actions: 'Actions',
+  'Avec le coach': 'With the coach',
+  Détail: 'Details',
+  'Vos réservations n’ont pas pu être chargées.': 'Your bookings could not be loaded.',
+  'Annuler cette réservation ?': 'Cancel this booking?',
+  "« {titre} » : votre place sera libérée et vous recevrez un e-mail d'annulation.":
+    '“{titre}”: your place will be released and you will receive a cancellation email.',
+  'Annuler la réservation': 'Cancel booking',
+  'Réservation annulée. Un e-mail de confirmation vous a été envoyé.':
+    'Booking cancelled. A confirmation email has been sent to you.',
+  'Il est trop tard pour annuler : la séance commence dans moins de 2 heures.':
+    'It is too late to cancel: the session starts in less than 2 hours.',
+  'L’annulation n’a pas pu aboutir.': 'The cancellation could not be completed.',
+
+  // Détail d'une réservation
+  '← Mes réservations': '← My bookings',
+  'Ma réservation': 'My booking',
+  'Réservation n° {id} · le {date}': 'Booking no. {id} · {date}',
+  Horaire: 'Time',
+  Activité: 'Activity',
+  'Précisé par le coach': 'Specified by the coach',
+  '{prix} € (réglé sur place)': '€{prix} (paid on site)',
+  'Donner mon avis sur la séance →': 'Review this session →',
+  'Voir la fiche de la séance →': 'View session details →',
+  'Annulée le {date}.': 'Cancelled on {date}.',
+  "L'annulation n'est plus possible à moins de 2 heures du début.":
+    'Cancellation is no longer possible less than 2 hours before the start.',
+  "QR code d'accès": 'Access QR code',
+  "Présentez ce code à l'accueil le jour de la séance.":
+    'Show this code at reception on the day of the session.',
+  'QR code de la réservation {id}': 'QR code for booking {id}',
+  Imprimer: 'Print',
+  'Cette réservation est introuvable.': 'This booking could not be found.',
+
+  // Mes favoris
+  'Mes favoris': 'My favourites',
+  'Les salles, coachs et séances que vous avez gardés sous la main.':
+    'The gyms, coaches and sessions you have kept close at hand.',
+  'Aucun favori pour le moment': 'No favourites yet',
+  "Touchez le cœur ♡ sur une salle, un coach ou une séance pour l'ajouter ici.":
+    'Tap the heart ♡ on a gym, a coach or a session to add it here.',
+  'Explorer FitBook': 'Explore FitBook',
+  'Aucun favori dans cette catégorie.': 'No favourites in this category.',
+  'Ajouté le {date}': 'Added on {date}',
+  'Voir la fiche': 'View details',
+  'Retirer {nom} des favoris': 'Remove {nom} from favourites',
+  'ce favori': 'this favourite',
+  Retirer: 'Remove',
+  'Retiré de vos favoris.': 'Removed from your favourites.',
+
+  // Mes avis
+  'Mes avis': 'My reviews',
+  'Un avis par salle, coach ou séance. Une modification repasse par la modération.':
+    'One review per gym, coach or session. Any edit goes through moderation again.',
+  "Vous n'avez pas encore donné d'avis": 'You have not written any reviews yet',
+  'Après une séance terminée, partagez votre expérience depuis la fiche de la salle, du coach ou de la séance.':
+    'After a completed session, share your experience from the gym, coach or session page.',
+  "Masqué par la modération : il n'apparaît plus sur la fiche":
+    'Hidden by moderation: it no longer appears on the page',
+  Masqué: 'Hidden',
+  'Publié · validé': 'Published · approved',
+  Publié: 'Published',
+  'Commentaire (facultatif)': 'Comment (optional)',
+  'Le {date}': 'On {date}',
+  'Avis modifié.': 'Review updated.',
+  'L’avis n’a pas pu être modifié.': 'The review could not be updated.',
+  'Supprimer cet avis ?': 'Delete this review?',
+  'Il disparaîtra de la fiche et ne comptera plus dans la note moyenne.':
+    'It will disappear from the page and will no longer count towards the average rating.',
+  'Avis supprimé.': 'Review deleted.',
+  'L’avis n’a pas pu être supprimé.': 'The review could not be deleted.',
+  'Vos avis n’ont pas pu être chargés.': 'Your reviews could not be loaded.',
+
+  // Notifications
+  Notifications: 'Notifications',
+  'Vous êtes à jour.': 'You are all caught up.',
+  '1 notification non lue.': '1 unread notification.',
+  '{n} notifications non lues.': '{n} unread notifications.',
+  'Tout marquer comme lu': 'Mark all as read',
+  'Aucune notification': 'No notifications',
+  'Vos confirmations de réservation, annulations et rappels apparaîtront ici.':
+    'Your booking confirmations, cancellations and reminders will appear here.',
+  Nouveau: 'New',
+  'Les notifications n’ont pas pu être chargées.': 'Notifications could not be loaded.',
+
+  // Profil
+  'Mon profil': 'My profile',
+  'Ces informations sont utilisées pour vos réservations.':
+    'This information is used for your bookings.',
+  'Photo de profil': 'Profile photo',
+  'Votre photo de profil': 'Your profile photo',
+  'Envoi…': 'Uploading…',
+  'Choisir une image': 'Choose an image',
+  'JPEG, PNG ou WebP, 2 Mo au maximum.': 'JPEG, PNG or WebP, 2 MB maximum.',
+  'Supprimer la photo': 'Delete photo',
+  'Mes informations': 'My details',
+  Prénom: 'First name',
+  Nom: 'Last name',
+  Téléphone: 'Phone',
+  'E-mail': 'Email',
+  "L'adresse e-mail ne peut pas être modifiée.": 'The email address cannot be changed.',
+  Rôle: 'Role',
+  'Changer de mot de passe': 'Change password',
+  'Enregistrement…': 'Saving…',
+  'Saisissez un numéro valide (7 à 20 caractères).': 'Enter a valid number (7 to 20 characters).',
+  'Ce champ est obligatoire.': 'This field is required.',
+  '50 caractères au maximum.': '50 characters maximum.',
+  'Profil enregistré.': 'Profile saved.',
+  'Le profil n’a pas pu être enregistré.': 'The profile could not be saved.',
+  'Formats acceptés : JPEG, PNG ou WebP.': 'Accepted formats: JPEG, PNG or WebP.',
+  'L’image ne doit pas dépasser 2 Mo.': 'The image must not exceed 2 MB.',
+  'Photo de profil mise à jour.': 'Profile photo updated.',
+  'L’image n’a pas pu être envoyée.': 'The image could not be uploaded.',
+  'Supprimer la photo ?': 'Delete the photo?',
+  'Vos initiales seront affichées à la place.': 'Your initials will be shown instead.',
+  'Photo supprimée.': 'Photo deleted.',
+};

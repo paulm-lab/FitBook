@@ -1,9 +1,11 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { Subject, catchError, debounceTime, map, of, startWith, switchMap } from 'rxjs';
 import { messageErreur } from '../../core/http';
+import { LangueService } from '../../core/i18n/langue.service';
+import { I18N } from '../../core/i18n/pipes';
 import {
   Coach,
   CriteresRecherche,
@@ -82,6 +84,7 @@ interface Resultats {
     SalleCardComponent,
     CoachCardComponent,
     CarteComponent,
+    ...I18N,
   ],
   templateUrl: './recherche.html',
   styleUrl: './recherche.css',
@@ -91,6 +94,7 @@ export class RechercheComponent {
   private readonly router = inject(Router);
   private readonly catalogue = inject(CatalogueService);
   private readonly toasts = inject(ToastService);
+  private readonly langue = inject(LangueService);
 
   readonly niveaux = Object.entries(NIVEAUX) as [Niveau, string][];
   readonly rayons = [2, 5, 10, 20, 50];
@@ -113,7 +117,9 @@ export class RechercheComponent {
       tris.push({ valeur: 'distance', libelle: 'Distance' });
     return tris;
   });
+  /** Position « autour de moi » (sans objet pour les coachs). */
   readonly position = computed(() => {
+    if (this.type() === 'coachs') return null;
     const lat = Number(this.params()['lat']);
     const lng = Number(this.params()['lng']);
     return this.params()['lat'] && Number.isFinite(lat) && Number.isFinite(lng)
@@ -125,6 +131,8 @@ export class RechercheComponent {
   readonly q = signal('');
   readonly ville = signal('');
   private readonly saisie = new Subject<void>();
+  /** Texte saisi pas encore reporté dans l'URL (debounce en cours). */
+  private saisieEnCours = false;
   readonly localisation = signal(false);
 
   readonly criteres = computed<CriteresRecherche>(() => {
@@ -176,30 +184,50 @@ export class RechercheComponent {
   /** Filtres actifs affichés en chips, retirables un à un. */
   readonly filtresActifs = computed(() => {
     const p = this.params();
+    const t = (texte: string, parametres?: Record<string, string | number>) =>
+      this.langue.t(texte, parametres);
     const chips: { cle: string[]; libelle: string }[] = [];
     if (p['q']) chips.push({ cle: ['q'], libelle: `« ${p['q']} »` });
-    if (p['ville']) chips.push({ cle: ['ville'], libelle: `Lieu : ${p['ville']}` });
-    if (p['activite']) chips.push({ cle: ['activite'], libelle: `Activité : ${p['activite']}` });
+    if (p['ville'])
+      chips.push({ cle: ['ville'], libelle: t('Lieu : {ville}', { ville: p['ville'] }) });
+    if (p['activite'])
+      chips.push({
+        cle: ['activite'],
+        libelle: t('Activité : {nom}', { nom: p['activite'] }),
+      });
     if (p['activiteId']) {
       const nom =
         this.activites().find((a) => a.id === Number(p['activiteId']))?.nom ??
-        `n° ${p['activiteId']}`;
-      chips.push({ cle: ['activiteId'], libelle: `Activité : ${nom}` });
+        t('n° {id}', { id: p['activiteId'] });
+      chips.push({ cle: ['activiteId'], libelle: t('Activité : {nom}', { nom }) });
     }
-    if (p['du']) chips.push({ cle: ['du'], libelle: `À partir du ${this.dateCourte(p['du'])}` });
-    if (p['au']) chips.push({ cle: ['au'], libelle: `Jusqu’au ${this.dateCourte(p['au'])}` });
+    if (p['du'])
+      chips.push({
+        cle: ['du'],
+        libelle: t('À partir du {date}', { date: this.dateCourte(p['du']) }),
+      });
+    if (p['au'])
+      chips.push({
+        cle: ['au'],
+        libelle: t('Jusqu’au {date}', { date: this.dateCourte(p['au']) }),
+      });
     if (p['prixMax'])
       chips.push({
         cle: ['prixMax'],
-        libelle: `${this.type() === 'coachs' ? 'Tarif' : 'Prix'} ≤ ${p['prixMax']} €`,
+        libelle: t(this.type() === 'coachs' ? 'Tarif ≤ {prix} €' : 'Prix ≤ {prix} €', {
+          prix: p['prixMax'],
+        }),
       });
     if (p['niveau'])
-      chips.push({ cle: ['niveau'], libelle: NIVEAUX[p['niveau'] as Niveau] ?? p['niveau'] });
-    if (p['noteMin']) chips.push({ cle: ['noteMin'], libelle: `Note ≥ ${p['noteMin']} ★` });
+      chips.push({ cle: ['niveau'], libelle: t(NIVEAUX[p['niveau'] as Niveau] ?? p['niveau']) });
+    if (p['noteMin'])
+      chips.push({ cle: ['noteMin'], libelle: t('Note ≥ {note} ★', { note: p['noteMin'] }) });
     if (this.position())
       chips.push({
         cle: ['lat', 'lng', 'rayon'],
-        libelle: `Autour de moi${p['rayon'] ? ' · ' + p['rayon'] + ' km' : ''}`,
+        libelle: p['rayon']
+          ? t('Autour de moi · {rayon} km', { rayon: p['rayon'] })
+          : t('Autour de moi'),
       });
     return chips;
   });
@@ -243,27 +271,35 @@ export class RechercheComponent {
   });
 
   constructor() {
-    // L'URL change (navigation, réinitialisation) : les champs texte suivent.
+    // L'URL change (navigation, réinitialisation) : les champs texte suivent, sauf pendant une
+    // saisie et quand seul l'espace final retiré par trim() diffère (« yoga » puis « yoga c… »).
     effect(() => {
       const p = this.params();
-      this.q.set(p['q'] ?? '');
-      this.ville.set(p['ville'] ?? '');
+      untracked(() => {
+        if (this.saisieEnCours) return;
+        for (const champ of ['q', 'ville'] as const) {
+          const valeur = p[champ] ?? '';
+          if (valeur !== this[champ]().trim()) this[champ].set(valeur);
+        }
+      });
     });
-    this.saisie
-      .pipe(debounceTime(400))
-      .subscribe(() =>
-        this.appliquer({ q: this.q().trim() || null, ville: this.ville().trim() || null }, true),
-      );
+    this.saisie.pipe(debounceTime(400)).subscribe(() => {
+      this.saisieEnCours = false;
+      this.appliquer({ q: this.q().trim() || null, ville: this.ville().trim() || null }, true);
+    });
   }
 
   saisir(champ: 'q' | 'ville', valeur: string): void {
     this[champ].set(valeur);
+    this.saisieEnCours = true;
     this.saisie.next();
   }
 
   changerType(type: TypeRecherche): void {
     if (type === this.type()) return;
-    // Les filtres propres aux séances n'ont pas de sens pour les salles et les coachs.
+    // Les filtres propres aux séances n'ont pas de sens pour les salles et les coachs ;
+    // la position n'est pas utilisée pour les coachs.
+    const sansPosition = type === 'coachs';
     this.appliquer({
       type: type === 'seances' ? null : type,
       tri: null,
@@ -272,6 +308,7 @@ export class RechercheComponent {
       au: type === 'seances' ? (this.params()['au'] ?? null) : null,
       prixMax: type === 'salles' ? null : (this.params()['prixMax'] ?? null),
       vue: type === 'coachs' ? null : (this.params()['vue'] ?? null),
+      ...(sansPosition ? { lat: null, lng: null, rayon: null } : {}),
     });
   }
 
@@ -291,6 +328,9 @@ export class RechercheComponent {
   }
 
   reinitialiser(): void {
+    this.saisieEnCours = false;
+    this.q.set('');
+    this.ville.set('');
     void this.router.navigate([], {
       queryParams: {
         type: this.type() === 'seances' ? null : this.type(),
@@ -314,7 +354,7 @@ export class RechercheComponent {
   /** « Autour de moi » : position du navigateur, rayon de 10 km et tri par distance. */
   autourDeMoi(): void {
     if (!('geolocation' in navigator)) {
-      this.toasts.erreur('Votre navigateur ne permet pas la géolocalisation.');
+      this.toasts.erreur(this.langue.t('Votre navigateur ne permet pas la géolocalisation.'));
       return;
     }
     this.localisation.set(true);
@@ -331,9 +371,11 @@ export class RechercheComponent {
       (error) => {
         this.localisation.set(false);
         this.toasts.erreur(
-          error.code === error.PERMISSION_DENIED
-            ? 'Position refusée : autorisez la géolocalisation pour chercher autour de vous.'
-            : 'Votre position n’a pas pu être déterminée.',
+          this.langue.t(
+            error.code === error.PERMISSION_DENIED
+              ? 'Position refusée : autorisez la géolocalisation pour chercher autour de vous.'
+              : 'Votre position n’a pas pu être déterminée.',
+          ),
         );
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },

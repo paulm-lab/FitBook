@@ -1,11 +1,11 @@
 <main class="login-page" id="contenu">
   <section class="login-card" aria-labelledby="login-title">
-    <span class="section-kicker">HEUREUX DE VOUS REVOIR</span>
-    <h1 id="login-title">Connexion</h1>
-    <p>Connectez-vous pour réserver votre prochaine séance ou gérer votre espace.</p>
+    <span class="section-kicker">{{ 'HEUREUX DE VOUS REVOIR' | t }}</span>
+    <h1 id="login-title">{{ 'Connexion' | t }}</h1>
+    <p>{{ 'Connectez-vous pour réserver votre prochaine séance ou gérer votre espace.' | t }}</p>
 
     <form [formGroup]="formulaire" (ngSubmit)="connecter()" novalidate>
-      <label for="login-email">E-mail</label>
+      <label for="login-email">{{ 'E-mail' | t }}</label>
       <input
         id="login-email"
         type="email"
@@ -21,13 +21,14 @@
       />
       @if (formulaire.controls.email.touched && formulaire.controls.email.invalid) {
         <small id="email-error">{{
-          formulaire.controls.email.hasError('required')
+          (formulaire.controls.email.hasError('required')
             ? 'Saisissez votre adresse e-mail.'
             : 'Saisissez une adresse e-mail valide.'
+          ) | t
         }}</small>
       }
 
-      <label for="login-password">Mot de passe</label>
+      <label for="login-password">{{ 'Mot de passe' | t }}</label>
       <input
         id="login-password"
         type="password"
@@ -44,38 +45,27 @@
       />
       @if (formulaire.controls.password.touched && formulaire.controls.password.invalid) {
         <small id="password-error">{{
-          formulaire.controls.password.hasError('required')
+          (formulaire.controls.password.hasError('required')
             ? 'Saisissez votre mot de passe.'
             : '8 caractères minimum.'
+          ) | t
         }}</small>
       }
-      <a class="forgot-link" routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
+      <a class="forgot-link" routerLink="/mot-de-passe-oublie">{{ 'Mot de passe oublié ?' | t }}</a>
 
       @if (erreur()) {
         <div class="error-message" role="alert">
           <p>{{ erreur() }}</p>
-          @if (nonVerifie()) {
-            <button
-              type="button"
-              class="link-btn"
-              (click)="renvoyerLien()"
-              [disabled]="renvoiEnCours()"
-            >
-              {{ renvoiEnCours() ? 'Envoi…' : 'Renvoyer le lien de confirmation' }}
-            </button>
-          }
         </div>
-      }
-      @if (renvoiMessage()) {
-        <p class="success-message" role="status">{{ renvoiMessage() }}</p>
       }
 
       <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
-        {{ envoi() ? 'Connexion...' : 'Se connecter' }}
+        {{ (envoi() ? 'Connexion...' : 'Se connecter') | t }}
       </button>
     </form>
     <p class="form-switch">
-      Pas encore de compte ? <a routerLink="/inscription">Créer un compte</a>
+      {{ 'Pas encore de compte ?' | t }}
+      <a routerLink="/inscription">{{ 'Créer un compte' | t }}</a>
     </p>
   </section>
   <app-visual-showcase page="login" [compact]="true"></app-visual-showcase>

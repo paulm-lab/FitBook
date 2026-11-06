@@ -184,7 +184,7 @@ final class AppFixtures extends Fixture
     }
 
     /**
-     * 40 sportifs : le 39e n'a pas confirmé son adresse et le 40e est bloqué (états de démonstration).
+     * 40 sportifs : le 40e est bloqué (état de démonstration).
      *
      * @return list<User> sportifs actifs uniquement
      */
@@ -193,10 +193,6 @@ final class AppFixtures extends Fixture
         $active = [];
         for ($i = 1; $i <= 40; ++$i) {
             $user = $this->createUser($manager, "sportif{$i}@fitbook.test", User::ROLE_SPORTIF, $this->faker->firstName(), $this->faker->lastName());
-            if ($i === 39) {
-                $user->setIsVerified(false);
-                continue;
-            }
             if ($i === 40) {
                 $user->setIsBlocked(true);
                 continue;

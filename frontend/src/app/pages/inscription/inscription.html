@@ -1,51 +1,25 @@
 <main class="form-page signup-page" id="contenu">
   <section class="form-card signup-card">
-    <span class="section-kicker">REJOIGNEZ FITBOOK</span>
-    <h1>Créer un compte</h1>
-    <p>Un compte pour réserver vos séances, proposer vos cours ou présenter votre salle.</p>
+    <span class="section-kicker">{{ 'REJOIGNEZ FITBOOK' | t }}</span>
+    <h1>{{ 'Créer un compte' | t }}</h1>
+    <p>
+      {{ 'Un compte pour réserver vos séances, proposer vos cours ou présenter votre salle.' | t }}
+    </p>
 
     @if (confirmation()) {
       <div class="success-message" role="status">
         <p>{{ confirmation() }}</p>
-
-        @if (emailInscrit() && statutEmail() === 'sent') {
-          <p>
-            L'e-mail de vérification a été envoyé à
-            <strong>{{ emailInscrit() }}</strong
-            >. Vérifiez également vos courriers indésirables.
-          </p>
-        }
-
-        @if (emailInscrit() && statutEmail() === 'queued') {
-          <p>
-            L'e-mail de vérification pour <strong>{{ emailInscrit() }}</strong>
-            est en file d'attente : il n'est pas encore parti et peut mettre quelques minutes à
-            arriver. S'il n'arrive pas, demandez un nouveau lien.
-          </p>
-        }
-
-        @if (emailInscrit() && !lienEnFile()) {
-          <p>
-            Le lien n'a pas pu être envoyé. Vous pouvez en demander un nouveau pour
-            <strong>{{ emailInscrit() }}</strong
-            >.
-          </p>
-        }
-
-        @if (erreur()) {
-          <p class="error-message" role="alert">{{ erreur() }}</p>
-        }
-
-        @if (emailInscrit()) {
-          <button class="form-action" type="button" [disabled]="envoi()" (click)="renvoyerLien()">
-            {{ envoi() ? 'Envoi...' : 'Renvoyer le lien de vérification' }}
-          </button>
-        }
+        <a
+          class="form-action"
+          routerLink="/connexion"
+          [queryParams]="emailInscrit() ? { email: emailInscrit() } : {}"
+          >{{ 'Se connecter' | t }}</a
+        >
       </div>
     } @else {
       <form [formGroup]="formulaire" (ngSubmit)="inscrire()" novalidate>
         <fieldset class="role-choice" aria-describedby="signup-role-error">
-          <legend>Je m'inscris en tant que</legend>
+          <legend>{{ "Je m'inscris en tant que" | t }}</legend>
           <div class="role-options">
             @for (option of roles; track option.valeur) {
               <label
@@ -59,8 +33,8 @@
                   [attr.value]="option.valeur"
                   name="role"
                 />
-                <span class="role-title">{{ option.titre }}</span>
-                <span class="role-text">{{ option.description }}</span>
+                <span class="role-title">{{ option.titre | t }}</span>
+                <span class="role-text">{{ option.description | t }}</span>
               </label>
             }
           </div>
@@ -71,7 +45,7 @@
 
         <div class="form-row">
           <label for="signup-prenom">
-            Prénom
+            {{ 'Prénom' | t }}
             <input
               id="signup-prenom"
               type="text"
@@ -90,7 +64,7 @@
           </label>
 
           <label for="signup-nom">
-            Nom
+            {{ 'Nom' | t }}
             <input
               id="signup-nom"
               type="text"
@@ -110,7 +84,7 @@
         </div>
 
         <label for="signup-email">
-          E-mail
+          {{ 'E-mail' | t }}
           <input
             id="signup-email"
             type="email"
@@ -129,7 +103,7 @@
         </label>
 
         <label for="signup-telephone">
-          Téléphone
+          {{ 'Téléphone' | t }}
           <input
             id="signup-telephone"
             type="tel"
@@ -148,7 +122,7 @@
         </label>
 
         <label for="signup-password">
-          Mot de passe
+          {{ 'Mot de passe' | t }}
           <input
             id="signup-password"
             type="password"
@@ -159,7 +133,7 @@
             (input)="effacerErreurServeur('password')"
           />
 
-          <small id="signup-password-hint"> 8 caractères minimum. </small>
+          <small id="signup-password-hint"> {{ '8 caractères minimum.' | t }} </small>
 
           @if (erreurChamp('password')) {
             <small class="field-error" id="signup-password-error">
@@ -173,14 +147,14 @@
         }
 
         <button class="form-action" type="submit" [disabled]="envoi()">
-          {{ envoi() ? 'Création...' : 'Créer mon compte' }}
+          {{ (envoi() ? 'Création...' : 'Créer mon compte') | t }}
         </button>
       </form>
     }
 
     <p class="form-switch">
-      Déjà membre ?
-      <a routerLink="/connexion">Se connecter</a>
+      {{ 'Déjà membre ?' | t }}
+      <a routerLink="/connexion">{{ 'Se connecter' | t }}</a>
     </p>
   </section>
 

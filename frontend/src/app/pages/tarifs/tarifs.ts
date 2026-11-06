@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { I18N } from '../../core/i18n/pipes';
 
 interface TarifPlan {
   id: string;
@@ -13,6 +14,7 @@ interface TarifPlan {
 @Component({
   selector: 'app-tarifs',
   standalone: true,
+  imports: [...I18N],
   templateUrl: './tarifs.html',
   styleUrl: './tarifs.css',
 })

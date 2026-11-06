@@ -1,5 +1,14 @@
 framework:
-    default_locale: en
+    # Langue de l'API : français par défaut, anglais si le client le demande (Accept-Language).
+    default_locale: fr
+    enabled_locales: [fr, en]
+    # La langue de la requête est déduite de l'en-tête Accept-Language (« en… » → en, sinon fr),
+    # avant le pare-feu : les erreurs de connexion sont donc aussi traduites.
+    set_locale_from_accept_language: true
+    set_content_language_from_locale: true
     translator:
         default_path: '%kernel.project_dir%/translations'
+        # Les clés de traduction sont les messages français eux-mêmes : sans traduction, le
+        # message français est renvoyé tel quel.
+        fallbacks: [fr]
         providers:

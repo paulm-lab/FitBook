@@ -238,6 +238,18 @@ class Session
         return $this->status === SessionStatus::Active
             && $this->startAt !== null
             && $this->startAt > $now
-            && $this->getRemainingPlaces() > 0;
+            && $this->getRemainingPlaces() > 0
+            && $this->hasAvailableCoach();
+    }
+
+    /**
+     * Le coach éventuel peut animer la séance : compte vérifié et non bloqué. La séance d'un
+     * coach bloqué disparaît du catalogue et n'est plus réservable.
+     */
+    public function hasAvailableCoach(): bool
+    {
+        $user = $this->coach?->getUser();
+
+        return $user === null || ($user->isVerified() && !$user->isBlocked());
     }
 }

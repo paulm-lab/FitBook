@@ -1,6 +1,5 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { messageErreur } from '../../core/http';
@@ -17,14 +16,16 @@ import {
   LoaderComponent,
 } from '../../shared/ui';
 
+import { I18N } from '../../core/i18n/pipes';
+import { LangueService } from '../../core/i18n/langue.service';
+
 type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 
 /** Fiche d'une séance et réservation (US-V04, UC-08). */
 @Component({
   selector: 'app-seance-detail',
   imports: [
-    DatePipe,
-    DecimalPipe,
+    ...I18N,
     RouterLink,
     LoaderComponent,
     EtatVideComponent,
@@ -45,18 +46,26 @@ export class SeanceDetailComponent {
   private readonly compte = inject(CompteService);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly langue = inject(LangueService);
 
   readonly etat = signal<Etat>('chargement');
   readonly seance = signal<SeanceDetail | null>(null);
   readonly envoi = signal(false);
   /** Réservation faite depuis cette page : lien vers « Mes réservations ». */
   readonly reservee = signal(false);
+  /** Place déjà réservée par l'utilisateur (API) ou depuis cette page : bouton désactivé. */
+  readonly dejaReservee = computed(() => this.reservee() || !!this.seance()?.dejaReservee);
 
   readonly niveau = computed(() => (this.seance() ? NIVEAUX[this.seance()!.niveau] : ''));
   readonly complet = computed(() => (this.seance()?.placesDisponibles ?? 0) <= 0);
   readonly passee = computed(() => {
     const s = this.seance();
     return !!s && (s.statut === 'annulee' || new Date(s.dateDebut) <= new Date());
+  });
+  /** Séance active et finie : les participants peuvent donner leur avis. */
+  readonly terminee = computed(() => {
+    const s = this.seance();
+    return !!s && s.statut === 'active' && new Date(s.dateFin) <= new Date();
   });
   readonly duree = computed(() => {
     const s = this.seance();
@@ -72,7 +81,12 @@ export class SeanceDetailComponent {
   });
 
   constructor() {
-    effect(() => this.charger(this.id()));
+    effect(() => {
+      const id = this.id();
+      // Autre séance : l'état « réservée » de la précédente ne s'applique plus.
+      untracked(() => this.reservee.set(false));
+      this.charger(id);
+    });
   }
 
   charger(id: string, silencieux = false): void {
@@ -91,7 +105,7 @@ export class SeanceDetailComponent {
 
   reserver(): void {
     const seance = this.seance();
-    if (!seance || this.envoi()) return;
+    if (!seance || this.envoi() || this.dejaReservee()) return;
     if (!this.auth.estConnecte()) {
       void this.router.navigate(['/connexion'], { queryParams: { returnUrl: this.router.url } });
       return;
@@ -105,7 +119,9 @@ export class SeanceDetailComponent {
         this.seance.update((s) =>
           s ? { ...s, placesDisponibles: Math.max(0, s.placesDisponibles - 1) } : s,
         );
-        this.toasts.succes('Réservation confirmée ! Un e-mail de confirmation vous a été envoyé.');
+        this.toasts.succes(
+          this.langue.t('Réservation confirmée ! Un e-mail de confirmation vous a été envoyé.'),
+        );
       },
       error: (error: unknown) => {
         this.envoi.set(false);

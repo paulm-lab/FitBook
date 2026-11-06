@@ -1,7 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Reservation } from '../../../core/models';
 import { GestionService, Inscrits } from '../../../core/services/gestion.service';
 import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
@@ -16,31 +17,36 @@ const STATUTS: Record<string, string> = {
 /** Liste des inscrits d'une séance (US-C05, US-G04), export CSV et impression. */
 @Component({
   selector: 'app-inscrits',
-  imports: [RouterLink, DatePipe, LoaderComponent, EtatVideComponent],
+  imports: [RouterLink, LoaderComponent, EtatVideComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Inscrits</span>
-        <h1>{{ donnees()?.seance?.titre ?? 'Séance' }}</h1>
+        <span class="section-kicker">{{ 'Inscrits' | t }}</span>
+        <h1>{{ donnees()?.seance?.titre ?? ('Séance' | t) }}</h1>
         @if (donnees(); as d) {
           <p>
-            {{ d.seance.dateDebut | date: 'EEEE d MMMM y · HH:mm' }} –
-            {{ d.seance.dateFin | date: 'HH:mm' }} · {{ d.seance.salle?.nom ?? 'Sans salle' }} ·
-            <strong>{{ d.nbConfirmes }} / {{ d.seance.capaciteMax }}</strong> places prises
+            {{ d.seance.dateDebut | dateL: 'EEEE d MMMM y · HH:mm' }} –
+            {{ d.seance.dateFin | dateL: 'HH:mm' }} ·
+            {{ d.seance.salle?.nom ?? ('Sans salle' | t) }} ·
+            <strong>{{
+              '{pris} / {max} places prises' | t: { pris: d.nbConfirmes, max: d.seance.capaciteMax }
+            }}</strong>
           </p>
         }
       </div>
       <div class="row no-print">
-        <a class="btn btn--ghost" [routerLink]="'/' + espace + '/seances'">← Retour</a>
+        <a class="btn btn--ghost" [routerLink]="'/' + espace + '/seances'">{{ '← Retour' | t }}</a>
         <button
           type="button"
           class="btn btn--ghost"
           (click)="exporter()"
           [disabled]="lignes().length === 0"
         >
-          Exporter en CSV
+          {{ 'Exporter en CSV' | t }}
         </button>
-        <button type="button" class="btn btn--ghost" (click)="imprimer()">Imprimer</button>
+        <button type="button" class="btn btn--ghost" (click)="imprimer()">
+          {{ 'Imprimer' | t }}
+        </button>
       </div>
     </header>
 
@@ -55,28 +61,30 @@ const STATUTS: Record<string, string> = {
           [checked]="confirmesSeulement()"
           (change)="confirmesSeulement.set($any($event.target).checked)"
         />
-        Confirmés seulement
+        {{ 'Confirmés seulement' | t }}
       </label>
       @if (lignes().length === 0) {
         <app-etat-vide
-          titre="Aucun inscrit"
-          message="Personne n'a encore réservé cette séance."
+          [titre]="'Aucun inscrit' | t"
+          [message]="'Personne n’a encore réservé cette séance.' | t"
           icone="👥"
         />
       } @else {
         <div class="table-wrap">
           <table class="table">
             <caption class="sr-only">
-              Inscrits de la séance
+              {{
+                'Inscrits de la séance' | t
+              }}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Nom</th>
-                <th scope="col">Prénom</th>
-                <th scope="col">E-mail</th>
-                <th scope="col">Téléphone</th>
-                <th scope="col">Statut</th>
-                <th scope="col">Réservé le</th>
+                <th scope="col">{{ 'Nom' | t }}</th>
+                <th scope="col">{{ 'Prénom' | t }}</th>
+                <th scope="col">{{ 'E-mail' | t }}</th>
+                <th scope="col">{{ 'Téléphone' | t }}</th>
+                <th scope="col">{{ 'Statut' | t }}</th>
+                <th scope="col">{{ 'Réservé le' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -91,9 +99,9 @@ const STATUTS: Record<string, string> = {
                   </td>
                   <td>{{ r.sportif?.telephone ?? '—' }}</td>
                   <td>
-                    <span class="badge badge--{{ r.statut }}">{{ statut(r.statut) }}</span>
+                    <span class="badge badge--{{ r.statut }}">{{ statut(r.statut) | t }}</span>
                   </td>
-                  <td>{{ r.dateReservation | date: 'd/MM/y HH:mm' }}</td>
+                  <td>{{ r.dateReservation | dateL: 'd/MM/y HH:mm' }}</td>
                 </tr>
               }
             </tbody>
@@ -106,6 +114,7 @@ const STATUTS: Record<string, string> = {
 export class InscritsComponent {
   readonly id = input.required<string>();
   private readonly gestion = inject(GestionService);
+  private readonly langue = inject(LangueService);
 
   readonly espace = espaceCourant();
   readonly donnees = signal<Inscrits | null>(null);
@@ -128,7 +137,9 @@ export class InscritsComponent {
           this.chargement.set(false);
         },
         error: (error) => {
-          this.erreur.set(messageErreur(error, 'Impossible de charger les inscrits.'));
+          this.erreur.set(
+            messageErreur(error, this.langue.t('Impossible de charger les inscrits.')),
+          );
           this.chargement.set(false);
         },
       });
@@ -139,20 +150,31 @@ export class InscritsComponent {
     return STATUTS[code] ?? code;
   }
 
-  /** Export CSV (séparateur « ; » pour Excel en français, BOM UTF-8 pour les accents). */
+  /**
+   * Export CSV (séparateur « ; » pour Excel en français, BOM UTF-8 pour les accents).
+   * Une valeur commençant par = + - @, une tabulation ou un retour chariot est préfixée d'une
+   * apostrophe : le tableur ne l'exécute pas comme une formule (injection CSV).
+   */
   exporter(): void {
-    const cellule = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+    const echapper = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const cellule = (v: string | null | undefined) =>
+      echapper(/^[=+\-@\t\r]/.test(v ?? '') ? `'${v}` : (v ?? ''));
+    // Téléphone écrit ="…" : Excel le garde en texte (0 initial et +32 conservés).
+    const telephone = (v: string | null | undefined) =>
+      v && /^[+\d][\d\s./()-]*$/.test(v) ? echapper(`="${v}"`) : cellule(v);
     const lignes = [
-      ['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Statut'].map(cellule).join(';'),
+      ['Nom', 'Prénom', 'E-mail', 'Téléphone', 'Statut']
+        .map((v) => cellule(this.langue.t(v)))
+        .join(';'),
       ...this.lignes().map((r) =>
         [
           r.sportif?.nom,
           r.sportif?.prenom,
           r.sportif?.email,
           r.sportif?.telephone,
-          this.statut(r.statut),
+          this.langue.t(this.statut(r.statut)),
         ]
-          .map(cellule)
+          .map((v, i) => (i === 3 ? telephone(v) : cellule(v)))
           .join(';'),
       ),
     ];

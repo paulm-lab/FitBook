@@ -1,7 +1,8 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { CoachDetail, Evolution, Note } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { GraphiqueEvolutionComponent } from '../../../shared/graphique';
@@ -20,28 +21,29 @@ interface StatsCoach {
   selector: 'app-tableau-coach',
   imports: [
     RouterLink,
-    DatePipe,
-    DecimalPipe,
     LoaderComponent,
     EtatVideComponent,
     EtoilesComponent,
     GraphiqueEvolutionComponent,
+    ...I18N,
   ],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Espace coach</span>
-        <h1>Bonjour {{ profil()?.prenom }} 👋</h1>
-        <p>Votre activité en un coup d'œil.</p>
+        <span class="section-kicker">{{ 'Espace coach' | t }}</span>
+        <h1>{{ 'Bonjour {prenom}' | t: { prenom: profil()?.prenom } }} 👋</h1>
+        <p>{{ 'Votre activité en un coup d’œil.' | t }}</p>
       </div>
-      <a class="btn" routerLink="/coach/seances/nouvelle">+ Nouvelle séance</a>
+      <a class="btn" routerLink="/coach/seances/nouvelle">{{ '+ Nouvelle séance' | t }}</a>
     </header>
 
     @if (profilIncomplet()) {
       <p class="alert" role="status" style="margin-bottom:20px">
-        Votre profil professionnel est incomplet : ajoutez une bio et vos spécialités pour être
-        trouvé par les sportifs.
-        <a routerLink="/coach/profil">Compléter mon profil →</a>
+        {{
+          'Votre profil professionnel est incomplet : ajoutez une bio et vos spécialités pour être trouvé par les sportifs.'
+            | t
+        }}
+        <a routerLink="/coach/profil">{{ 'Compléter mon profil →' | t }}</a>
       </p>
     }
 
@@ -53,21 +55,21 @@ interface StatsCoach {
       <div class="stats">
         <div class="stat">
           <span class="stat-value">{{ s.nbSeancesAVenir }}</span
-          ><span class="stat-label">séances à venir</span>
+          ><span class="stat-label">{{ 'séances à venir' | t }}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{{ s.nbInscritsAVenir }}</span
-          ><span class="stat-label">sportifs inscrits</span>
+          ><span class="stat-label">{{ 'sportifs inscrits' | t }}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{{
-            s.tauxRemplissage !== null ? (s.tauxRemplissage | number: '1.0-1') + ' %' : '—'
+            s.tauxRemplissage !== null ? (s.tauxRemplissage | nombreL: '1.0-1') + ' %' : '—'
           }}</span
-          ><span class="stat-label">taux de remplissage</span>
+          ><span class="stat-label">{{ 'taux de remplissage' | t }}</span>
         </div>
         <div class="stat">
           <span class="stat-value">{{
-            s.note.note !== null ? (s.note.note | number: '1.1-1') : '—'
+            s.note.note !== null ? (s.note.note | nombreL: '1.1-1') : '—'
           }}</span
           ><app-etoiles [note]="s.note.note" [nbAvis]="s.note.nbAvis" />
         </div>
@@ -75,18 +77,18 @@ interface StatsCoach {
 
       <div class="grid grid--2" style="align-items:start">
         <section class="panel">
-          <h2>Réservations par semaine</h2>
+          <h2>{{ 'Réservations par semaine' | t }}</h2>
           <app-graphique-evolution [donnees]="s.evolution" />
         </section>
         <section class="panel">
           <div class="row row--between">
-            <h2>Prochaines séances</h2>
-            <a routerLink="/coach/seances" class="text-link">Tout voir →</a>
+            <h2>{{ 'Prochaines séances' | t }}</h2>
+            <a routerLink="/coach/seances" class="text-link">{{ 'Tout voir →' | t }}</a>
           </div>
           @if (prochaines().length === 0) {
             <app-etat-vide
-              titre="Aucune séance programmée"
-              message="Créez votre prochaine séance pour la rendre réservable."
+              [titre]="'Aucune séance programmée' | t"
+              [message]="'Créez votre prochaine séance pour la rendre réservable.' | t"
               icone="📅"
             />
           } @else {
@@ -100,17 +102,21 @@ interface StatsCoach {
                     <strong>{{ seance.titre }}</strong
                     ><br />
                     <span class="muted"
-                      >{{ seance.dateDebut | date: 'EEE d MMM · HH:mm' }} ·
-                      {{ seance.capaciteMax - seance.placesDisponibles }}/{{
-                        seance.capaciteMax
-                      }}
-                      inscrits</span
+                      >{{ seance.dateDebut | dateL: 'EEE d MMM · HH:mm' }} ·
+                      {{
+                        '{n}/{max} inscrits'
+                          | t
+                            : {
+                                n: seance.capaciteMax - seance.placesDisponibles,
+                                max: seance.capaciteMax,
+                              }
+                      }}</span
                     >
                   </span>
                   <a
                     class="btn btn--sm btn--ghost"
                     [routerLink]="['/coach/seances', seance.id, 'inscrits']"
-                    >Inscrits</a
+                    >{{ 'Inscrits' | t }}</a
                   >
                 </li>
               }
@@ -123,6 +129,7 @@ interface StatsCoach {
 })
 export class TableauCoachComponent {
   private readonly gestion = inject(GestionService);
+  private readonly langue = inject(LangueService);
   readonly stats = signal<StatsCoach | null>(null);
   readonly profil = signal<CoachDetail | null>(null);
   readonly chargement = signal(true);
@@ -142,7 +149,9 @@ export class TableauCoachComponent {
         this.chargement.set(false);
       },
       error: (error) => {
-        this.erreur.set(messageErreur(error, 'Impossible de charger vos statistiques.'));
+        this.erreur.set(
+          messageErreur(error, this.langue.t('Impossible de charger vos statistiques.')),
+        );
         this.chargement.set(false);
       },
     });

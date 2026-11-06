@@ -114,6 +114,8 @@ export interface SeanceDetail extends SeanceResume {
   note: Note;
   avis: Avis[];
   peutModifier: boolean;
+  /** Vrai si l'utilisateur connecté a une réservation confirmée sur cette séance. */
+  dejaReservee?: boolean;
 }
 
 export interface Salle {

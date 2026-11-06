@@ -2,23 +2,29 @@
   <section class="hero">
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-      <span class="eyebrow">VOTRE SPORT. VOTRE RYTHME.</span>
-      <h1>Bougez plus.<br /><span>Vivez mieux.</span></h1>
-      <p>Réservez les meilleures activités sportives près de chez vous, en quelques secondes.</p>
+      <span class="eyebrow">{{ 'VOTRE SPORT. VOTRE RYTHME.' | t }}</span>
+      <h1>
+        {{ 'Bougez plus.' | t }}<br /><span>{{ 'Vivez mieux.' | t }}</span>
+      </h1>
+      <p>
+        {{
+          'Réservez les meilleures activités sportives près de chez vous, en quelques secondes.' | t
+        }}
+      </p>
       <form class="search-bar" (submit)="rechercher($event)">
         <label class="search-field">
-          <span>QUOI</span>
+          <span>{{ 'QUOI' | t }}</span>
           <input
             type="text"
-            placeholder="Activité, salle, coach…"
+            [placeholder]="'Activité, salle, coach…' | t"
             [(ngModel)]="quoi"
             name="q"
             autocomplete="off"
-            aria-label="Que voulez-vous pratiquer ?"
+            [attr.aria-label]="'Que voulez-vous pratiquer ?' | t"
           />
         </label>
         <label class="search-field icon-field">
-          <span>OÙ</span>
+          <span>{{ 'OÙ' | t }}</span>
           <span class="input-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -26,26 +32,26 @@
             </svg>
             <input
               type="text"
-              placeholder="Commune ou code postal"
+              [placeholder]="'Commune ou code postal' | t"
               [(ngModel)]="lieu"
               name="ville"
               autocomplete="address-level2"
-              aria-label="Où ?"
+              [attr.aria-label]="'Où ?' | t"
             />
           </span>
         </label>
         <label class="search-field icon-field">
-          <span>QUAND</span>
+          <span>{{ 'QUAND' | t }}</span>
           <span class="input-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="5" width="18" height="16" rx="2" />
               <path d="M16 3v4M8 3v4M3 10h18" />
             </svg>
-            <select [(ngModel)]="quand" name="quand" aria-label="Quand ?">
-              <option value="Cette semaine">Cette semaine</option>
-              <option value="Ce week-end">Ce week-end</option>
-              <option value="La semaine prochaine">La semaine prochaine</option>
-              <option value="N'importe quand">N'importe quand</option>
+            <select [(ngModel)]="quand" name="quand" [attr.aria-label]="'Quand ?' | t">
+              <option value="Cette semaine">{{ 'Cette semaine' | t }}</option>
+              <option value="Ce week-end">{{ 'Ce week-end' | t }}</option>
+              <option value="La semaine prochaine">{{ 'La semaine prochaine' | t }}</option>
+              <option value="N'importe quand">{{ "N'importe quand" | t }}</option>
             </select>
           </span>
         </label>
@@ -54,14 +60,17 @@
             <circle cx="10.8" cy="10.8" r="6.8" />
             <path d="m16 16 5 5" />
           </svg>
-          <span>Rechercher</span>
+          <span>{{ 'Rechercher' | t }}</span>
         </button>
       </form>
       <div class="hero-footer">
-        <div class="avatar-stack" aria-label="Membres FitBook">
+        <div class="avatar-stack" [attr.aria-label]="'Membres FitBook' | t">
           <span>A</span><span>M</span><span>S</span>
         </div>
-        <p><strong>+12 000 sportifs</strong><span>nous font déjà confiance</span></p>
+        <p>
+          <strong>{{ '+12 000 sportifs' | t }}</strong
+          ><span>{{ 'nous font déjà confiance' | t }}</span>
+        </p>
       </div>
     </div>
   </section>
@@ -70,63 +79,63 @@
   <section class="content-section popular-section" id="activites-populaires">
     <div class="section-heading">
       <div>
-        <span class="section-kicker">À VOUS DE JOUER</span>
-        <h2>Les activités populaires</h2>
+        <span class="section-kicker">{{ 'À VOUS DE JOUER' | t }}</span>
+        <h2>{{ 'Les activités populaires' | t }}</h2>
       </div>
-      <a routerLink="/activites" class="text-link">Toutes les activités →</a>
+      <a routerLink="/activites" class="text-link">{{ 'Toutes les activités →' | t }}</a>
     </div>
     <div class="activity-showcase">
       <a class="showcase-card" routerLink="/recherche" [queryParams]="{ activite: 'Yoga' }"
         ><img
           src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=75"
-          alt="Cours de yoga"
+          [alt]="'Cours de yoga' | t"
           loading="lazy"
           decoding="async"
           (error)="imageError($event)"
-        /><span>Yoga</span></a
+        /><span>{{ 'Yoga' | t }}</span></a
       >
       <a class="showcase-card" routerLink="/recherche" [queryParams]="{ activite: 'Cardio' }"
         ><img
           src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=75"
-          alt="Salle de fitness"
+          [alt]="'Salle de fitness' | t"
           loading="lazy"
           decoding="async"
           (error)="imageError($event)"
-        /><span>Cardio</span></a
+        /><span>{{ 'Cardio' | t }}</span></a
       >
       <a class="showcase-card" routerLink="/recherche" [queryParams]="{ activite: 'Boxe' }"
         ><img
           src="https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=800&q=75"
-          alt="Entraînement de boxe"
+          [alt]="'Entraînement de boxe' | t"
           loading="lazy"
           decoding="async"
           (error)="imageError($event)"
-        /><span>Boxe</span></a
+        /><span>{{ 'Boxe' | t }}</span></a
       >
     </div>
   </section>
   <section class="content-section how-section">
     <div class="section-heading">
       <div>
-        <span class="section-kicker">SIMPLE COMME BONJOUR</span>
-        <h2>Votre prochaine séance en 3 étapes</h2>
+        <span class="section-kicker">{{ 'SIMPLE COMME BONJOUR' | t }}</span>
+        <h2>{{ 'Votre prochaine séance en 3 étapes' | t }}</h2>
       </div>
     </div>
     <div class="steps-grid">
       <article>
         <b>01</b>
-        <h3>Trouvez votre activité</h3>
-        <p>Parcourez les cours près de chez vous et choisissez votre créneau.</p>
+        <h3>{{ 'Trouvez votre activité' | t }}</h3>
+        <p>{{ 'Parcourez les cours près de chez vous et choisissez votre créneau.' | t }}</p>
       </article>
       <article>
         <b>02</b>
-        <h3>Choisissez votre coach</h3>
-        <p>Découvrez les professionnels et les espaces qui vous correspondent.</p>
+        <h3>{{ 'Choisissez votre coach' | t }}</h3>
+        <p>{{ 'Découvrez les professionnels et les espaces qui vous correspondent.' | t }}</p>
       </article>
       <article>
         <b>03</b>
-        <h3>Réservez en quelques clics</h3>
-        <p>Gardez votre place et préparez-vous à bouger à votre rythme.</p>
+        <h3>{{ 'Réservez en quelques clics' | t }}</h3>
+        <p>{{ 'Gardez votre place et préparez-vous à bouger à votre rythme.' | t }}</p>
       </article>
     </div>
   </section>
@@ -136,7 +145,7 @@
         controls
         playsinline
         preload="none"
-        aria-label="Vidéo de présentation FitBook"
+        [attr.aria-label]="'Vidéo de présentation FitBook' | t"
         poster="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1000&q=75"
       >
         <source
@@ -146,22 +155,26 @@
       </video>
     </div>
     <div class="story-copy">
-      <span class="section-kicker">LE SPORT À VOTRE RYTHME</span>
-      <h2>Un espace. Tous vos possibles.</h2>
+      <span class="section-kicker">{{ 'LE SPORT À VOTRE RYTHME' | t }}</span>
+      <h2>{{ 'Un espace. Tous vos possibles.' | t }}</h2>
       <p>
-        Yoga, renforcement, cardio ou sports de combat : trouvez une séance qui vous ressemble,
-        guidée par des professionnels passionnés.
+        {{
+          'Yoga, renforcement, cardio ou sports de combat : trouvez une séance qui vous ressemble, guidée par des professionnels passionnés.'
+            | t
+        }}
       </p>
-      <a routerLink="/recherche" class="btn">Trouver une séance</a>
+      <a routerLink="/recherche" class="btn">{{ 'Trouver une séance' | t }}</a>
     </div>
   </section>
   <section class="content-section testimonial-section">
-    <span class="section-kicker">ILS BOUGENT AVEC FITBOOK</span>
-    <h2>Leurs mots, leur expérience</h2>
+    <span class="section-kicker">{{ 'ILS BOUGENT AVEC FITBOOK' | t }}</span>
+    <h2>{{ 'Leurs mots, leur expérience' | t }}</h2>
     <blockquote>
-      « J’ai trouvé un cours près de chez moi en quelques minutes. Depuis, le sport fait vraiment
-      partie de ma semaine. »
+      {{
+        '« J’ai trouvé un cours près de chez moi en quelques minutes. Depuis, le sport fait vraiment partie de ma semaine. »'
+          | t
+      }}
     </blockquote>
-    <p class="testimonial-author">Camille · membre FitBook</p>
+    <p class="testimonial-author">{{ 'Camille · membre FitBook' | t }}</p>
   </section>
 </main>

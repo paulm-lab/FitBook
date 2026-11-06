@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { erreursChamps, messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { ROLES, Utilisateur } from '../../../core/models';
 import { CompteService } from '../../../core/services/compte.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -21,24 +23,24 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
  */
 @Component({
   selector: 'app-profil',
-  imports: [ReactiveFormsModule, RouterLink, ImageSecoursDirective],
+  imports: [ReactiveFormsModule, RouterLink, ImageSecoursDirective, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Mon compte</span>
-        <h1>Mon profil</h1>
-        <p>Ces informations sont utilisées pour vos réservations.</p>
+        <span class="section-kicker">{{ 'Mon compte' | t }}</span>
+        <h1>{{ 'Mon profil' | t }}</h1>
+        <p>{{ 'Ces informations sont utilisées pour vos réservations.' | t }}</p>
       </div>
     </header>
 
     <div class="profile">
       <section class="panel avatar-panel" aria-labelledby="avatar-title">
-        <h2 id="avatar-title">Photo de profil</h2>
+        <h2 id="avatar-title">{{ 'Photo de profil' | t }}</h2>
         @if (auth.utilisateur()?.avatar) {
           <img
             class="avatar avatar--lg"
             [src]="auth.utilisateur()!.avatar"
-            alt="Votre photo de profil"
+            [alt]="'Votre photo de profil' | t"
             appSecours
           />
         } @else {
@@ -47,7 +49,7 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
           }}</span>
         }
         <label class="btn btn--sm btn--ghost file-btn" [class.disabled]="envoiAvatar()">
-          {{ envoiAvatar() ? 'Envoi…' : 'Choisir une image' }}
+          {{ (envoiAvatar() ? 'Envoi…' : 'Choisir une image') | t }}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -56,7 +58,9 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
             aria-describedby="avatar-hint avatar-error"
           />
         </label>
-        <small class="field-hint" id="avatar-hint">JPEG, PNG ou WebP, 2 Mo au maximum.</small>
+        <small class="field-hint" id="avatar-hint">{{
+          'JPEG, PNG ou WebP, 2 Mo au maximum.' | t
+        }}</small>
         @if (erreurAvatar()) {
           <small class="field-error" id="avatar-error" role="alert">{{ erreurAvatar() }}</small>
         }
@@ -67,17 +71,17 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
             (click)="supprimerAvatar()"
             [disabled]="envoiAvatar()"
           >
-            Supprimer la photo
+            {{ 'Supprimer la photo' | t }}
           </button>
         }
       </section>
 
       <section class="panel" aria-labelledby="infos-title">
-        <h2 id="infos-title">Mes informations</h2>
+        <h2 id="infos-title">{{ 'Mes informations' | t }}</h2>
         <form class="form" [formGroup]="formulaire" (ngSubmit)="enregistrer()" novalidate>
           <div class="form-row">
             <label class="field">
-              <span>Prénom</span>
+              <span>{{ 'Prénom' | t }}</span>
               <input
                 type="text"
                 formControlName="prenom"
@@ -92,7 +96,7 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
               }
             </label>
             <label class="field">
-              <span>Nom</span>
+              <span>{{ 'Nom' | t }}</span>
               <input
                 type="text"
                 formControlName="nom"
@@ -106,7 +110,7 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
             </label>
           </div>
           <label class="field">
-            <span>Téléphone</span>
+            <span>{{ 'Téléphone' | t }}</span>
             <input
               type="tel"
               formControlName="telephone"
@@ -122,31 +126,31 @@ const TAILLE_MAX_AVATAR = 2 * 1024 * 1024;
           </label>
           <div class="form-row">
             <label class="field">
-              <span>E-mail</span>
+              <span>{{ 'E-mail' | t }}</span>
               <input
                 type="email"
                 [value]="auth.utilisateur()?.email ?? ''"
                 disabled
                 aria-describedby="profil-email-hint"
               />
-              <small class="field-hint" id="profil-email-hint"
-                >L'adresse e-mail ne peut pas être modifiée.</small
-              >
+              <small class="field-hint" id="profil-email-hint">{{ emailFixe | t }}</small>
             </label>
             <label class="field">
-              <span>Rôle</span>
+              <span>{{ 'Rôle' | t }}</span>
               <input type="text" [value]="roleLibelle()" disabled />
             </label>
           </div>
           <div class="row row--between">
-            <a class="text-link" routerLink="/mot-de-passe-oublie">Changer de mot de passe</a>
+            <a class="text-link" routerLink="/mot-de-passe-oublie">{{
+              'Changer de mot de passe' | t
+            }}</a>
             <button
               class="btn"
               type="submit"
               [disabled]="envoi() || formulaire.pristine"
               [attr.aria-busy]="envoi()"
             >
-              {{ envoi() ? 'Enregistrement…' : 'Enregistrer' }}
+              {{ (envoi() ? 'Enregistrement…' : 'Enregistrer') | t }}
             </button>
           </div>
         </form>
@@ -197,12 +201,17 @@ export class ProfilComponent {
   private readonly compte = inject(CompteService);
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  private readonly langue = inject(LangueService);
 
+  /** Texte avec apostrophe, tenu hors du gabarit (guillemets du parseur Angular). */
+  readonly emailFixe = "L'adresse e-mail ne peut pas être modifiée.";
   readonly envoi = signal(false);
   readonly envoiAvatar = signal(false);
   readonly erreurAvatar = signal('');
   readonly erreursServeur = signal<Partial<Record<ChampProfil, string>>>({});
-  readonly roleLibelle = computed(() => (this.auth.role() ? ROLES[this.auth.role()!] : ''));
+  readonly roleLibelle = computed(() =>
+    this.auth.role() ? this.langue.t(ROLES[this.auth.role()!]) : '',
+  );
 
   readonly formulaire = inject(FormBuilder).nonNullable.group({
     prenom: [
@@ -228,11 +237,13 @@ export class ProfilComponent {
     const control = this.formulaire.controls[champ];
     if (control.touched || control.dirty) {
       if (control.hasError('required') || control.hasError('pattern')) {
-        return champ === 'telephone'
-          ? 'Saisissez un numéro valide (7 à 20 caractères).'
-          : 'Ce champ est obligatoire.';
+        return this.langue.t(
+          champ === 'telephone'
+            ? 'Saisissez un numéro valide (7 à 20 caractères).'
+            : 'Ce champ est obligatoire.',
+        );
       }
-      if (control.hasError('maxlength')) return '50 caractères au maximum.';
+      if (control.hasError('maxlength')) return this.langue.t('50 caractères au maximum.');
     }
     return this.erreursServeur()[champ] ?? '';
   }
@@ -253,11 +264,13 @@ export class ProfilComponent {
         next: (user) => {
           this.mettreAJour(user);
           this.formulaire.markAsPristine();
-          this.toasts.succes('Profil enregistré.');
+          this.toasts.succes(this.langue.t('Profil enregistré.'));
         },
         error: (error: unknown) => {
           this.erreursServeur.set(erreursChamps(error));
-          this.toasts.erreur(messageErreur(error, 'Le profil n’a pas pu être enregistré.'));
+          this.toasts.erreur(
+            messageErreur(error, this.langue.t('Le profil n’a pas pu être enregistré.')),
+          );
         },
       });
   }
@@ -269,11 +282,11 @@ export class ProfilComponent {
     this.erreurAvatar.set('');
     if (!fichier) return;
     if (!TYPES_AVATAR.includes(fichier.type)) {
-      this.erreurAvatar.set('Formats acceptés : JPEG, PNG ou WebP.');
+      this.erreurAvatar.set(this.langue.t('Formats acceptés : JPEG, PNG ou WebP.'));
       return;
     }
     if (fichier.size > TAILLE_MAX_AVATAR) {
-      this.erreurAvatar.set('L’image ne doit pas dépasser 2 Mo.');
+      this.erreurAvatar.set(this.langue.t('L’image ne doit pas dépasser 2 Mo.'));
       return;
     }
 
@@ -284,18 +297,20 @@ export class ProfilComponent {
       .subscribe({
         next: (user) => {
           this.mettreAJour(user);
-          this.toasts.succes('Photo de profil mise à jour.');
+          this.toasts.succes(this.langue.t('Photo de profil mise à jour.'));
         },
         error: (error: unknown) =>
-          this.erreurAvatar.set(messageErreur(error, 'L’image n’a pas pu être envoyée.')),
+          this.erreurAvatar.set(
+            messageErreur(error, this.langue.t('L’image n’a pas pu être envoyée.')),
+          ),
       });
   }
 
   async supprimerAvatar(): Promise<void> {
     const ok = await this.confirm.demander({
-      titre: 'Supprimer la photo ?',
-      message: 'Vos initiales seront affichées à la place.',
-      confirmer: 'Supprimer',
+      titre: this.langue.t('Supprimer la photo ?'),
+      message: this.langue.t('Vos initiales seront affichées à la place.'),
+      confirmer: this.langue.t('Supprimer'),
       danger: true,
     });
     if (!ok) return;
@@ -306,7 +321,7 @@ export class ProfilComponent {
       .subscribe({
         next: (user) => {
           this.mettreAJour(user);
-          this.toasts.succes('Photo supprimée.');
+          this.toasts.succes(this.langue.t('Photo supprimée.'));
         },
         error: (error: unknown) => this.toasts.erreur(messageErreur(error)),
       });

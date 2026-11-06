@@ -1,9 +1,9 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Reservation, SeanceResume } from '../../../core/models';
+import { I18N } from '../../../core/i18n/pipes';
 import { CompteService } from '../../../core/services/compte.service';
 import { CalendrierComponent, evenementSeance } from '../../../shared/calendrier';
 import { FavorisStore } from '../../../shared/favori-button';
@@ -12,47 +12,51 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
 /** Tableau de bord du sportif (US-S04) : prochaines séances, compteurs, calendrier personnel. */
 @Component({
   selector: 'app-tableau-sportif',
-  imports: [RouterLink, DatePipe, CalendrierComponent, LoaderComponent, EtatVideComponent],
+  imports: [RouterLink, CalendrierComponent, LoaderComponent, EtatVideComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Mon espace</span>
-        <h1>Bonjour {{ auth.utilisateur()?.prenom }} !</h1>
-        <p>Retrouvez vos prochaines séances et votre activité sur FitBook.</p>
+        <span class="section-kicker">{{ 'Mon espace' | t }}</span>
+        <h1>{{ 'Bonjour {prenom} !' | t: { prenom: auth.utilisateur()?.prenom } }}</h1>
+        <p>{{ 'Retrouvez vos prochaines séances et votre activité sur FitBook.' | t }}</p>
       </div>
-      <a class="btn" routerLink="/recherche">Trouver une séance</a>
+      <a class="btn" routerLink="/recherche">{{ 'Trouver une séance' | t }}</a>
     </header>
 
     @if (chargement()) {
       <app-loader />
     } @else {
-      <section class="stats" aria-label="Mes chiffres">
+      <section class="stats" [attr.aria-label]="'Mes chiffres' | t">
         <a class="stat" routerLink="/mon-espace/reservations"
           ><span class="stat-value">{{ total() }}</span
-          ><span class="stat-label">Réservation{{ total() > 1 ? 's' : '' }} à venir</span></a
+          ><span class="stat-label">{{
+            (total() > 1 ? 'Réservations à venir' : 'Réservation à venir') | t
+          }}</span></a
         >
         <a class="stat" routerLink="/mon-espace/favoris"
           ><span class="stat-value">{{ favoris.favoris().length }}</span
-          ><span class="stat-label">Favoris</span></a
+          ><span class="stat-label">{{ 'Favoris' | t }}</span></a
         >
         <a class="stat" routerLink="/mon-espace/avis"
           ><span class="stat-value">{{ nbAvis() }}</span
-          ><span class="stat-label">Avis donnés</span></a
+          ><span class="stat-label">{{ 'Avis donnés' | t }}</span></a
         >
       </section>
 
       <section class="panel" aria-labelledby="prochaines-title">
         <div class="row row--between">
-          <h2 id="prochaines-title">Mes prochaines séances</h2>
-          <a class="text-link" routerLink="/mon-espace/reservations">Toutes mes réservations →</a>
+          <h2 id="prochaines-title">{{ 'Mes prochaines séances' | t }}</h2>
+          <a class="text-link" routerLink="/mon-espace/reservations">{{
+            'Toutes mes réservations →' | t
+          }}</a>
         </div>
         @if (prochaines().length === 0) {
           <app-etat-vide
-            titre="Aucune séance réservée"
-            message="Yoga, boxe, running… trouvez la séance qui vous motive."
+            [titre]="'Aucune séance réservée' | t"
+            [message]="'Yoga, boxe, running… trouvez la séance qui vous motive.' | t"
             icone="📅"
           >
-            <a class="btn" routerLink="/recherche">Rechercher une séance</a>
+            <a class="btn" routerLink="/recherche">{{ 'Rechercher une séance' | t }}</a>
           </app-etat-vide>
         } @else {
           <ul class="next-list">
@@ -60,17 +64,18 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
               @if (r.seance; as s) {
                 <li>
                   <time class="next-date" [attr.datetime]="s.dateDebut">
-                    <strong>{{ s.dateDebut | date: 'd' }}</strong
-                    ><span>{{ s.dateDebut | date: 'MMM' }}</span>
+                    <strong>{{ s.dateDebut | dateL: 'd' }}</strong
+                    ><span>{{ s.dateDebut | dateL: 'MMM' }}</span>
                   </time>
                   <div class="next-info">
                     <a [routerLink]="['/mon-espace/reservations', r.id]">{{ s.titre }}</a>
                     <span class="muted"
-                      >{{ s.dateDebut | date: 'EEEE · HH:mm' }} – {{ s.dateFin | date: 'HH:mm' }} ·
-                      {{ s.salle?.nom ?? 'Lieu précisé par le coach' }}</span
+                      >{{ s.dateDebut | dateL: 'EEEE · HH:mm' }} –
+                      {{ s.dateFin | dateL: 'HH:mm' }} ·
+                      {{ s.salle?.nom ?? ('Lieu précisé par le coach' | t) }}</span
                     >
                   </div>
-                  <span class="badge badge--confirmee">Confirmée</span>
+                  <span class="badge badge--confirmee">{{ 'Confirmée' | t }}</span>
                 </li>
               }
             }
@@ -79,7 +84,7 @@ import { EtatVideComponent, LoaderComponent } from '../../../shared/ui';
       </section>
 
       <section class="calendar-section" aria-labelledby="calendrier-title">
-        <h2 id="calendrier-title">Mon calendrier</h2>
+        <h2 id="calendrier-title">{{ 'Mon calendrier' | t }}</h2>
         <app-calendrier
           [evenements]="evenements()"
           vue="dayGridMonth"

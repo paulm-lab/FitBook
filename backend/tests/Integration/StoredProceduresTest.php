@@ -108,12 +108,14 @@ final class StoredProceduresTest extends TestCase
         $session = $this->session('+1 day', 5);
         [, $id] = $this->reserve($user, $session);
         self::assertSame(0, $this->cancel($id, $user));
+        $this->db()->executeStatement('UPDATE reservation SET reminder_sent_at = UTC_TIMESTAMP() WHERE id = ?', [$id]);
 
         [$code, $newId] = $this->reserve($user, $session);
 
         self::assertSame(0, $code);
         self::assertSame($id, $newId, 'Une seule ligne par couple (sportif, séance).');
         self::assertNull($this->db()->fetchOne('SELECT cancelled_at FROM reservation WHERE id = ?', [$id]));
+        self::assertNull($this->db()->fetchOne('SELECT reminder_sent_at FROM reservation WHERE id = ?', [$id]), 'Nouveau rappel à envoyer.');
     }
 
     // -------------------------------------------------------------------------

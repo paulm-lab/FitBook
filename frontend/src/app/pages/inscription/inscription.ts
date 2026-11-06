@@ -5,12 +5,9 @@ import { RouterLink } from '@angular/router';
 import { EMPTY, TimeoutError, catchError, defer, finalize, take } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 import { MESSAGE_INJOIGNABLE, serveurInjoignable } from '../../core/http';
-import {
-  AuthService,
-  InscriptionResponse,
-  InscriptionSaisie,
-  StatutEmailVerification,
-} from '../../core/auth/auth.service';
+import { AuthService, InscriptionSaisie } from '../../core/auth/auth.service';
+import { LangueService } from '../../core/i18n/langue.service';
+import { I18N } from '../../core/i18n/pipes';
 
 type ChampInscription = 'prenom' | 'nom' | 'email' | 'telephone' | 'password' | 'role';
 type RoleInscription = InscriptionSaisie['role'];
@@ -35,24 +32,22 @@ export const ROLES_INSCRIPTION: { valeur: RoleInscription; titre: string; descri
     },
   ];
 
-/** Création de compte avec choix du rôle, puis confirmation de l'adresse par e-mail (US-V05, US-V06). */
+/** Création de compte avec choix du rôle (US-V05) : le compte peut se connecter aussitôt. */
 @Component({
   selector: 'app-inscription',
-  imports: [ReactiveFormsModule, RouterLink, VisualShowcaseComponent],
+  imports: [ReactiveFormsModule, RouterLink, VisualShowcaseComponent, ...I18N],
   templateUrl: './inscription.html',
   styleUrl: './inscription.css',
 })
 export class InscriptionComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  private readonly langue = inject(LangueService);
 
   readonly roles = ROLES_INSCRIPTION;
   readonly erreur = signal('');
   readonly confirmation = signal('');
   readonly emailInscrit = signal('');
-  readonly lienEnFile = signal(false);
-  // null après un renvoi : la réponse volontairement neutre du backend ne dit pas si l'e-mail est parti.
-  readonly statutEmail = signal<StatutEmailVerification | null>(null);
   readonly envoi = signal(false);
   readonly erreursServeur = signal<Partial<Record<ChampInscription, string>>>({});
 
@@ -102,64 +97,27 @@ export class InscriptionComponent {
         this.emailInscrit.set(
           typeof response.email === 'string' && response.email ? response.email : donnees.email,
         );
-        const statut = InscriptionComponent.statutDepuisReponse(response);
-        this.statutEmail.set(statut);
-        this.lienEnFile.set(statut !== 'failed');
         this.confirmation.set(
-          statut === 'failed'
-            ? "Compte créé. L'e-mail de vérification n'a pas pu être envoyé."
-            : 'Compte créé.',
+          typeof response.message === 'string' && response.message
+            ? response.message
+            : this.langue.t('Compte créé avec succès. Vous pouvez maintenant vous connecter.'),
         );
-      });
-  }
-
-  renvoyerLien(): void {
-    if (this.envoi() || !this.emailInscrit()) return;
-    this.envoi.set(true);
-    this.erreur.set('');
-    this.auth
-      .renvoyerVerification(this.emailInscrit())
-      .pipe(finalize(() => this.envoi.set(false)))
-      .subscribe({
-        next: (response) => {
-          this.confirmation.set(response.message);
-          this.lienEnFile.set(true);
-          this.statutEmail.set(null);
-        },
-        error: (error: unknown) => {
-          if (error instanceof TimeoutError) {
-            this.erreur.set(
-              'Le serveur met trop de temps à répondre. Vérifiez votre connexion avant de réessayer.',
-            );
-          } else if (!(error instanceof HttpErrorResponse)) {
-            this.erreur.set(
-              'Le lien de vérification n’a pas pu être demandé. Réessayez plus tard.',
-            );
-          } else {
-            this.erreur.set(
-              serveurInjoignable(error)
-                ? MESSAGE_INJOIGNABLE
-                : typeof error.error?.message === 'string'
-                  ? error.error.message
-                  : 'Le lien de vérification n’a pas pu être envoyé. Réessayez plus tard.',
-            );
-          }
-        },
       });
   }
 
   erreurChamp(champ: ChampInscription): string {
     const control = this.formulaire.controls[champ];
+    const t = (texte: string) => this.langue.t(texte);
     if (control.touched || control.dirty) {
-      if (control.hasError('required')) return 'Ce champ est obligatoire.';
-      if (control.hasError('email')) return 'Saisissez une adresse e-mail valide.';
-      if (control.hasError('maxlength')) return 'La valeur saisie est trop longue.';
+      if (control.hasError('required')) return t('Ce champ est obligatoire.');
+      if (control.hasError('email')) return t('Saisissez une adresse e-mail valide.');
+      if (control.hasError('maxlength')) return t('La valeur saisie est trop longue.');
       if (control.hasError('minlength'))
-        return 'Le mot de passe doit contenir au moins 8 caractères.';
+        return t('Le mot de passe doit contenir au moins 8 caractères.');
       if (control.hasError('pattern'))
         return champ === 'telephone'
-          ? 'Saisissez un numéro de téléphone valide.'
-          : 'Ce champ ne peut pas être vide.';
+          ? t('Saisissez un numéro de téléphone valide.')
+          : t('Ce champ ne peut pas être vide.');
     }
     return this.erreursServeur()[champ] ?? '';
   }
@@ -173,34 +131,30 @@ export class InscriptionComponent {
   }
 
   private traiterErreur(error: unknown): void {
+    const t = (texte: string) => this.langue.t(texte);
     if (error instanceof TimeoutError) {
       this.erreur.set(
-        'Le serveur met trop de temps à répondre. Vérifiez votre connexion avant de réessayer.',
+        t('Le serveur met trop de temps à répondre. Vérifiez votre connexion avant de réessayer.'),
       );
       return;
     }
     if (!(error instanceof HttpErrorResponse)) {
-      this.erreur.set('Une erreur technique empêche la création du compte. Réessayez plus tard.');
+      this.erreur.set(
+        t('Une erreur technique empêche la création du compte. Réessayez plus tard.'),
+      );
       return;
     }
     const erreurs = error.error?.errors;
     const parChamp: Partial<Record<ChampInscription, string>> =
       erreurs && typeof erreurs === 'object' ? { ...erreurs } : {};
-    if (error.status === 409) parChamp.email = 'Cette adresse e-mail est déjà utilisée.';
+    if (error.status === 409) parChamp.email = t('Cette adresse e-mail est déjà utilisée.');
     this.erreursServeur.set(parChamp);
     this.erreur.set(
       serveurInjoignable(error)
-        ? `${MESSAGE_INJOIGNABLE} Si le compte a été créé, utilisez le lien reçu par e-mail ou demandez-en un nouveau.`
+        ? `${t(MESSAGE_INJOIGNABLE)} ${t('Si le compte a été créé, vous pouvez essayer de vous connecter.')}`
         : typeof error.error?.message === 'string'
           ? error.error.message
-          : 'Une erreur technique empêche la création du compte. Réessayez plus tard.',
+          : t('Une erreur technique empêche la création du compte. Réessayez plus tard.'),
     );
-  }
-
-  // Sans statut explicite (ancien backend), on n'affirme jamais que l'e-mail est parti.
-  private static statutDepuisReponse(response: InscriptionResponse): StatutEmailVerification {
-    const statut = response.verificationEmailStatus;
-    if (statut === 'sent' || statut === 'queued' || statut === 'failed') return statut;
-    return response.verificationEmailQueued === true ? 'queued' : 'failed';
   }
 }

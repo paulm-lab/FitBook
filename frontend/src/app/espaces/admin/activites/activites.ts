@@ -5,6 +5,8 @@ import { Activite } from '../../../core/models';
 import { CatalogueService } from '../../../core/services/catalogue.service';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import {
   ConfirmService,
   EtatVideComponent,
@@ -15,28 +17,40 @@ import {
 /** Catalogue des activités (US-A03) : ajout, modification, suppression. */
 @Component({
   selector: 'app-activites-admin',
-  imports: [ReactiveFormsModule, LoaderComponent, EtatVideComponent, ImageSecoursDirective],
+  imports: [
+    ReactiveFormsModule,
+    LoaderComponent,
+    EtatVideComponent,
+    ImageSecoursDirective,
+    ...I18N,
+  ],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Administration</span>
-        <h1>Activités</h1>
-        <p>Les disciplines proposées sur FitBook.</p>
+        <span class="section-kicker">{{ 'Administration' | t }}</span>
+        <h1>{{ 'Activités' | t }}</h1>
+        <p>{{ 'Les disciplines proposées sur FitBook.' | t }}</p>
       </div>
       @if (!formOuvert()) {
-        <button type="button" class="btn" (click)="ouvrir(null)">+ Nouvelle activité</button>
+        <button type="button" class="btn" (click)="ouvrir(null)">
+          {{ '+ Nouvelle activité' | t }}
+        </button>
       }
     </header>
 
     @if (formOuvert()) {
       <section class="panel edit" aria-labelledby="form-titre">
         <h2 id="form-titre">
-          {{ edition() ? 'Modifier « ' + edition()!.nom + ' »' : 'Nouvelle activité' }}
+          {{
+            edition()
+              ? ('Modifier « {nom} »' | t: { nom: edition()!.nom })
+              : ('Nouvelle activité' | t)
+          }}
         </h2>
         <form class="form" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
           <div class="form-row">
             <label class="field">
-              <span>Nom</span>
+              <span>{{ 'Nom' | t }}</span>
               <input
                 formControlName="nom"
                 maxlength="50"
@@ -48,11 +62,11 @@ import {
               }
             </label>
             <label class="field">
-              <span>Catégorie</span>
+              <span>{{ 'Catégorie' | t }}</span>
               <input
                 formControlName="categorie"
                 maxlength="50"
-                placeholder="Bien-être, Cardio…"
+                [placeholder]="'Bien-être, Cardio…' | t"
                 [attr.aria-invalid]="!!erreur('categorie')"
                 [attr.aria-describedby]="erreur('categorie') ? 'err-cat' : null"
               />
@@ -64,7 +78,7 @@ import {
             </label>
           </div>
           <label class="field">
-            <span>Description</span>
+            <span>{{ 'Description' | t }}</span>
             <textarea
               formControlName="description"
               maxlength="2000"
@@ -76,7 +90,7 @@ import {
           </label>
           <div class="image-row">
             <label class="field">
-              <span>Adresse de l'image (URL)</span>
+              <span>{{ 'Adresse de l’image (URL)' | t }}</span>
               <input
                 type="url"
                 formControlName="image"
@@ -92,16 +106,18 @@ import {
               <img
                 class="preview"
                 [src]="form.controls.image.value"
-                alt="Aperçu de l'image"
+                [alt]="'Aperçu de l’image' | t"
                 appSecours
               />
             }
           </div>
           <div class="row">
             <button type="submit" class="btn" [disabled]="envoi()" [attr.aria-busy]="envoi()">
-              {{ envoi() ? 'Enregistrement…' : 'Enregistrer' }}
+              {{ (envoi() ? 'Enregistrement…' : 'Enregistrer') | t }}
             </button>
-            <button type="button" class="btn btn--ghost" (click)="fermer()">Annuler</button>
+            <button type="button" class="btn btn--ghost" (click)="fermer()">
+              {{ 'Annuler' | t }}
+            </button>
           </div>
         </form>
       </section>
@@ -113,19 +129,23 @@ import {
       <app-loader />
     } @else if (activites()!.length === 0) {
       <app-etat-vide
-        titre="Aucune activité"
-        message="Ajoutez la première discipline de la plateforme."
+        [titre]="'Aucune activité' | t"
+        [message]="'Ajoutez la première discipline de la plateforme.' | t"
       />
     } @else {
       <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th scope="col"><span class="sr-only">Image</span></th>
-              <th scope="col">Nom</th>
-              <th scope="col">Catégorie</th>
-              <th scope="col">Description</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">
+                <span class="sr-only">{{ 'Image' | t }}</span>
+              </th>
+              <th scope="col">{{ 'Nom' | t }}</th>
+              <th scope="col">{{ 'Catégorie' | t }}</th>
+              <th scope="col">{{ 'Description' | t }}</th>
+              <th scope="col">
+                <span class="sr-only">{{ 'Actions' | t }}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -149,10 +169,10 @@ import {
                 <td>
                   <div class="actions">
                     <button type="button" class="btn btn--sm btn--ghost" (click)="ouvrir(a)">
-                      Modifier
+                      {{ 'Modifier' | t }}
                     </button>
                     <button type="button" class="btn btn--sm btn--danger" (click)="supprimer(a)">
-                      Supprimer
+                      {{ 'Supprimer' | t }}
                     </button>
                   </div>
                 </td>
@@ -203,6 +223,7 @@ export class ActivitesAdminComponent {
   private readonly gestion = inject(GestionService);
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  private readonly langue = inject(LangueService);
 
   readonly activites = signal<Activite[] | null>(null);
   readonly chargementErreur = signal('');
@@ -233,8 +254,8 @@ export class ActivitesAdminComponent {
     if (serveur) return serveur;
     const control = this.form.controls[champ];
     if (!control.touched || control.valid) return '';
-    if (control.hasError('required')) return 'Ce champ est obligatoire.';
-    if (control.hasError('maxlength')) return 'Ce texte est trop long.';
+    if (control.hasError('required')) return this.langue.t('Ce champ est obligatoire.');
+    if (control.hasError('maxlength')) return this.langue.t('Ce texte est trop long.');
     return '';
   }
 
@@ -276,7 +297,7 @@ export class ActivitesAdminComponent {
     ).subscribe({
       next: () => {
         this.envoi.set(false);
-        this.toasts.succes(edition ? 'Activité modifiée.' : 'Activité ajoutée.');
+        this.toasts.succes(this.langue.t(edition ? 'Activité modifiée.' : 'Activité ajoutée.'));
         this.fermer();
         this.charger();
       },
@@ -291,16 +312,19 @@ export class ActivitesAdminComponent {
 
   async supprimer(a: Activite): Promise<void> {
     const ok = await this.confirm.demander({
-      titre: 'Supprimer l’activité',
-      message: `« ${a.nom} » sera supprimée. Une activité utilisée par des séances ne peut pas être supprimée.`,
-      confirmer: 'Supprimer',
+      titre: this.langue.t('Supprimer l’activité'),
+      message: this.langue.t(
+        '« {nom} » sera supprimée. Une activité utilisée par des séances ne peut pas être supprimée.',
+        { nom: a.nom },
+      ),
+      confirmer: this.langue.t('Supprimer'),
       danger: true,
     });
     if (!ok) return;
     this.gestion.supprimerActivite(a.id).subscribe({
       next: () => {
         this.activites.update((liste) => liste?.filter((i) => i.id !== a.id) ?? null);
-        this.toasts.succes('Activité supprimée.');
+        this.toasts.succes(this.langue.t('Activité supprimée.'));
       },
       error: (e) => this.toasts.erreur(messageErreur(e)),
     });
@@ -310,7 +334,9 @@ export class ActivitesAdminComponent {
     this.catalogue.activites().subscribe({
       next: (a) => this.activites.set(a),
       error: (e) =>
-        this.chargementErreur.set(messageErreur(e, 'Impossible de charger les activités.')),
+        this.chargementErreur.set(
+          messageErreur(e, this.langue.t('Impossible de charger les activités.')),
+        ),
     });
   }
 }

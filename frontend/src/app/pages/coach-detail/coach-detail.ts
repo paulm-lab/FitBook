@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -14,6 +13,7 @@ import {
   LoaderComponent,
 } from '../../shared/ui';
 import { DisponibilitesListeComponent } from '../salle-detail/disponibilites-liste';
+import { I18N } from '../../core/i18n/pipes';
 
 type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 
@@ -21,7 +21,7 @@ type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 @Component({
   selector: 'app-coach-detail',
   imports: [
-    DecimalPipe,
+    ...I18N,
     RouterLink,
     LoaderComponent,
     EtatVideComponent,

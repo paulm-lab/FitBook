@@ -11,6 +11,8 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
+import { LangueService } from '../core/i18n/langue.service';
+import { I18N } from '../core/i18n/pipes';
 
 export interface PointCarte {
   id: number;
@@ -29,7 +31,13 @@ export interface PointCarte {
  */
 @Component({
   selector: 'app-carte',
-  template: `<div #carte class="map" role="region" aria-label="Carte des résultats"></div>`,
+  template: `<div
+    #carte
+    class="map"
+    role="region"
+    [attr.aria-label]="'Carte des résultats' | t"
+  ></div>`,
+  imports: [...I18N],
 })
 export class CarteComponent implements AfterViewInit, OnDestroy {
   readonly points = input<PointCarte[]>([]);
@@ -40,6 +48,7 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
 
   private readonly element = viewChild.required<ElementRef<HTMLDivElement>>('carte');
   private readonly zone = inject(NgZone);
+  private readonly langue = inject(LangueService);
   private carte?: L.Map;
   private calque = L.layerGroup();
 
@@ -57,6 +66,7 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
       this.points();
       this.position();
       this.rayonKm();
+      this.langue.langue();
       this.dessiner();
     });
   }
@@ -69,7 +79,7 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
     );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; contributeurs OpenStreetMap',
+      attribution: this.langue.t('&copy; contributeurs OpenStreetMap'),
     }).addTo(this.carte);
     this.calque.addTo(this.carte);
     this.dessiner();
@@ -96,7 +106,7 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
       }
       const lien = document.createElement('a');
       lien.href = point.lien;
-      lien.textContent = 'Voir la fiche →';
+      lien.textContent = this.langue.t('Voir la fiche →');
       lien.addEventListener('click', (event) => {
         event.preventDefault();
         this.zone.run(() => this.ouvrir.emit(point.lien));
@@ -121,7 +131,7 @@ export class CarteComponent implements AfterViewInit, OnDestroy {
         fillColor: '#3b82f6',
         fillOpacity: 1,
       })
-        .bindTooltip('Vous êtes ici')
+        .bindTooltip(this.langue.t('Vous êtes ici'))
         .addTo(this.calque);
       limites.push([position.lat, position.lng]);
       if (this.rayonKm()) {
