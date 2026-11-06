@@ -36,6 +36,8 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | [API](docs/api.md) | Routes REST, codes d'erreur, recherche, commandes planifiées (Swagger : `/api/doc`) |
 | [Sécurité](docs/securite.md) | Protections face à l'OWASP Top 10, secrets, points à surveiller |
 | [Liste des tests](docs/liste-des-tests.md) | Synthèse, couverture des exigences, recette des parcours, inventaire |
+| [Tests de charge](docs/tests-de-charge/README.md) | Courbes de stress de l'API (débit, temps de réponse, erreurs) |
+| [Énoncé et grille](docs/consignes/enonce-et-grille-UAA-MI08.pdf) | Consignes des formateurs et grille d'évaluation UAA MI08 |
 | [Déploiement](docs/deploiement.md) | Mise en production, tâches planifiées, mise à jour |
 | [Postman](postman/README.md) | Collection, environnement et rapport Newman |
 
@@ -167,11 +169,22 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
 | Route | Méthode | Rôle |
 |-------|---------|------|
 | `/api/inscription` | POST | Inscription : `prenom`, `nom`, `email`, `telephone`, `password`, `role` (`sportif` par défaut, `coach` ou `gestionnaire` ; jamais `admin`) |
+| `/api/auth/verify-email` | GET | Lien signé reçu par e-mail (VerifyEmailBundle) : active le compte |
+| `/api/auth/resend-verification` | POST | Renvoie le lien de confirmation (`email`) |
 | `/api/login` | POST | `email` + `password` → `{ "token": "…", profil }` + cookie `BEARER` HttpOnly |
 | `/api/me` | GET | Utilisateur connecté |
 | `/api/logout` | POST | Supprime le cookie |
 | `/api/auth/forgot-password` | POST | Envoie un lien de réinitialisation (`email`) |
 | `/api/auth/reset-password` | POST | `token` + `password` : nouveau mot de passe (lien à usage unique, valable 1 h) |
+
+- **Vérification de l'adresse** (obligatoire) : l'inscription crée un compte non vérifié et envoie,
+  dans la langue de l'utilisateur, un lien signé (VerifyEmailBundle, valable 24 h, lié à l'adresse).
+  La réponse `201` indique l'état réel de l'envoi (`verificationEmailStatus` : `sent`, `queued` ou
+  `failed`). Le lien active le compte puis redirige vers `/verification-email?status=success|error`
+  du front. Tant que l'adresse n'est pas confirmée, `/api/login` répond `403`
+  `{ "message": "Confirmez votre adresse e-mail avant de vous connecter.", "code": "email_non_verifie" }`.
+  En développement, les e-mails partent vers **Mailpit** (http://127.0.0.1:8025) par le worker
+  Messenger : `demarrer.ps1` (ou `demarrer.cmd`) doit être lancé pour qu'ils soient envoyés.
 
 - **JWT** (LexikJWTAuthenticationBundle), valable 1 h, accepté dans `Authorization: Bearer <jeton>`
   ou dans le cookie `BEARER` (HttpOnly, SameSite=Lax). L'API est sans état : aucune session PHP.
@@ -179,9 +192,9 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
   **Voters** : un coach ne modifie que ses séances, un gestionnaire que ses salles et leurs
   séances, un sportif que ses réservations et ses avis (`src/Security/Voter/`).
 - **Protections** : 5 échecs de connexion en 15 min → 429 ; 5 inscriptions par IP et par heure ;
-  3 demandes d'e-mail (mot de passe oublié) par adresse en 15 min ; réponses identiques
+  3 demandes d'e-mail (renvoi, mot de passe oublié) par adresse en 15 min ; réponses identiques
   que l'adresse existe ou non ; en-têtes `Host` inconnus refusés (`TRUSTED_HOSTS`).
-- **Erreurs** : `400` JSON mal formé · `401` non authentifié · `403` compte bloqué ou
+- **Erreurs** : `400` JSON mal formé · `401` non authentifié · `403` compte non vérifié, bloqué ou
   droit refusé · `409` adresse déjà utilisée · `422` `{ "errors": { "champ": "message" } }` · `429` trop de tentatives.
 
 Exemple avec `curl` :
@@ -201,10 +214,10 @@ Créés par les fixtures. **Mots de passe de démonstration uniquement**, à ne 
 | Administrateur | `admin@fitbook.test` | `Admin123!` |
 | Gestionnaire (5) | `gestionnaire1@fitbook.test` … `gestionnaire5@fitbook.test` | `Gestion123!` |
 | Coach (15) | `coach1@fitbook.test` … `coach15@fitbook.test` | `Coach123!` |
-| Sportif (40) | `sportif1@fitbook.test` … `sportif39@fitbook.test` | `Sportif123!` |
+| Sportif (40) | `sportif1@fitbook.test` … `sportif38@fitbook.test` | `Sportif123!` |
 
-État particulier pour les tests : `sportif40@fitbook.test` est **bloqué** (connexion refusée).
-Le compte est actif dès l'inscription : aucune confirmation d'adresse n'est demandée.
+États particuliers pour les tests : `sportif39@fitbook.test` n'a **pas confirmé** son adresse
+(connexion refusée) et `sportif40@fitbook.test` est **bloqué**.
 
 Contenu : 10 salles à Bruxelles (coordonnées approximatives), 10 activités, 80 séances sur les
 4 prochaines semaines (dont 4 annulées et 2 complètes) et 20 séances passées, environ 500

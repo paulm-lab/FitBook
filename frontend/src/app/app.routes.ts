@@ -107,6 +107,15 @@ export const routes: Routes = [
       import('./pages/inscription/inscription').then((m) => m.InscriptionComponent),
   },
   {
+    // Arrivée depuis le lien signé de l'e-mail (redirigé par l'API avec ?status=success|error).
+    path: 'verification-email',
+    title: 'Vérification de l’adresse — FitBook',
+    loadComponent: () =>
+      import('./pages/verification-email/verification-email').then(
+        (m) => m.VerificationEmailComponent,
+      ),
+  },
+  {
     path: 'mot-de-passe-oublie',
     title: 'Mot de passe oublié — FitBook',
     loadComponent: () =>

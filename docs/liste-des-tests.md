@@ -5,11 +5,11 @@
 
 ## 1. Synthèse
 
-| Niveau | Outil | Nombre | Résultat (5 novembre 2026) | Commande |
+| Niveau | Outil | Nombre | Résultat (6 novembre 2026) | Commande |
 |--------|-------|--------|---------------------------|----------|
-| Unitaires et fonctionnels API | PHPUnit 12 (SQLite en mémoire) | 82 tests, 320 assertions | ✅ tous verts | `cd backend && php bin/phpunit --exclude-group mysql` |
-| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` (MySQL 9.1 / WAMP) | 8 tests, 32 assertions | ✅ tous verts | `php bin/phpunit --group mysql` |
-| Frontend | Vitest (`ng test`) | 35 tests | ✅ tous verts | `cd frontend && npm test -- --watch=false` |
+| Unitaires et fonctionnels API | PHPUnit 12 (SQLite en mémoire) | 116 tests, 490 assertions | ✅ tous verts | `cd backend && php bin/phpunit --exclude-group mysql` |
+| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` (MySQL 9.1 / WAMP) | 8 tests, 33 assertions | ✅ tous verts | `php bin/phpunit --group mysql` |
+| Frontend | Vitest (`ng test`) | 71 tests | ✅ tous verts | `cd frontend && npm test -- --watch=false` |
 | API de bout en bout | Postman + Newman, sur SQLite puis sur MySQL (procédures stockées) | 60 requêtes, 106 assertions | ✅ 0 échec sur les deux bases | voir [`postman/README.md`](../postman/README.md) |
 | Parcours dans le navigateur | Recette (script Playwright headless + contrôle visuel) | 47 pages, 8 parcours | ✅ sans erreur | § 3 |
 | Qualité front | ESLint (angular-eslint, accessibilité des templates) + Prettier | — | ✅ 0 erreur | `npm run lint` · `npm run format:check` |
@@ -26,7 +26,7 @@ elles-mêmes sur la base `fitbook_test`.
 |----------|-------------------|
 | EF-01 Recherche, filtres, tri, pagination, distance | `SearchTest` · Postman « Catalogue et recherche » |
 | EF-02 Fiches | `CatalogueAndReservationTest`, `FavoritesAndReviewsTest` (fiche sur proxy Doctrine) |
-| EF-03/04/05 Inscription par rôle, connexion immédiate, JWT, mot de passe oublié | `AuthenticationTest` · specs `inscription`, `connexion`, `core.spec.ts` |
+| EF-03/04/05 Inscription par rôle, vérification de l'adresse (lien signé), JWT, mot de passe oublié | `AuthenticationTest`, `LocalizationTest` (messages et e-mails en anglais) · specs `inscription`, `connexion`, `verification-email`, `core.spec.ts` |
 | EF-06, RG-03, RG-04 Réservation, capacité, doublon | `CatalogueAndReservationTest`, `ReservationFlowTest`, `StoredProceduresTest` (mysql) · Postman |
 | EF-07, RG-05 Annulation jusqu'à 2 h avant | `ReservationFlowTest`, `StoredProceduresTest` · Postman |
 | EF-08 Favoris | `FavoritesAndReviewsTest` · Postman |
@@ -60,21 +60,27 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 
 ### 4.1 PHPUnit (backend)
 
-#### `tests/Controller/Api/AuthenticationTest.php` (20)
+#### `tests/Controller/Api/AuthenticationTest.php` (26)
 
-- registration persists an active sportif with hashed password
-- new account can log in immediately and reach its profile
+- registration persists an unverified sportif with hashed password
+- new account cannot log in before confirming its address
 - coach registration creates an empty coach profile
 - manager role can be chosen but never administrator
-- smtp failure does not prevent registration nor login
+- registration reports an email accepted synchronously as sent
+- smtp failure still creates the account and allows a resend
 - registration normalizes email and rejects duplicates
 - invalid fields get422 with one french message per field
 - registration rejects malformed json
+- signed link from the email activates the account
+- tampered link or link for another address is rejected
+- resend verification queues a new link only for unverified accounts
+- resend verification is rate limited
 - login returns a jwt and sets an http only cookie
 - jwt in authorization header authenticates requests
 - cookie session works until logout
 - forged token is rejected
-- blocked account cannot log in
+- rejected cookie is cleared by the401 response
+- unverified or blocked account cannot log in
 - blocking an account invalidates its existing token
 - account status is not revealed with a wrong password
 - login is throttled after five failures
@@ -82,6 +88,18 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 - forgotten password answers the same for unknown addresses
 - reset rejects invalid tokens and short passwords
 - untrusted host header is rejected
+
+#### `tests/Controller/Api/LocalizationTest.php` (9)
+
+- validation errors follow the request language
+- api exception messages are translated
+- json schema messages with parameters are translated
+- login failure is translated and login remembers the language
+- rejected jwt is translated and its cookie still cleared
+- registration in english stores the locale and sends an english verification email
+- unverified login and resend answers are translated
+- welcome email after verification uses the account language
+- notifications and emails use the recipient language
 
 #### `tests/Controller/Api/AvatarAndRemindersTest.php` (2)
 
@@ -207,21 +225,33 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 
 - should create
 
-#### `src/app/pages/connexion/connexion.spec.ts` (9)
+#### `src/app/pages/connexion/connexion.spec.ts` (15)
 
 - connecte l’utilisateur et le redirige vers la page demandée
 - refuse une redirection vers un autre site et ouvre l’espace du rôle
 - affiche un message pour des identifiants incorrects
 - pré-remplit l’adresse transmise par la page d’inscription
 - affiche le message du serveur pour un compte bloqué
+- propose de renvoyer le lien pour une adresse non confirmée (code de l’API)
+- reconnaît une adresse non confirmée en anglais, même sans code
+- renvoie le lien à l’adresse saisie et affiche la réponse de l’API
+- signale l’échec du renvoi et réactive le bouton
+- affiche le bouton de renvoi en anglais
 - affiche le message de limitation après trop de tentatives
 - réactive le formulaire si le service lève une exception synchrone
 - n’appelle pas l’API pour un formulaire invalide
 - réaffiche « Se connecter » dans la page après une erreur réseau
+- s’affiche en anglais quand la langue choisie est l’anglais
 
-#### `src/app/pages/inscription/inscription.spec.ts` (12)
+#### `src/app/pages/inscription/inscription.spec.ts` (22)
 
-- confirme la création du compte et propose de se connecter
+- confirme le succès et indique que le lien de vérification a été mis en file
+- annonce un e-mail envoyé seulement quand le serveur SMTP l’a accepté
+- indique un e-mail en file d’attente sans prétendre qu’il est parti
+- signale l’échec d’envoi et propose un nouveau lien
+- ne déduit jamais « envoyé » d’une réponse sans statut explicite
+- pré-remplit l’adresse inscrite dans le lien de connexion
+- affiche la confirmation et le bouton de renvoi en anglais
 - envoie le rôle choisi à l’API
 - envoie le rôle sportif par défaut et ne propose jamais administrateur
 - réactive le formulaire quand le service lève une exception synchrone
@@ -233,6 +263,20 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 - affiche la confirmation dans la page après la réponse du serveur
 - affiche les erreurs de champ renvoyées par le serveur
 - réactive le formulaire et affiche un message en cas d’erreur serveur
+- termine l’état d’envoi du lien après le succès du backend
+- termine l’état d’envoi et affiche une erreur si le renvoi échoue
+- termine l’état d’envoi et affiche une erreur si le renvoi expire
+- ne renvoie pas plusieurs demandes simultanément
+
+#### `src/app/pages/verification-email/verification-email.spec.ts` (7)
+
+- affiche la confirmation et le bouton de connexion en cas de succès
+- affiche le formulaire de renvoi pour un lien invalide ou expiré
+- renvoie le lien à l’adresse fournie et termine l’état d’envoi
+- n’appelle pas l’API pour une adresse invalide
+- affiche le message du serveur si le renvoi échoue
+- réactive le bouton si le service de renvoi lève une exception synchrone
+- s’affiche en anglais quand la langue choisie est l’anglais
 
 #### `src/app/shared/ui.spec.ts` (4)
 

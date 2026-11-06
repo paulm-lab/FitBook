@@ -36,7 +36,7 @@
   ré-hachage automatique à la connexion (`UserRepository::upgradePassword`).
 - JWT signés en **RS256** (clés RSA, la clé privée chiffrée par `JWT_PASSPHRASE`), durée de vie 1 h.
 - Cookie `BEARER` **HttpOnly**, `SameSite=Lax`, `Secure` en production (HTTPS obligatoire).
-- Pas de confirmation d'adresse : le compte est actif dès l'inscription. Jetons de réinitialisation
+- Liens de vérification d'e-mail signés (VerifyEmailBundle, 24 h) ; jetons de réinitialisation
   du mot de passe à usage unique, stockés hachés, valables 1 h (ResetPasswordBundle).
 - Jeton de QR code aléatoire (`random_bytes(16)`), non devinable.
 
