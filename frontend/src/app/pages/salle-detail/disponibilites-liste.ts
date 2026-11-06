@@ -2,6 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { LangueService } from '../../core/i18n/langue.service';
 import { Disponibilite, JOURS } from '../../core/models';
 import { I18N } from '../../core/i18n/pipes';
+import { dateLocale } from '../../espaces/commun/espace';
 
 /** Créneaux de disponibilité d'une salle ou d'un coach : récurrents puis ponctuels. */
 @Component({
@@ -54,7 +55,8 @@ export class DisponibilitesListeComponent {
 
   /** Récurrents (lundi → dimanche), puis ponctuels à venir par date. */
   readonly creneaux = computed(() => {
-    const aujourdhui = new Date().toISOString().slice(0, 10);
+    // Date locale (et non UTC) : après minuit à Bruxelles, les créneaux de la veille sont passés.
+    const aujourdhui = dateLocale(new Date());
     return [...this.disponibilites()]
       .filter((d) => d.recurrent || (d.date ?? '') >= aujourdhui)
       .sort(

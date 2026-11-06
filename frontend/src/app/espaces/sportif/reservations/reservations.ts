@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { messageErreur } from '../../../core/http';
 import { LangueService } from '../../../core/i18n/langue.service';
 import { I18N } from '../../../core/i18n/pipes';
@@ -199,6 +200,7 @@ export class MesReservationsComponent {
   readonly page = signal<Page<Reservation> | null>(null);
   readonly chargement = signal(true);
   readonly erreur = signal('');
+  private requete?: Subscription;
 
   constructor() {
     this.charger(1);
@@ -214,7 +216,9 @@ export class MesReservationsComponent {
   charger(page: number, repli = false): void {
     this.chargement.set(true);
     this.erreur.set('');
-    this.compte.reservations(this.periode(), page).subscribe({
+    // Une réponse lente de l'onglet précédent n'écrase pas la vue courante.
+    this.requete?.unsubscribe();
+    this.requete = this.compte.reservations(this.periode(), page).subscribe({
       next: (resultat) => {
         if (repli && page > 1 && resultat.items.length === 0) {
           this.charger(page - 1);

@@ -251,6 +251,7 @@ export class GestionService {
     q?: string;
     role?: string;
     page?: number;
+    parPage?: number;
   }): Observable<Page<UtilisateurAdmin>> {
     return this.http.get<Page<UtilisateurAdmin>>(`${API_URL}/admin/utilisateurs`, {
       params: params(filtre),

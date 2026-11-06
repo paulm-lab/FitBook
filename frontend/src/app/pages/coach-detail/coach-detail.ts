@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CoachDetail } from '../../core/models';
 import { CatalogueService } from '../../core/services/catalogue.service';
 import { AvisSectionComponent } from '../../shared/avis-section';
@@ -46,13 +47,18 @@ export class CoachDetailComponent {
     `${this.coach()?.prenom?.[0] ?? ''}${this.coach()?.nom?.[0] ?? ''}`.toUpperCase(),
   );
 
+  private requete?: Subscription;
+
   constructor() {
     effect(() => this.charger(this.id()));
   }
 
   charger(id: string, silencieux = false): void {
     if (!silencieux) this.etat.set('chargement');
-    this.catalogue.coach(Number(id)).subscribe({
+    // Autre identifiant avant la réponse : la requête précédente est annulée et ne peut plus
+    // écraser la fiche affichée.
+    this.requete?.unsubscribe();
+    this.requete = this.catalogue.coach(Number(id)).subscribe({
       next: (coach) => {
         this.coach.set(coach);
         this.etat.set('ok');

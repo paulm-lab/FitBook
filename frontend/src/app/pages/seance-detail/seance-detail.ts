@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { messageErreur } from '../../core/http';
 import { NIVEAUX, SeanceDetail } from '../../core/models';
@@ -80,6 +81,8 @@ export class SeanceDetailComponent {
     return ['/', espace, 'seances', this.id()];
   });
 
+  private requete?: Subscription;
+
   constructor() {
     effect(() => {
       const id = this.id();
@@ -91,7 +94,10 @@ export class SeanceDetailComponent {
 
   charger(id: string, silencieux = false): void {
     if (!silencieux) this.etat.set('chargement');
-    this.catalogue.seance(Number(id)).subscribe({
+    // Autre identifiant avant la réponse : la requête précédente est annulée et ne peut plus
+    // écraser la fiche affichée.
+    this.requete?.unsubscribe();
+    this.requete = this.catalogue.seance(Number(id)).subscribe({
       next: (seance) => {
         this.seance.set(seance);
         this.etat.set('ok');

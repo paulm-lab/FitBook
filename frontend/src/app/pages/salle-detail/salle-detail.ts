@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { SalleDetail } from '../../core/models';
 import { CatalogueService } from '../../core/services/catalogue.service';
@@ -81,6 +82,8 @@ export class SalleDetailComponent {
   ]);
   readonly aujourdhui = JOURS_OUVERTURE[(new Date().getDay() + 6) % 7];
 
+  private requete?: Subscription;
+
   constructor() {
     effect(() => this.charger(this.id()));
   }
@@ -90,7 +93,10 @@ export class SalleDetailComponent {
       this.etat.set('chargement');
       this.photo.set(0);
     }
-    this.catalogue.salle(Number(id)).subscribe({
+    // Autre identifiant avant la réponse : la requête précédente est annulée et ne peut plus
+    // écraser la fiche affichée.
+    this.requete?.unsubscribe();
+    this.requete = this.catalogue.salle(Number(id)).subscribe({
       next: (salle) => {
         this.salle.set(salle);
         this.etat.set('ok');

@@ -124,6 +124,7 @@
 "Cette réservation ne vous appartient pas.": "This booking does not belong to you."
 "Il est trop tard pour annuler : la séance commence dans moins de 2 heures.": "It is too late to cancel: the session starts in less than 2 hours."
 "Cette réservation est déjà annulée ou terminée.": "This booking is already cancelled or completed."
+"Cette séance a déjà commencé : la réservation ne peut plus être annulée.": "This session has already started: the booking can no longer be cancelled."
 "Résultat inattendu de la base de données.": "Unexpected database result."
 
 # --- Libellés calculés du catalogue (CataloguePresenter) -------------------------------------

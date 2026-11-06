@@ -14,6 +14,7 @@ use App\Entity\Session;
 use App\Entity\User;
 use App\Enum\ReservationStatus;
 use App\Enum\SessionLevel;
+use App\Enum\SessionStatus;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -42,7 +43,8 @@ final class CataloguePresenter
     /** @return array<string, mixed> */
     public function activity(Activity $activity): array
     {
-        $sessions = $activity->getSessions()->toArray();
+        // Séances annulées exclues : elles ne disent rien de ce qui est réellement proposé.
+        $sessions = self::activeSessions($activity->getSessions()->toArray());
 
         return [
             'id' => $activity->getId(),
@@ -82,7 +84,8 @@ final class CataloguePresenter
     /** @return array<string, mixed> */
     public function gym(Gym $gym): array
     {
-        $capacities = array_map(static fn (Session $s): int => $s->getCapacity(), $gym->getSessions()->toArray());
+        // Séances annulées exclues : la capacité porte sur ce que la salle propose réellement.
+        $capacities = array_map(static fn (Session $s): int => $s->getCapacity(), self::activeSessions($gym->getSessions()->toArray()));
 
         return [
             'id' => $gym->getId(),
@@ -207,13 +210,15 @@ final class CataloguePresenter
     {
         $session = $reservation->getSession();
         $isOwner = $viewer !== null && $viewer->getId() !== null && $reservation->getUser()?->getId() === $viewer->getId();
+        // Séance finie : la réservation est présentée comme terminée sans attendre la commande planifiée.
+        $status = $reservation->getEffectiveStatus($now);
         $data = [
             'id' => $reservation->getId(),
-            'statut' => $reservation->getStatus()->value,
+            'statut' => $status->value,
             'dateReservation' => $reservation->getCreatedAt()->format(\DATE_ATOM),
             'dateAnnulation' => $reservation->getCancelledAt()?->format(\DATE_ATOM),
             'annulable' => $reservation->isCancellable($now),
-            'qrToken' => $isOwner && $reservation->getStatus() === ReservationStatus::Confirmee ? $reservation->getQrToken() : null,
+            'qrToken' => $isOwner && $status === ReservationStatus::Confirmee ? $reservation->getQrToken() : null,
             'seance' => $session ? $this->session($session, $confirmedCount ?? $session->getConfirmedCount()) : null,
         ];
 
@@ -244,6 +249,16 @@ final class CataloguePresenter
             $target instanceof Session => ['type' => 'seance', 'id' => $target->getId(), 'nom' => $target->getTitle(), 'image' => $target->getActivity()?->getIcon(), 'dateDebut' => $target->getStartAt()?->format(\DATE_ATOM)],
             default => null,
         };
+    }
+
+    /**
+     * @param array<Session> $sessions
+     *
+     * @return list<Session>
+     */
+    private static function activeSessions(array $sessions): array
+    {
+        return array_values(array_filter($sessions, static fn (Session $s): bool => $s->getStatus() === SessionStatus::Active));
     }
 
     /** @param list<Session> $sessions */

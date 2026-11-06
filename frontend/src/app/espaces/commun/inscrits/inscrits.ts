@@ -124,7 +124,10 @@ export class InscritsComponent {
 
   readonly lignes = computed<Reservation[]>(() => {
     const inscrits = this.donnees()?.inscrits ?? [];
-    return this.confirmesSeulement() ? inscrits.filter((r) => r.statut === 'confirmee') : inscrits;
+    // Une séance passée a ses participants en « terminee » : ils restent des inscrits confirmés.
+    return this.confirmesSeulement()
+      ? inscrits.filter((r) => r.statut === 'confirmee' || r.statut === 'terminee')
+      : inscrits;
   });
 
   constructor() {

@@ -160,7 +160,8 @@ export class ReservationsAdminComponent {
     return STATUTS[statut] ?? statut;
   }
 
-  charger(numero: number): void {
+  /** @param repli page vide après une annulation (filtre « Confirmée ») : on recule d'une page */
+  charger(numero: number, repli = false): void {
     this.erreur.set('');
     this.gestion
       .reservationsAdmin({
@@ -169,7 +170,10 @@ export class ReservationsAdminComponent {
         page: numero,
       })
       .subscribe({
-        next: (p) => this.page.set(p),
+        next: (p) => {
+          if (repli && numero > 1 && p.items.length === 0) this.charger(numero - 1);
+          else this.page.set(p);
+        },
         error: (e) =>
           this.erreur.set(
             messageErreur(e, this.langue.t('Impossible de charger les réservations.')),
@@ -193,17 +197,10 @@ export class ReservationsAdminComponent {
     if (!ok) return;
     this.enCours.set(r.id);
     this.gestion.annulerReservation(r.id).subscribe({
-      next: (maj) => {
+      next: () => {
         this.enCours.set(null);
-        this.page.update(
-          (p) =>
-            p && {
-              ...p,
-              items: p.items.map((i) =>
-                i.id === maj.id ? { ...i, ...maj, sportif: maj.sportif ?? i.sportif } : i,
-              ),
-            },
-        );
+        // Rechargement : sous le filtre « Confirmée », la ligne annulée disparaît et le total suit.
+        this.charger(this.page()?.page ?? 1, true);
         this.toasts.succes(this.langue.t('Réservation annulée, le sportif est prévenu.'));
       },
       error: (e) => {

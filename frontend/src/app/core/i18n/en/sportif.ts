@@ -88,6 +88,8 @@ export const EN_SPORTIF: Record<string, string> = {
   'Annulée le {date}.': 'Cancelled on {date}.',
   "L'annulation n'est plus possible à moins de 2 heures du début.":
     'Cancellation is no longer possible less than 2 hours before the start.',
+  "La séance a commencé : l'annulation n'est plus possible.":
+    'The session has started: it can no longer be cancelled.',
   "QR code d'accès": 'Access QR code',
   "Présentez ce code à l'accueil le jour de la séance.":
     'Show this code at reception on the day of the session.',

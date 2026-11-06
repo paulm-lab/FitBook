@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -134,6 +134,12 @@ type Horaire = FormGroup<{
                 <option [ngValue]="null">{{ 'Choisir…' | t }}</option>
                 @for (u of gestionnaires(); track u.id) {
                   <option [ngValue]="u.id">{{ u.prenom }} {{ u.nom }} — {{ u.email }}</option>
+                }
+                <!-- Gestionnaire actuel absent de la liste (rôle changé…) : il reste affiché. -->
+                @if (gestionnaireAbsent(); as id) {
+                  <option [ngValue]="id">
+                    {{ 'Gestionnaire actuel (n° {id})' | t: { id: id } }}
+                  </option>
                 }
               </select>
               @if (message('gestionnaireId'); as m) {
@@ -373,6 +379,13 @@ export class SalleFormComponent {
   readonly soumis = signal(false);
   readonly photos = signal<string[]>([]);
   readonly gestionnaires = signal<UtilisateurAdmin[]>([]);
+  /** Gestionnaire enregistré sur la salle chargée. */
+  private readonly gestionnaireActuel = signal<number | null>(null);
+  /** Identifiant du gestionnaire actuel s'il ne figure pas dans la liste des gestionnaires. */
+  readonly gestionnaireAbsent = computed(() => {
+    const id = this.gestionnaireActuel();
+    return id !== null && !this.gestionnaires().some((u) => u.id === id) ? id : null;
+  });
 
   readonly horaires = this.fb.array<Horaire>(
     JOURS_SEMAINE.map((jour) =>
@@ -403,9 +416,7 @@ export class SalleFormComponent {
 
   constructor() {
     if (this.espace === 'admin') {
-      this.gestion
-        .utilisateurs({ role: 'gestionnaire' })
-        .subscribe({ next: (p) => this.gestionnaires.set(p.items) });
+      this.chargerGestionnaires(1);
     }
     effect(() => {
       const id = Number(this.id());
@@ -526,6 +537,16 @@ export class SalleFormComponent {
     });
   }
 
+  /** Tous les gestionnaires, page par page (50 au maximum par page côté API). */
+  private chargerGestionnaires(page: number): void {
+    this.gestion.utilisateurs({ role: 'gestionnaire', page, parPage: 50 }).subscribe({
+      next: (p) => {
+        this.gestionnaires.update((liste) => (page === 1 ? p.items : [...liste, ...p.items]));
+        if (p.page < p.pages) this.chargerGestionnaires(p.page + 1);
+      },
+    });
+  }
+
   private charger(id: number): void {
     this.chargement.set(true);
     this.catalogue.salle(id).subscribe({
@@ -554,6 +575,7 @@ export class SalleFormComponent {
           this.horaires.at(i).setValue({ ferme: !plage, ouverture, fermeture });
         }
         this.photos.set(s.photos ?? []);
+        this.gestionnaireActuel.set(s.gestionnaireId);
         this.chargement.set(false);
       },
       error: (error) => {

@@ -40,6 +40,7 @@ export const EN_PRO: Record<string, string> = {
     'Reviews will appear here once the first sessions are over.',
   sur: 'on',
   'Impossible de charger les avis.': 'Unable to load reviews.',
+  'Moyenne des {n} avis affichés': 'Average of the {n} reviews shown',
 
   // Calendrier
   'Mon planning': 'My schedule',
@@ -71,6 +72,7 @@ export const EN_PRO: Record<string, string> = {
   Ponctuel: 'One-off',
   'Jour de la semaine': 'Day of the week',
   'Choisir…': 'Choose…',
+  'Gestionnaire actuel (n° {id})': 'Current gym manager (no. {id})',
   'Choisissez le jour.': 'Choose the day.',
   Date: 'Date',
   'Choisissez la date.': 'Choose the date.',

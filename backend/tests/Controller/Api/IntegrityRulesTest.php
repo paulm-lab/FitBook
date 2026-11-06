@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Enum\ReservationStatus;
+use App\Enum\SessionLevel;
 use App\Enum\SessionStatus;
 use App\Repository\ReservationRepository;
 use App\Tests\Support\ApiTestCase;
@@ -279,6 +280,113 @@ final class IntegrityRulesTest extends ApiTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame(10000, $this->json()['page']);
+    }
+
+    public function testActivityFilterOnlyMatchesActiveUpcomingSessions(): void
+    {
+        $manager = $this->user('g@example.test', User::ROLE_GESTIONNAIRE);
+        $activity = $this->activity();
+        $this->session($activity, $this->gym($manager, 'Salle annulée'), null, status: SessionStatus::Annulee);
+        $this->session($activity, $this->gym($manager, 'Salle passée'), null, '-3 days');
+        $this->session($activity, $this->gym($manager, 'Salle active'), null);
+        $cancelledCoach = $this->user('c1@example.test', User::ROLE_COACH, 'Ana', 'Annulee');
+        $pastCoach = $this->user('c2@example.test', User::ROLE_COACH, 'Paul', 'Passe');
+        $activeCoach = $this->user('c3@example.test', User::ROLE_COACH, 'Léa', 'Active');
+        $this->session($activity, null, $this->reload($cancelledCoach)->getCoachProfile(), status: SessionStatus::Annulee);
+        $this->session($activity, null, $this->reload($pastCoach)->getCoachProfile(), '-3 days');
+        $this->session($activity, null, $this->reload($activeCoach)->getCoachProfile());
+
+        $this->client->request('GET', '/api/recherche?type=salles&activiteId=' . $activity->getId());
+        self::assertResponseIsSuccessful();
+        self::assertSame(['Salle active'], array_column($this->json()['items'], 'nom'));
+
+        $this->client->request('GET', '/api/recherche?type=coachs&activiteId=' . $activity->getId());
+        self::assertResponseIsSuccessful();
+        self::assertSame(['Active'], array_column($this->json()['items'], 'nom'));
+    }
+
+    // --- Données calculées du catalogue ---------------------------------------
+
+    public function testCatalogueIgnoresCancelledSessions(): void
+    {
+        $gym = $this->gym($this->user('g@example.test', User::ROLE_GESTIONNAIRE));
+        $activity = $this->activity();
+        $this->session($activity, $gym, null, capacity: 10);
+        $cancelled = $this->session($activity, $gym, null, capacity: 50, status: SessionStatus::Annulee, level: SessionLevel::Avance);
+        $cancelled->setEndAt($cancelled->getStartAt()->modify('+3 hours'));
+        $this->em()->flush();
+        // Collections inverses (salle → séances) relues en base, comme dans une vraie requête.
+        $this->em()->clear();
+
+        $this->client->request('GET', '/api/salles/' . $gym->getId());
+        self::assertResponseIsSuccessful();
+        self::assertSame(10, $this->json()['capacite']);
+
+        $this->client->request('GET', '/api/activites/' . $activity->getId());
+        self::assertResponseIsSuccessful();
+        self::assertSame(60, $this->json()['duree']);
+        self::assertSame('Débutant', $this->json()['niveau']);
+    }
+
+    // --- Séances finies : participants et réservations terminées --------------
+
+    public function testAttendeesCountAndRemainingPlacesAgreeOnAFinishedSession(): void
+    {
+        $coach = $this->user('coach@example.test', User::ROLE_COACH);
+        $session = $this->session($this->activity(), null, $this->reload($coach)->getCoachProfile(), '-3 hours', capacity: 3);
+        $this->reservation($this->user('a@example.test'), $session, ReservationStatus::Terminee);
+        // Séance finie, mais la commande app:finish-reservations n'est pas encore passée.
+        $this->reservation($this->user('b@example.test'), $session);
+        $this->reservation($this->user('c@example.test'), $session, ReservationStatus::Annulee);
+        $this->login($coach);
+
+        $this->client->request('GET', '/api/seances/' . $session->getId() . '/inscrits');
+
+        self::assertResponseIsSuccessful();
+        $data = $this->json();
+        self::assertSame(2, $data['nbConfirmes']);
+        self::assertSame(1, $data['seance']['placesDisponibles']);
+        // La réservation encore « confirmée » d'une séance finie est présentée comme terminée.
+        $statuses = array_column($data['inscrits'], 'statut');
+        sort($statuses);
+        self::assertSame(['annulee', 'terminee', 'terminee'], $statuses);
+    }
+
+    public function testAdministratorCannotCancelTheReservationOfAStartedSession(): void
+    {
+        $activity = $this->activity();
+        $coach = $this->reload($this->user('coach@example.test', User::ROLE_COACH))->getCoachProfile();
+        $started = $this->reservation($this->user('a@example.test'), $this->session($activity, null, $coach, '-30 minutes'));
+        $soon = $this->reservation($this->user('b@example.test'), $this->session($activity, null, $coach, '+1 hour'));
+        $this->login($this->user('admin@example.test', User::ROLE_ADMIN));
+
+        $this->client->request('POST', '/api/reservations/' . $started->getId() . '/annuler');
+        self::assertResponseStatusCodeSame(409);
+        self::assertSame('Cette séance a déjà commencé : la réservation ne peut plus être annulée.', $this->json()['message']);
+
+        // Moins de 2 h avant le début : l'administrateur peut encore annuler (pas de délai pour lui).
+        $this->client->request('POST', '/api/reservations/' . $soon->getId() . '/annuler');
+        self::assertResponseIsSuccessful();
+
+        $this->em()->clear();
+        self::assertSame(ReservationStatus::Confirmee, $this->em()->find(Reservation::class, $started->getId())->getStatus());
+        self::assertSame(ReservationStatus::Annulee, $this->em()->find(Reservation::class, $soon->getId())->getStatus());
+    }
+
+    public function testConfirmedReservationOfAFinishedSessionIsListedAsFinished(): void
+    {
+        $coach = $this->reload($this->user('coach@example.test', User::ROLE_COACH))->getCoachProfile();
+        $finished = $this->reservation($this->user('a@example.test'), $this->session($this->activity(), null, $coach, '-3 hours'));
+        $this->login($this->user('admin@example.test', User::ROLE_ADMIN));
+
+        $this->client->request('GET', '/api/admin/reservations?statut=terminee');
+        self::assertResponseIsSuccessful();
+        self::assertSame([$finished->getId()], array_column($this->json()['items'], 'id'));
+        self::assertSame('terminee', $this->json()['items'][0]['statut']);
+
+        $this->client->request('GET', '/api/admin/reservations?statut=confirmee');
+        self::assertResponseIsSuccessful();
+        self::assertSame([], $this->json()['items']);
     }
 
     /** @return array<string, mixed> */

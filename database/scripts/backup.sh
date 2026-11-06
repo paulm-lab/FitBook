@@ -41,7 +41,10 @@ if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERREUR : $ENV_FILE introuvable (il doit contenir DATABASE_URL)." >&2
     exit 1
 fi
-URL="$(grep -E '^DATABASE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
+URL="$(grep -E '^DATABASE_URL=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '\r')"
+# Guillemets qui entourent la valeur retirés (seulement ceux-là : le mot de passe peut en contenir).
+URL="${URL#[\"\']}"
+URL="${URL%[\"\']}"
 
 # Format attendu : mysql://utilisateur:motdepasse@hote:port/base?options
 if [[ ! "$URL" =~ ^mysql://([^:]+):([^@]*)@([^:/]+):?([0-9]*)/([^?]+) ]]; then
@@ -49,7 +52,10 @@ if [[ ! "$URL" =~ ^mysql://([^:]+):([^@]*)@([^:/]+):?([0-9]*)/([^?]+) ]]; then
     exit 1
 fi
 DB_USER="${BASH_REMATCH[1]}"
-DB_PASS="$(printf '%b' "${BASH_REMATCH[2]//%/\\x}")"   # décode l'encodage URL (%40 → @)
+# Décode l'encodage URL (%40 → @) : les « \ » littéraux sont doublés d'abord, pour que printf %b
+# ne les prenne pas pour des séquences d'échappement (« \n » resterait sinon un saut de ligne).
+DB_PASS="${BASH_REMATCH[2]//\\/\\\\}"
+DB_PASS="$(printf '%b' "${DB_PASS//%/\\x}")"
 DB_HOST="${BASH_REMATCH[3]}"
 DB_PORT="${BASH_REMATCH[4]:-3306}"
 DB_NAME="${BASH_REMATCH[5]}"
@@ -63,7 +69,10 @@ fi
 OPTIONS_FILE="$(mktemp)"
 trap 'rm -f "$OPTIONS_FILE"' EXIT
 chmod 600 "$OPTIONS_FILE"
-printf '[client]\nuser=%s\npassword="%s"\nhost=%s\nport=%s\n' "$DB_USER" "$DB_PASS" "$DB_HOST" "$DB_PORT" > "$OPTIONS_FILE"
+# Valeur entre guillemets dans le fichier d'options : « \ » et « " » y sont des caractères
+# spéciaux, donc échappés (\\ et \") pour que mysqldump lise le mot de passe exact.
+DB_PASS_OPTION="$(printf '%s' "$DB_PASS" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')"
+printf '[client]\nuser=%s\npassword="%s"\nhost=%s\nport=%s\n' "$DB_USER" "$DB_PASS_OPTION" "$DB_HOST" "$DB_PORT" > "$OPTIONS_FILE"
 
 # mysqldump sous Windows attend un chemin Windows.
 if command -v cygpath >/dev/null 2>&1; then
