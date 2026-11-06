@@ -142,6 +142,8 @@ export const EN_PAGES: Record<string, string> = {
   'Déjà membre ?': 'Already a member?',
   'Compte créé avec succès. Vous pouvez maintenant vous connecter.':
     'Account created successfully. You can now log in.',
+  'Compte créé avec succès. Bienvenue sur FitBook !':
+    'Account created successfully. Welcome to FitBook!',
   'Ce champ est obligatoire.': 'This field is required.',
   'La valeur saisie est trop longue.': 'The value entered is too long.',
   'Saisissez un numéro de téléphone valide.': 'Enter a valid phone number.',

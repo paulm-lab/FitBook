@@ -1,12 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { EMPTY, TimeoutError, catchError, defer, finalize, take } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { EMPTY, TimeoutError, catchError, defer, finalize, switchMap, take } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
 import { MESSAGE_INJOIGNABLE, serveurInjoignable } from '../../core/http';
 import { AuthService, InscriptionSaisie } from '../../core/auth/auth.service';
 import { LangueService } from '../../core/i18n/langue.service';
+import { ToastService } from '../../core/services/toast.service';
 import { I18N } from '../../core/i18n/pipes';
 
 type ChampInscription = 'prenom' | 'nom' | 'email' | 'telephone' | 'password' | 'role';
@@ -32,7 +33,7 @@ export const ROLES_INSCRIPTION: { valeur: RoleInscription; titre: string; descri
     },
   ];
 
-/** Création de compte avec choix du rôle (US-V05) : le compte peut se connecter aussitôt. */
+/** Création de compte avec choix du rôle (US-V05), suivie d'une connexion automatique. */
 @Component({
   selector: 'app-inscription',
   imports: [ReactiveFormsModule, RouterLink, VisualShowcaseComponent, ...I18N],
@@ -43,6 +44,8 @@ export class InscriptionComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly langue = inject(LangueService);
+  private readonly router = inject(Router);
+  private readonly toasts = inject(ToastService);
 
   readonly roles = ROLES_INSCRIPTION;
   readonly erreur = signal('');
@@ -91,17 +94,26 @@ export class InscriptionComponent {
           return EMPTY;
         }),
         take(1),
+        // Compte créé : connexion automatique, l'utilisateur arrive directement dans son espace.
+        switchMap((response) => {
+          const email =
+            typeof response.email === 'string' && response.email ? response.email : donnees.email;
+          this.emailInscrit.set(email);
+          return this.auth.connexion(email, donnees.password).pipe(
+            catchError(() => {
+              // Connexion automatique impossible : le compte existe, on propose de se connecter.
+              this.confirmation.set(
+                this.langue.t('Compte créé avec succès. Vous pouvez maintenant vous connecter.'),
+              );
+              return EMPTY;
+            }),
+          );
+        }),
         finalize(() => this.envoi.set(false)),
       )
-      .subscribe((response) => {
-        this.emailInscrit.set(
-          typeof response.email === 'string' && response.email ? response.email : donnees.email,
-        );
-        this.confirmation.set(
-          typeof response.message === 'string' && response.message
-            ? response.message
-            : this.langue.t('Compte créé avec succès. Vous pouvez maintenant vous connecter.'),
-        );
+      .subscribe(() => {
+        this.toasts.succes(this.langue.t('Compte créé avec succès. Bienvenue sur FitBook !'));
+        void this.router.navigateByUrl(this.auth.espace());
       });
   }
 

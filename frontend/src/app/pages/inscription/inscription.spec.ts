@@ -1,15 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { Subject, TimeoutError, of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { InscriptionComponent } from './inscription';
 
 describe('InscriptionComponent', () => {
-  const auth = { inscription: vi.fn() };
+  const auth = { inscription: vi.fn(), connexion: vi.fn(), espace: () => '/mon-espace' };
 
   beforeEach(async () => {
     auth.inscription.mockReset();
+    auth.connexion.mockReset();
+    // Connexion automatique après l'inscription : réussie par défaut.
+    auth.connexion.mockReturnValue(of({ id: 1, email: 'camille@example.test', role: 'sportif' }));
     await TestBed.configureTestingModule({
       imports: [InscriptionComponent],
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
@@ -31,13 +34,34 @@ describe('InscriptionComponent', () => {
     });
   }
 
-  it('confirme la création du compte et propose de se connecter', () => {
+  it('connecte automatiquement le nouveau compte et ouvre son espace', () => {
     auth.inscription.mockReturnValue(
       of({
         message: 'Compte créé avec succès. Vous pouvez maintenant vous connecter.',
         email: 'camille@example.test',
       }),
     );
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const component = creerComposant();
+    remplirFormulaire(component);
+
+    component.inscrire();
+
+    expect(auth.inscription).toHaveBeenCalledTimes(1);
+    expect(auth.connexion).toHaveBeenCalledWith('camille@example.test', 'MotDePasse-Local-123!');
+    expect(navigate).toHaveBeenCalledWith('/mon-espace');
+    expect(component.confirmation()).toBe('');
+    expect(component.envoi()).toBe(false);
+  });
+
+  it('propose de se connecter si la connexion automatique échoue', () => {
+    auth.inscription.mockReturnValue(
+      of({
+        message: 'Compte créé avec succès. Vous pouvez maintenant vous connecter.',
+        email: 'camille@example.test',
+      }),
+    );
+    auth.connexion.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
     const fixture = TestBed.createComponent(InscriptionComponent);
     const component = fixture.componentInstance;
     remplirFormulaire(component);
@@ -45,16 +69,17 @@ describe('InscriptionComponent', () => {
     component.inscrire();
     fixture.detectChanges();
 
-    expect(auth.inscription).toHaveBeenCalledTimes(1);
     expect(component.confirmation()).toBe(
       'Compte créé avec succès. Vous pouvez maintenant vous connecter.',
     );
-    expect(component.envoi()).toBe(false);
-    const statut = (fixture.nativeElement as HTMLElement).querySelector('[role="status"]');
-    expect(statut?.textContent).toContain('Vous pouvez maintenant vous connecter.');
-    expect(statut?.textContent).not.toContain('vérification');
-    const lien = statut?.querySelector('a');
-    expect(lien?.getAttribute('href')).toBe('/connexion?email=camille@example.test');
+    const element = fixture.nativeElement as HTMLElement;
+    const statut = element.querySelector('[role="status"]');
+    expect(statut?.querySelector('a')?.getAttribute('href')).toBe(
+      '/connexion?email=camille@example.test',
+    );
+    // Un seul lien « Se connecter » : celui du bas de page est masqué après l'inscription.
+    expect(element.querySelectorAll('a[href^="/connexion"]').length).toBe(1);
+    expect(element.querySelector('.form-switch')).toBeNull();
   });
 
   it('envoie le rôle choisi à l’API', () => {
@@ -205,7 +230,8 @@ describe('InscriptionComponent', () => {
     expect(element.querySelector('[role="alert"]')?.textContent).toContain('injoignable');
   });
 
-  it('affiche la confirmation dans la page après la réponse du serveur', async () => {
+  it('affiche la confirmation dans la page si la connexion automatique échoue', async () => {
+    auth.connexion.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
     const response$ = new Subject<{
       message: string;
       email: string;
