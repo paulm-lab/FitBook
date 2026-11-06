@@ -4,7 +4,7 @@
 # 1. Copier .env.example en .env (non versionné) et y choisir les mots de passe.
 # 2. docker compose up -d
 # 3. Dans backend/.env.local :
-#      DATABASE_URL="mysql://fitbook_user:<FITBOOK_DB_PASSWORD>@127.0.0.1:3307/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+#      DATABASE_URL="mysql://fitbook_user:<FITBOOK_DB_PASSWORD>@127.0.0.1:3307/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 #      MAILER_DSN=smtp://127.0.0.1:1025
 #
 # Ports exposés sur 127.0.0.1 uniquement (pas d'accès depuis le réseau) :
@@ -27,7 +27,7 @@ services:
             - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
         volumes:
             - mysql_data:/var/lib/mysql
-            # Au premier démarrage : bases fitbook / fitbook_test et utilisateur fitbook_user.
+            # Au premier démarrage : bases fitbookdata / fitbookdata_test et utilisateur fitbook_user.
             - ./database/scripts/create_user.sql:/fitbook/create_user.sql:ro
             - ./database/scripts/docker-init.sh:/docker-entrypoint-initdb.d/10-fitbook-user.sh:ro
         healthcheck:

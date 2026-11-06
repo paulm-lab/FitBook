@@ -19,7 +19,8 @@ framework:
             messenger.bus.default: []
 
         routing:
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            # Les e-mails partent directement (pas de file d'attente) : l'utilisateur sait tout
+            # de suite si son lien de confirmation est parti, sans dépendre d'un worker.
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
 

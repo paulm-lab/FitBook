@@ -57,7 +57,7 @@ final class AuthenticationTest extends WebTestCase
         self::assertTrue($user->isVerified());
         self::assertNotSame(self::PASSWORD, $user->getPassword());
         self::assertTrue(static::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, self::PASSWORD));
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
     }
 
     public function testNewAccountCanLogInImmediatelyAndReachItsProfile(): void
@@ -312,7 +312,7 @@ final class AuthenticationTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Si un compte correspond', $this->json($client)['message']);
-        self::assertQueuedEmailCount(0);
+        self::assertEmailCount(0);
     }
 
     public function testResetRejectsInvalidTokensAndShortPasswords(): void

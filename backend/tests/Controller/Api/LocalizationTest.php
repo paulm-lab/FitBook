@@ -107,7 +107,7 @@ final class LocalizationTest extends ApiTestCase
         self::assertSame('Account created successfully. You can now log in.', $this->json()['message']);
         self::assertSame('en', $this->em()->getRepository(User::class)->findOneBy(['email' => 'camille@example.test'])?->getLocale());
 
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
         $email = self::getMailerMessage();
         self::assertInstanceOf(TemplatedEmail::class, $email);
         self::assertSame('Welcome to FitBook', $email->getSubject());

@@ -11,7 +11,7 @@ Navigateur ──HTTPS──> serveur web
                        ├── /            → frontend/dist/fitbook-front/browser (fichiers statiques Angular)
                        ├── /api, /uploads → backend/public/index.php (Symfony, PHP-FPM)
                        └── MySQL 8 (utilisateur fitbook_user)
-Tâches : worker Messenger (e-mails) + commandes horaires (rappels, réservations terminées)
+Tâches : commandes horaires (rappels, réservations terminées) ; e-mails envoyés directement en SMTP
 ```
 
 Servir le front et l'API **sur le même domaine** garde le cookie HttpOnly du JWT sur la même
@@ -20,7 +20,7 @@ origine (pas de CORS à ouvrir, `SameSite=Lax` suffit).
 ## 2. Base de données
 
 ```bash
-# En root, une seule fois : bases fitbook / fitbook_test et utilisateur dédié.
+# En root, une seule fois : bases fitbookdata / fitbookdata_test et utilisateur dédié.
 mysql -u root -p -e "SET @fitbook_password = 'mot-de-passe-fort'; SOURCE database/scripts/create_user.sql;"
 ```
 
@@ -41,7 +41,7 @@ composer install --no-dev --optimize-autoloader
 APP_ENV=prod
 APP_DEBUG=0
 APP_SECRET=<64 caractères aléatoires>
-DATABASE_URL="mysql://fitbook_user:<mot-de-passe>@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+DATABASE_URL="mysql://fitbook_user:<mot-de-passe>@127.0.0.1:3306/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 MAILER_DSN=smtp://<utilisateur>:<mot-de-passe>@<serveur-smtp>:587
 MAILER_FROM=noreply@fitbook.exemple
 MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
@@ -130,7 +130,7 @@ Sous Windows (WAMP), les mêmes commandes se planifient avec le Planificateur de
 2. `git fetch && git checkout vX.Y.Z`
 3. Backend : `composer install --no-dev -o`, `doctrine:migrations:migrate -n`, `cache:clear`
 4. Frontend : `npm ci && npm run build`, copie de `dist/`
-5. Redémarrer le worker Messenger
+5. Vérifier l'envoi d'un e-mail (inscription de test)
 6. Vérifier : `curl -I https://fitbook.exemple/api/activites` (200) et une connexion de test
 
 Retour arrière : `git checkout` de la version précédente, restauration du dump si une migration

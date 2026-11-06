@@ -94,7 +94,7 @@ final class ReservationFlowTest extends ApiTestCase
         self::assertResponseIsSuccessful();
         self::assertSame('annulee', $this->json()['statut']);
         self::assertSame(1, $this->json()['seance']['placesDisponibles']);
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
 
         $this->client->request('POST', '/api/reservations/' . $later->getId() . '/annuler');
         self::assertResponseStatusCodeSame(409);

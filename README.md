@@ -36,6 +36,9 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | [API](docs/api.md) | Routes REST, codes d'erreur, recherche, commandes planifiées (Swagger : `/api/doc`) |
 | [Sécurité](docs/securite.md) | Protections face à l'OWASP Top 10, secrets, points à surveiller |
 | [Liste des tests](docs/liste-des-tests.md) | Synthèse, couverture des exigences, recette des parcours, inventaire |
+| [Tests de charge](docs/tests-de-charge/README.md) | Courbes de stress de l'API (débit, temps de réponse, erreurs) |
+| [Énoncé et grille](docs/consignes/enonce-et-grille-UAA-MI08.pdf) | Consignes des formateurs et grille d'évaluation UAA MI08 |
+| [Conformité](docs/conformite-enonce.md) | Contrôle de chaque exigence de l'énoncé et de la grille, écarts et actions |
 | [Déploiement](docs/deploiement.md) | Mise en production, tâches planifiées, mise à jour |
 | [Postman](postman/README.md) | Collection, environnement et rapport Newman |
 
@@ -47,12 +50,12 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | Backend | PHP 8.3, Symfony 7.4 (API REST JSON), Doctrine ORM, LexikJWT, Mailer + Messenger, NelmioApiDoc, opis/json-schema |
 | Base de données | MySQL 8+ (InnoDB), utilisateur dédié `fitbook_user`, 3 procédures stockées |
 | E-mails (dev) | Mailpit |
-| Tests et qualité | PHPUnit (93 tests), Vitest (50 tests), Postman + Newman (60 requêtes), ESLint + Prettier, PHPStan 6 et PHP-CS-Fixer (configurés) |
+| Tests et qualité | PHPUnit (117 tests), Vitest (50 tests), Postman + Newman (60 requêtes), ESLint + Prettier, PHPStan 6 et PHP-CS-Fixer (configurés) |
 
 ## Arborescence
 
 ```text
-fitbook-mi08/
+fitbook/
 ├── backend/            # API Symfony
 ├── frontend/           # Application Angular
 ├── database/
@@ -103,13 +106,13 @@ mysql -u root -p -e "SET @fitbook_password = 'mot-de-passe-fort'; SOURCE databas
 docker compose up -d      # MySQL sur 127.0.0.1:3307, phpMyAdmin sur :8080, Mailpit sur :8025
 ```
 
-Le script crée les bases `fitbook` et `fitbook_test` et l'utilisateur `fitbook_user`, dont les droits
+Le script crée les bases `fitbookdata` et `fitbookdata_test` et l'utilisateur `fitbook_user`, dont les droits
 sont limités à ces deux bases. L'application ne se connecte jamais en `root`.
 
 #### 2. Configuration locale (`backend/.env.local`, jamais versionné)
 
 ```dotenv
-DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 MAILER_DSN=smtp://127.0.0.1:1025
 # Passphrase de la clé privée JWT : une longue chaîne aléatoire.
 JWT_PASSPHRASE=une-longue-phrase-secrete-aleatoire
@@ -126,7 +129,7 @@ symfony console lexik:jwt:generate-keypair      # clés RSA dans config/jwt/ (ja
 symfony console doctrine:migrations:migrate     # tables, contraintes CHECK, procédures stockées
 symfony console doctrine:fixtures:load          # jeu de démonstration (Bruxelles)
 symfony serve                                   # API sur http://127.0.0.1:8000 (HTTP, voir .symfony.local.yaml)
-# Le worker d'e-mails (messenger:consume async) démarre avec le serveur.
+# Les e-mails partent directement vers Mailpit (aucun worker nécessaire).
 ```
 
 > **Windows** : si `lexik:jwt:generate-keypair` échoue avec `error:80000003:system library`,
@@ -172,6 +175,10 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
 | `/api/logout` | POST | Supprime le cookie |
 | `/api/auth/forgot-password` | POST | Envoie un lien de réinitialisation (`email`) |
 | `/api/auth/reset-password` | POST | `token` + `password` : nouveau mot de passe (lien à usage unique, valable 1 h) |
+
+- **Inscription directe** : le compte est actif dès sa création, sans confirmation de l'adresse
+  e-mail ; l'utilisateur peut se connecter immédiatement. Un e-mail de bienvenue est envoyé
+  directement (Mailpit en développement : http://127.0.0.1:8025) ; son échec ne bloque rien.
 
 - **JWT** (LexikJWTAuthenticationBundle), valable 1 h, accepté dans `Authorization: Bearer <jeton>`
   ou dans le cookie `BEARER` (HttpOnly, SameSite=Lax). L'API est sans état : aucune session PHP.
@@ -220,11 +227,11 @@ symfony php bin/phpunit --group mysql   # procédures stockées et contraintes C
 
 Les tests fonctionnels utilisent SQLite en mémoire et des clés JWT de test générées
 automatiquement dans `backend/var/jwt-test/`. Les tests d'intégration du groupe `mysql`
-reconstruisent la base `fitbook_test` à partir des migrations ; ils nécessitent, dans
+reconstruisent la base `fitbookdata_test` à partir des migrations ; ils nécessitent, dans
 `backend/.env.test.local` (non versionné) :
 
 ```dotenv
-MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook_test?serverVersion=8.0.32&charset=utf8mb4"
+MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata_test?serverVersion=8.0.32&charset=utf8mb4"
 ```
 
 Frontend : `cd frontend && npm test -- --watch=false` (50 tests).
