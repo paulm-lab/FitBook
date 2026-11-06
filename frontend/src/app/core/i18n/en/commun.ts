@@ -45,7 +45,6 @@ export const EN_COMMUN: Record<string, string> = {
   'Tarifs — FitBook': 'Pricing — FitBook',
   'Connexion — FitBook': 'Log in — FitBook',
   'Inscription — FitBook': 'Sign up — FitBook',
-  'Vérification de l’adresse — FitBook': 'Email verification — FitBook',
   'Mot de passe oublié — FitBook': 'Forgotten password — FitBook',
   'Nouveau mot de passe — FitBook': 'New password — FitBook',
   'Mon espace — FitBook': 'My space — FitBook',

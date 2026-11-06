@@ -4,12 +4,6 @@ import { Observable, catchError, finalize, map, of, shareReplay, tap, timeout } 
 import { API_URL } from '../http';
 import { Role, Utilisateur } from '../models';
 
-// sent : accepté par le serveur SMTP ; queued : en file Messenger, pas encore parti ; failed : ni l'un ni l'autre.
-export type StatutEmailVerification = 'sent' | 'queued' | 'failed';
-
-/** Code renvoyé par l'API (403 à la connexion) quand l'adresse n'est pas encore confirmée. */
-export const CODE_EMAIL_NON_VERIFIE = 'email_non_verifie';
-
 export interface InscriptionSaisie {
   prenom: string;
   nom: string;
@@ -23,8 +17,6 @@ export interface InscriptionResponse {
   message: string;
   email: string;
   role?: Role;
-  verificationEmailQueued?: boolean;
-  verificationEmailStatus?: StatutEmailVerification;
 }
 
 /** Espace d'accueil de chaque rôle après la connexion. */
@@ -130,13 +122,6 @@ export class AuthService {
   inscription(data: InscriptionSaisie): Observable<InscriptionResponse> {
     return this.http
       .post<InscriptionResponse>(`${API_URL}/inscription`, data)
-      .pipe(timeout({ first: 20000 }));
-  }
-
-  /** Nouveau lien de confirmation (réponse neutre : ne dit pas si le compte existe). */
-  renvoyerVerification(email: string): Observable<{ message: string }> {
-    return this.http
-      .post<{ message: string }>(`${API_URL}/auth/resend-verification`, { email })
       .pipe(timeout({ first: 20000 }));
   }
 

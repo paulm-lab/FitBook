@@ -120,10 +120,6 @@ export const EN_PAGES: Record<string, string> = {
   'Connexion impossible. Réessayez plus tard.': 'Unable to log in. Please try again later.',
   'Adresse e-mail ou mot de passe incorrect.': 'Incorrect email address or password.',
   'Ce compte ne peut pas se connecter.': 'This account cannot log in.',
-  'Renvoyer le lien de vérification': 'Resend the verification link',
-  'Envoi du lien…': 'Sending the link…',
-  'Le lien n’a pas pu être renvoyé. Réessayez dans quelques minutes.':
-    'The link could not be resent. Please try again in a few minutes.',
   'Trop de tentatives de connexion. Patientez quelques minutes avant de réessayer.':
     'Too many login attempts. Please wait a few minutes before trying again.',
 
@@ -144,20 +140,8 @@ export const EN_PAGES: Record<string, string> = {
   'Création...': 'Creating...',
   'Créer mon compte': 'Create my account',
   'Déjà membre ?': 'Already a member?',
-  'Compte créé.': 'Account created.',
-  'Compte créé. L’e-mail de vérification n’a pas pu être envoyé.':
-    'Account created. The verification email could not be sent.',
-  'L’e-mail de vérification a été envoyé à': 'The verification email has been sent to',
-  'Vérifiez également vos courriers indésirables.': 'Please also check your spam folder.',
-  'L’e-mail de vérification pour': 'The verification email for',
-  'est en file d’attente : il n’est pas encore parti et peut mettre quelques minutes à arriver. S’il n’arrive pas, demandez un nouveau lien.':
-    'is queued: it has not been sent yet and may take a few minutes to arrive. If it does not arrive, request a new link.',
-  'Le lien n’a pas pu être envoyé. Vous pouvez en demander un nouveau pour':
-    'The link could not be sent. You can request a new one for',
-  'Le lien de vérification n’a pas pu être demandé. Réessayez plus tard.':
-    'The verification link could not be requested. Please try again later.',
-  'Le lien de vérification n’a pas pu être envoyé. Réessayez plus tard.':
-    'The verification link could not be sent. Please try again later.',
+  'Compte créé avec succès. Vous pouvez maintenant vous connecter.':
+    'Account created successfully. You can now log in.',
   'Ce champ est obligatoire.': 'This field is required.',
   'La valeur saisie est trop longue.': 'The value entered is too long.',
   'Saisissez un numéro de téléphone valide.': 'Enter a valid phone number.',
@@ -167,23 +151,8 @@ export const EN_PAGES: Record<string, string> = {
   'Une erreur technique empêche la création du compte. Réessayez plus tard.':
     'A technical error is preventing the account from being created. Please try again later.',
   'Cette adresse e-mail est déjà utilisée.': 'This email address is already in use.',
-  'Si le compte a été créé, utilisez le lien reçu par e-mail ou demandez-en un nouveau.':
-    'If the account was created, use the link you received by email or request a new one.',
-
-  // Vérification de l'adresse e-mail (lien signé)
-  'VÉRIFICATION DE VOTRE COMPTE': 'ACCOUNT VERIFICATION',
-  'Adresse vérifiée': 'Address verified',
-  'Votre adresse e-mail est vérifiée. Votre compte FitBook est actif.':
-    'Your email address is verified. Your FitBook account is active.',
-  'Lien de vérification invalide': 'Invalid verification link',
-  'Le lien de vérification est invalide ou expiré. Demandez un nouveau lien.':
-    'The verification link is invalid or has expired. Request a new link.',
-  'Adresse e-mail': 'Email address',
-  'Renvoyer le lien': 'Resend the link',
-  'Le serveur met trop de temps à répondre. Réessayez dans quelques instants.':
-    'The server is taking too long to respond. Please try again in a few moments.',
-  'La demande de renvoi n’a pas abouti. Réessayez dans quelques instants.':
-    'The resend request failed. Please try again in a few moments.',
+  'Si le compte a été créé, vous pouvez essayer de vous connecter.':
+    'If the account was created, you can try to log in.',
 
   // Page introuvable
   'Page introuvable': 'Page not found',

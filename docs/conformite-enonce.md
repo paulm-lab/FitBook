@@ -11,7 +11,7 @@
 
 | # | Exigence (source) | Statut | Preuve | Correction / action |
 |---|-------------------|--------|--------|---------------------|
-| 1 | Inscription, connexion, **confirmation e-mail**, permissions par rôle (É p.2 obj. 4, É p.3 backend) | ✅ | Supprimée par erreur le 6/11, **rétablie** : `InscriptionController`, `UserChecker`, page `/verification-email`. Test réel : inscription → connexion refusée (403 `email_non_verifie`, FR et EN) → lien reçu dans Mailpit → `status=success` → connexion 200. PHPUnit `AuthenticationTest` | Fait |
+| 1 | Inscription, connexion, **confirmation e-mail**, permissions par rôle (É p.2 obj. 4, É p.3 backend) | ❌ | Inscription, connexion et permissions présentes. La **confirmation e-mail a été retirée le 6/11 sur décision du porteur du projet**, malgré l'exigence de l'énoncé : le compte est actif dès l'inscription. Le code de confirmation existe dans l'historique Git (commit `69f3ff9`) | Écart assumé, à justifier à l'oral ; pour le rétablir : `git revert` du commit de suppression |
 | 2 | GitHub **créé avant le développement** (É p.4) | ❌ | Dépôt local depuis le 31/10, mais dépôt GitHub `paulm-lab/FitBook` créé et poussé le 6/11 | Ne peut pas être corrigé après coup. À expliquer à l'oral (dépôt local Git dès le 31/10) |
 | 3 | **3 commits minimum par jour** de travail (É p.4) | 🟡 | `git log` : 3 commits le 31/10, 56 le 5/11, plusieurs dizaines le 6/11 ; aucun commit les autres jours | Respecter la règle désormais. Ne pas réécrire l'historique (dates falsifiées) |
 | 4 | **1 pull request tous les 3 jours** maximum (É p.4) | ❌ | Aucune pull request sur GitHub (fusions locales `--no-ff`) | Passer désormais par des pull requests GitHub pour fusionner les branches `feature/*` |
@@ -82,4 +82,4 @@
    des commits, gestion des activités et des coachs, choix de MySQL 9.1 (WAMP) compatible MySQL 8.
 4. **Avant la démonstration** : recharger les fixtures (`php bin/console doctrine:fixtures:load`),
    relancer Newman, faire la sauvegarde `03_fin` sur `fitbookdata`, lancer `demarrer.ps1`
-   (Mailpit nécessaire pour recevoir les e-mails de confirmation d'adresse).
+   (Mailpit pour voir les e-mails envoyés par le site).

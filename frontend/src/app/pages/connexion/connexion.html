@@ -56,20 +56,7 @@
       @if (erreur()) {
         <div class="error-message" role="alert">
           <p>{{ erreur() }}</p>
-          @if (nonVerifie()) {
-            <button
-              type="button"
-              class="link-btn"
-              (click)="renvoyerLien()"
-              [disabled]="renvoiEnCours()"
-            >
-              {{ (renvoiEnCours() ? 'Envoi du lien…' : 'Renvoyer le lien de vérification') | t }}
-            </button>
-          }
         </div>
-      }
-      @if (renvoiMessage()) {
-        <p class="success-message" role="status">{{ renvoiMessage() }}</p>
       }
 
       <button class="form-action" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
