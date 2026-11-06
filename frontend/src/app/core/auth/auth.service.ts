@@ -66,6 +66,8 @@ export class AuthService {
   /** Restaure la session depuis le cookie (au démarrage) ; ne lève jamais d'erreur. */
   verifierSession(): Observable<Utilisateur | null> {
     return this.http.get<Utilisateur>(`${API_URL}/me`).pipe(
+      // API muette : au bout de 5 s, l'application démarre en visiteur au lieu de rester blanche.
+      timeout({ first: 5000 }),
       catchError(() => of(null)),
       tap((user) => {
         this.utilisateurCourant.set(user);

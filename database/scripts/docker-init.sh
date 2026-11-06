@@ -8,8 +8,10 @@
 # =============================================================================
 set -eu
 
-# Échappe les apostrophes du mot de passe pour la chaîne SQL.
-PASSWORD_SQL=$(printf '%s' "$FITBOOK_DB_PASSWORD" | sed "s/'/''/g")
+# Échappe le mot de passe pour la chaîne SQL : d'abord les barres obliques inverses (caractère
+# d'échappement de MySQL, sinon « \n » deviendrait un saut de ligne), puis les apostrophes.
+# Le document « here » ne réinterprète pas le contenu de la variable ($, `, \ restent intacts).
+PASSWORD_SQL=$(printf '%s' "$FITBOOK_DB_PASSWORD" | sed -e 's/\\/\\\\/g' -e "s/'/''/g")
 
 mysql --user=root --password="$MYSQL_ROOT_PASSWORD" <<SQL
 SET @fitbook_host = '%';

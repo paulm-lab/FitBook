@@ -103,9 +103,10 @@ import { STATUTS, annulerAvecConfirmation } from '../reservations/reservations';
               <button type="button" class="btn btn--danger" (click)="annuler(r)">
                 {{ 'Annuler la réservation' | t }}
               </button>
-            } @else if (r.statut === 'confirmee') {
+            } @else if (r.statut === 'confirmee' && !finie(r)) {
+              <!-- Délai de 2 h dépassé avant le début, ou séance en cours ; rien une fois finie. -->
               <p class="muted">
-                {{ textes.tropTard | t }}
+                {{ (commencee(r) ? textes.commencee : textes.tropTard) | t }}
               </p>
             }
           </div>
@@ -203,6 +204,7 @@ export class ReservationDetailComponent {
   /** Textes contenant une apostrophe, tenus hors du gabarit (guillemets du parseur Angular). */
   readonly textes = {
     tropTard: "L'annulation n'est plus possible à moins de 2 heures du début.",
+    commencee: "La séance a commencé : l'annulation n'est plus possible.",
     qrTitre: "QR code d'accès",
     qrAide: "Présentez ce code à l'accueil le jour de la séance.",
   };
@@ -232,6 +234,11 @@ export class ReservationDetailComponent {
       r.statut === 'terminee' ||
       (r.statut === 'confirmee' && !!r.seance && new Date(r.seance.dateFin) <= new Date())
     );
+  }
+
+  /** Séance commencée (début atteint). */
+  commencee(r: Reservation): boolean {
+    return !!r.seance && new Date(r.seance.dateDebut) <= new Date();
   }
 
   /** Format date + heure dans la langue courante (« à » / « at »). */

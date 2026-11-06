@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { EventInput } from '@fullcalendar/core';
 import { messageErreur } from '../../../core/http';
 import { LangueService } from '../../../core/i18n/langue.service';
@@ -93,6 +94,9 @@ export class CalendrierEspaceComponent {
   readonly salles = signal<Salle[]>([]);
   readonly salleId = signal<number | null>(null);
   private fenetre: { debut: Date; fin: Date } | null = null;
+  // Dernières requêtes : annulées si la période ou la salle change avant leur réponse.
+  private requeteSeances?: Subscription;
+  private requeteDisponibilites?: Subscription;
 
   readonly evenements = computed<EventInput[]>(() => [
     ...this.seances().map(evenementSeance),
@@ -112,8 +116,9 @@ export class CalendrierEspaceComponent {
   changerSalle(valeur: string): void {
     this.salleId.set(valeur ? Number(valeur) : null);
     const id = this.salleId();
+    this.requeteDisponibilites?.unsubscribe();
     if (id) {
-      this.catalogue
+      this.requeteDisponibilites = this.catalogue
         .disponibilites({ salleId: id })
         .subscribe({ next: (d) => this.disponibilites.set(d) });
     } else {
@@ -124,7 +129,8 @@ export class CalendrierEspaceComponent {
 
   charger(fenetre: { debut: Date; fin: Date }): void {
     this.fenetre = fenetre;
-    this.gestion
+    this.requeteSeances?.unsubscribe();
+    this.requeteSeances = this.gestion
       .seances(this.espace, {
         debut: fenetre.debut.toISOString(),
         fin: fenetre.fin.toISOString(),

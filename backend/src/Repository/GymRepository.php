@@ -43,10 +43,14 @@ class GymRepository extends ServiceEntityRepository
                 ->setParameter('cp', $criteria->ville);
         }
         if ($criteria->activiteId !== null || $criteria->activite !== '') {
-            // Salles qui proposent au moins une séance de cette activité.
+            // Salles qui proposent au moins une séance active et à venir de cette activité
+            // (une séance annulée ou passée ne signifie pas que l'activité y est proposée).
             $sub = $this->getEntityManager()->createQueryBuilder()
                 ->select('1')->from(Session::class, 'gs')->join('gs.activity', 'ga')
-                ->andWhere('gs.gym = g');
+                ->andWhere('gs.gym = g')
+                ->andWhere('gs.status = :activeStatus AND gs.startAt > :now');
+            $query->setParameter('activeStatus', SessionStatus::Active)
+                ->setParameter('now', new \DateTimeImmutable());
             if ($criteria->activiteId !== null) {
                 $sub->andWhere('ga.id = :activityId');
                 $query->setParameter('activityId', $criteria->activiteId);

@@ -183,11 +183,25 @@ class ReservationRepository extends ServiceEntityRepository
         if ($manager !== null) {
             $query->andWhere('g.manager = :manager')->setParameter('manager', $manager);
         }
-        if ($status !== null && ReservationStatus::tryFrom($status) !== null) {
-            $query->andWhere('r.status = :status')->setParameter('status', ReservationStatus::from($status));
+        $now ??= new \DateTimeImmutable();
+        // Filtre sur le statut effectif : une réservation confirmée d'une séance active finie
+        // compte comme terminée, même avant le passage de app:finish-reservations.
+        $statusFilter = ReservationStatus::tryFrom((string) $status);
+        $finished = 'r.status = :confirmedStatus AND s.status = :activeSession AND s.endAt <= :now';
+        if ($statusFilter !== null) {
+            $query->andWhere(match ($statusFilter) {
+                ReservationStatus::Confirmee => "r.status = :status AND NOT ($finished)",
+                ReservationStatus::Terminee => "r.status = :status OR ($finished)",
+                ReservationStatus::Annulee => 'r.status = :status',
+            })->setParameter('status', $statusFilter);
+            if ($statusFilter !== ReservationStatus::Annulee) {
+                $query->setParameter('confirmedStatus', ReservationStatus::Confirmee)
+                    ->setParameter('activeSession', SessionStatus::Active)
+                    ->setParameter('now', $now);
+            }
         }
         if ($upcomingOnly) {
-            return $query->andWhere('s.startAt > :now')->setParameter('now', $now ?? new \DateTimeImmutable())
+            return $query->andWhere('s.startAt > :now')->setParameter('now', $now)
                 ->orderBy('s.startAt', 'ASC')->addOrderBy('u.lastName', 'ASC');
         }
 

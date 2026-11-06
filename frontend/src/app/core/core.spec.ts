@@ -99,6 +99,21 @@ describe('AuthService et intercepteur', () => {
     expect(auth.estConnecte()).toBe(false);
   });
 
+  it('démarre en visiteur si /api/me ne répond pas dans les 5 secondes', async () => {
+    vi.useFakeTimers();
+    try {
+      const { http, auth } = configurer();
+      const reponse = firstValueFrom(auth.verifierSession());
+      const requete = http.expectOne('/api/me');
+      vi.advanceTimersByTime(5000);
+      expect(await reponse).toBeNull();
+      expect(requete.cancelled).toBe(true);
+      expect(auth.pret()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('garde le jeton en mémoire et le joint aux appels suivants', async () => {
     const { http, auth } = configurer();
     const connexion = firstValueFrom(auth.connexion('lea@exemple.test', 'secret123'));

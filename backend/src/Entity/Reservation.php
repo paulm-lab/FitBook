@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\ReservationStatus;
+use App\Enum\SessionStatus;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -154,5 +155,20 @@ class Reservation
         return $this->status === ReservationStatus::Confirmee
             && $startAt !== null
             && $startAt > $now->modify(self::CANCELLATION_DELAY);
+    }
+
+    /**
+     * Statut tel qu'il doit être présenté : une réservation confirmée d'une séance active déjà
+     * finie est terminée, même si la commande app:finish-reservations n'est pas encore passée.
+     */
+    public function getEffectiveStatus(\DateTimeImmutable $now): ReservationStatus
+    {
+        $endAt = $this->session?->getEndAt();
+
+        return $this->status === ReservationStatus::Confirmee
+            && $this->session?->getStatus() === SessionStatus::Active
+            && $endAt !== null && $endAt <= $now
+            ? ReservationStatus::Terminee
+            : $this->status;
     }
 }
