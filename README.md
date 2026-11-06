@@ -241,7 +241,7 @@ reconstruisent la base `fitbookdata_test` à partir des migrations ; ils nécess
 MYSQL_TEST_DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata_test?serverVersion=8.0.32&charset=utf8mb4"
 ```
 
-Frontend : `cd frontend && npm test -- --watch=false` (50 tests).
+Frontend : `cd frontend && npm test -- --watch=false` (71 tests).
 API de bout en bout : collection Postman / Newman, voir [`postman/README.md`](postman/README.md).
 Détail et recette des parcours : [`docs/liste-des-tests.md`](docs/liste-des-tests.md).
 
