@@ -38,6 +38,7 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | [Liste des tests](docs/liste-des-tests.md) | Synthèse, couverture des exigences, recette des parcours, inventaire |
 | [Tests de charge](docs/tests-de-charge/README.md) | Courbes de stress de l'API (débit, temps de réponse, erreurs) |
 | [Énoncé et grille](docs/consignes/enonce-et-grille-UAA-MI08.pdf) | Consignes des formateurs et grille d'évaluation UAA MI08 |
+| [Conformité](docs/conformite-enonce.md) | Contrôle de chaque exigence de l'énoncé et de la grille, écarts et actions |
 | [Déploiement](docs/deploiement.md) | Mise en production, tâches planifiées, mise à jour |
 | [Postman](postman/README.md) | Collection, environnement et rapport Newman |
 
