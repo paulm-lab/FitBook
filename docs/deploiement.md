@@ -20,7 +20,7 @@ origine (pas de CORS à ouvrir, `SameSite=Lax` suffit).
 ## 2. Base de données
 
 ```bash
-# En root, une seule fois : bases fitbook / fitbook_test et utilisateur dédié.
+# En root, une seule fois : bases fitbookdata / fitbookdata_test et utilisateur dédié.
 mysql -u root -p -e "SET @fitbook_password = 'mot-de-passe-fort'; SOURCE database/scripts/create_user.sql;"
 ```
 
@@ -41,7 +41,7 @@ composer install --no-dev --optimize-autoloader
 APP_ENV=prod
 APP_DEBUG=0
 APP_SECRET=<64 caractères aléatoires>
-DATABASE_URL="mysql://fitbook_user:<mot-de-passe>@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+DATABASE_URL="mysql://fitbook_user:<mot-de-passe>@127.0.0.1:3306/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 MAILER_DSN=smtp://<utilisateur>:<mot-de-passe>@<serveur-smtp>:587
 MAILER_FROM=noreply@fitbook.exemple
 MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0

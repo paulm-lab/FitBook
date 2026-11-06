@@ -2,7 +2,7 @@
 -- FitBook — création des bases et de l'utilisateur MySQL dédié `fitbook_user`
 -- =============================================================================
 -- L'application ne se connecte JAMAIS en root : elle utilise `fitbook_user`, dont les
--- droits sont limités à la base `fitbook` (et à sa base de tests `fitbook_test`).
+-- droits sont limités à la base `fitbookdata` (et à sa base de tests `fitbookdata_test`).
 --
 -- Aucun mot de passe n'est écrit ici. Il est fourni au lancement, en tant que root :
 --
@@ -12,7 +12,7 @@
 -- depuis le réseau Docker : le script d'initialisation fixe @fitbook_host = '%'.
 --
 -- Le mot de passe est ensuite reporté dans backend/.env.local (fichier non versionné) :
---   DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbook?serverVersion=8.0.32&charset=utf8mb4"
+--   DATABASE_URL="mysql://fitbook_user:mot-de-passe-fort@127.0.0.1:3306/fitbookdata?serverVersion=8.0.32&charset=utf8mb4"
 -- =============================================================================
 
 SET @fitbook_host = COALESCE(NULLIF(@fitbook_host, ''), 'localhost');
@@ -23,8 +23,8 @@ SELECT IF(COALESCE(@fitbook_password, '') = '',
           'ERREUR : définissez @fitbook_password avant de lancer ce script.',
           CONCAT('Création de fitbook_user@', @fitbook_host)) AS verification;
 
-CREATE DATABASE IF NOT EXISTS `fitbook` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE IF NOT EXISTS `fitbook_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `fitbookdata` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `fitbookdata_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CREATE USER et GRANT n'acceptent pas de variable : les requêtes sont construites puis
 -- préparées. QUOTE() échappe les valeurs (aucune injection possible via les variables).
@@ -49,12 +49,12 @@ DEALLOCATE PREPARE stmt;
 -- Aucun droit global (pas de FILE, SUPER, PROCESS, GRANT OPTION…).
 SET @privileges = 'SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, INDEX, REFERENCES, CREATE TEMPORARY TABLES, CREATE ROUTINE, ALTER ROUTINE, EXECUTE, LOCK TABLES, SHOW VIEW';
 
-SET @sql = CONCAT('GRANT ', @privileges, ' ON `fitbook`.* TO ', @account);
+SET @sql = CONCAT('GRANT ', @privileges, ' ON `fitbookdata`.* TO ', @account);
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
-SET @sql = CONCAT('GRANT ', @privileges, ' ON `fitbook_test`.* TO ', @account);
+SET @sql = CONCAT('GRANT ', @privileges, ' ON `fitbookdata_test`.* TO ', @account);
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;

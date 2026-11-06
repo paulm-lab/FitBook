@@ -18,7 +18,7 @@
 Les tests fonctionnels PHPUnit utilisent une base SQLite en mémoire recréée à chaque test ; sur
 cette base, les règles des procédures stockées sont appliquées par le même service PHP
 (`ReservationService`), avec les mêmes codes de réponse. Le groupe `mysql` vérifie les procédures
-elles-mêmes sur la base `fitbook_test`.
+elles-mêmes sur la base `fitbookdata_test`.
 
 ## 2. Couverture des exigences
 

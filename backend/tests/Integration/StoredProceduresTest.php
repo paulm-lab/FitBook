@@ -16,7 +16,7 @@ use Symfony\Component\Process\Process;
  * Tests d'intégration des 3 procédures stockées et des contraintes CHECK, sur une vraie base MySQL.
  *
  * Base utilisée : MYSQL_TEST_DATABASE_URL (dans .env.test.local, non versionné), normalement
- * `fitbook_test` avec l'utilisateur `fitbook_user`. Le schéma y est reconstruit par les migrations
+ * `fitbookdata_test` avec l'utilisateur `fitbook_user`. Le schéma y est reconstruit par les migrations
  * avant les tests ; sans cette variable, les tests sont ignorés (les autres tests tournent sur SQLite).
  */
 #[Group('mysql')]
