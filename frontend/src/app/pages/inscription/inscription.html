@@ -9,43 +9,12 @@
     @if (confirmation()) {
       <div class="success-message" role="status">
         <p>{{ confirmation() }}</p>
-
-        @if (emailInscrit() && statutEmail() === 'sent') {
-          <p>
-            {{ 'L’e-mail de vérification a été envoyé à' | t }}
-            <strong>{{ emailInscrit() }}</strong
-            >. {{ 'Vérifiez également vos courriers indésirables.' | t }}
-          </p>
-        }
-
-        @if (emailInscrit() && statutEmail() === 'queued') {
-          <p>
-            {{ 'L’e-mail de vérification pour' | t }}
-            <strong>{{ emailInscrit() }}</strong>
-            {{
-              'est en file d’attente : il n’est pas encore parti et peut mettre quelques minutes à arriver. S’il n’arrive pas, demandez un nouveau lien.'
-                | t
-            }}
-          </p>
-        }
-
-        @if (emailInscrit() && !lienEnFile()) {
-          <p>
-            {{ 'Le lien n’a pas pu être envoyé. Vous pouvez en demander un nouveau pour' | t }}
-            <strong>{{ emailInscrit() }}</strong
-            >.
-          </p>
-        }
-
-        @if (erreur()) {
-          <p class="error-message" role="alert">{{ erreur() }}</p>
-        }
-
-        @if (emailInscrit()) {
-          <button class="form-action" type="button" [disabled]="envoi()" (click)="renvoyerLien()">
-            {{ (envoi() ? 'Envoi du lien…' : 'Renvoyer le lien de vérification') | t }}
-          </button>
-        }
+        <a
+          class="form-action"
+          routerLink="/connexion"
+          [queryParams]="emailInscrit() ? { email: emailInscrit() } : {}"
+          >{{ 'Se connecter' | t }}</a
+        >
       </div>
     } @else {
       <form [formGroup]="formulaire" (ngSubmit)="inscrire()" novalidate>
@@ -185,10 +154,7 @@
 
     <p class="form-switch">
       {{ 'Déjà membre ?' | t }}
-      <!-- Après l'inscription, l'adresse est pré-remplie pour se connecter une fois confirmée. -->
-      <a routerLink="/connexion" [queryParams]="emailInscrit() ? { email: emailInscrit() } : {}">{{
-        'Se connecter' | t
-      }}</a>
+      <a routerLink="/connexion">{{ 'Se connecter' | t }}</a>
     </p>
   </section>
 

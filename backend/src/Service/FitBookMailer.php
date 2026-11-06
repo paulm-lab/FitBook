@@ -42,30 +42,15 @@ final class FitBookMailer
         );
     }
 
-    /** Lien signé de confirmation de l'adresse e-mail après l'inscription. */
-    public function sendVerification(User $user, string $verificationUrl): EmailDeliveryStatus
-    {
-        return $this->send(
-            (string) $user->getEmail(),
-            $user->getLocale(),
-            'Vérifiez votre adresse e-mail FitBook',
-            'Confirmez votre adresse e-mail',
-            'Bonjour {name}, confirmez votre adresse pour activer votre compte FitBook. Ce lien expire dans 24 heures.',
-            ['{name}' => (string) $user->getFirstName()],
-            $verificationUrl,
-            'Vérifier mon adresse',
-        );
-    }
-
-    /** Bienvenue, une fois l'adresse confirmée. */
+    /** Bienvenue, juste après l'inscription. */
     public function sendRegistrationConfirmation(User $user): EmailDeliveryStatus
     {
         return $this->send(
             (string) $user->getEmail(),
             $user->getLocale(),
-            'Votre compte FitBook est activé',
+            'Bienvenue sur FitBook',
             'Bienvenue chez FitBook',
-            'Bonjour {name}, votre adresse est vérifiée et votre compte est maintenant actif. Vous pouvez découvrir les séances disponibles.',
+            'Bonjour {name}, votre compte est créé et vous pouvez dès maintenant vous connecter pour découvrir les séances disponibles.',
             ['{name}' => (string) $user->getFirstName()],
         );
     }

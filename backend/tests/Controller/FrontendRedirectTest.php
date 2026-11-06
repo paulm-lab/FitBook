@@ -24,9 +24,6 @@ final class FrontendRedirectTest extends WebTestCase
         $client->request('GET', '/recherche?q=yoga');
         self::assertResponseRedirects('http://localhost:4200/recherche?q=yoga');
 
-        $client->request('GET', '/verification-email?status=success');
-        self::assertResponseRedirects('http://localhost:4200/verification-email?status=success');
-
         $client->request('GET', '/');
         self::assertResponseRedirects('http://localhost:4200/');
     }

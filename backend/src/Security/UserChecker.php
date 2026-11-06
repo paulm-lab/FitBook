@@ -10,13 +10,10 @@ use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * Refuse la connexion d'un compte bloqué ou non vérifié (RG-02).
+ * Refuse la connexion d'un compte bloqué (RG-02).
  */
 final class UserChecker implements UserCheckerInterface
 {
-    /** Message (clé de traduction) d'un compte dont l'adresse n'est pas encore confirmée. */
-    public const UNVERIFIED_MESSAGE = 'Confirmez votre adresse e-mail avant de vous connecter.';
-
     public function checkPreAuth(UserInterface $user): void
     {
     }
@@ -29,9 +26,6 @@ final class UserChecker implements UserCheckerInterface
         }
         if ($user->isBlocked()) {
             throw new CustomUserMessageAccountStatusException('Ce compte a été bloqué. Contactez l’administrateur.');
-        }
-        if (!$user->isVerified()) {
-            throw new CustomUserMessageAccountStatusException(self::UNVERIFIED_MESSAGE);
         }
     }
 }

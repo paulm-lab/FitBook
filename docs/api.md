@@ -55,7 +55,7 @@ son coach (à défaut, celle de sa salle).
 
 ## Authentification
 
-`POST /api/inscription`, `GET /api/auth/verify-email`, `POST /api/auth/resend-verification`,
+`POST /api/inscription` (compte actif immédiatement),
 `POST /api/login`, `GET /api/me`, `POST /api/logout`, `POST /api/auth/forgot-password`,
 `POST /api/auth/reset-password` — voir le [README](../README.md#authentification).
 
