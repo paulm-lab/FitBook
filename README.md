@@ -167,8 +167,6 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
 | Route | Méthode | Rôle |
 |-------|---------|------|
 | `/api/inscription` | POST | Inscription : `prenom`, `nom`, `email`, `telephone`, `password`, `role` (`sportif` par défaut, `coach` ou `gestionnaire` ; jamais `admin`) |
-| `/api/auth/verify-email` | GET | Lien signé reçu par e-mail (VerifyEmailBundle) : active le compte |
-| `/api/auth/resend-verification` | POST | Renvoie le lien de confirmation (`email`) |
 | `/api/login` | POST | `email` + `password` → `{ "token": "…", profil }` + cookie `BEARER` HttpOnly |
 | `/api/me` | GET | Utilisateur connecté |
 | `/api/logout` | POST | Supprime le cookie |
@@ -181,9 +179,9 @@ php bin/console app:send-reminders          # rappel unique 24 h avant chaque s�
   **Voters** : un coach ne modifie que ses séances, un gestionnaire que ses salles et leurs
   séances, un sportif que ses réservations et ses avis (`src/Security/Voter/`).
 - **Protections** : 5 échecs de connexion en 15 min → 429 ; 5 inscriptions par IP et par heure ;
-  3 demandes d'e-mail (renvoi, mot de passe oublié) par adresse en 15 min ; réponses identiques
+  3 demandes d'e-mail (mot de passe oublié) par adresse en 15 min ; réponses identiques
   que l'adresse existe ou non ; en-têtes `Host` inconnus refusés (`TRUSTED_HOSTS`).
-- **Erreurs** : `400` JSON mal formé · `401` non authentifié · `403` compte non vérifié, bloqué ou
+- **Erreurs** : `400` JSON mal formé · `401` non authentifié · `403` compte bloqué ou
   droit refusé · `409` adresse déjà utilisée · `422` `{ "errors": { "champ": "message" } }` · `429` trop de tentatives.
 
 Exemple avec `curl` :
@@ -203,10 +201,10 @@ Créés par les fixtures. **Mots de passe de démonstration uniquement**, à ne 
 | Administrateur | `admin@fitbook.test` | `Admin123!` |
 | Gestionnaire (5) | `gestionnaire1@fitbook.test` … `gestionnaire5@fitbook.test` | `Gestion123!` |
 | Coach (15) | `coach1@fitbook.test` … `coach15@fitbook.test` | `Coach123!` |
-| Sportif (40) | `sportif1@fitbook.test` … `sportif38@fitbook.test` | `Sportif123!` |
+| Sportif (40) | `sportif1@fitbook.test` … `sportif39@fitbook.test` | `Sportif123!` |
 
-États particuliers pour les tests : `sportif39@fitbook.test` n'a **pas confirmé** son adresse
-(connexion refusée) et `sportif40@fitbook.test` est **bloqué**.
+État particulier pour les tests : `sportif40@fitbook.test` est **bloqué** (connexion refusée).
+Le compte est actif dès l'inscription : aucune confirmation d'adresse n'est demandée.
 
 Contenu : 10 salles à Bruxelles (coordonnées approximatives), 10 activités, 80 séances sur les
 4 prochaines semaines (dont 4 annulées et 2 complètes) et 20 séances passées, environ 500

@@ -28,7 +28,7 @@
 | UC-01 | Rechercher une offre (salle, coach, séance) | Visiteur | US-V01, US-V02, US-V03 |
 | UC-02 | Consulter une fiche | Visiteur | US-V04 |
 | UC-03 | S'inscrire | Visiteur | US-V05 |
-| UC-04 | Confirmer son adresse e-mail | Visiteur | US-V06 |
+| UC-04 | Se connecter dès l'inscription | Visiteur | US-V06 |
 | UC-05 | Se connecter | Visiteur | US-S01 |
 | UC-06 | Réinitialiser son mot de passe | Visiteur | US-V07 |
 | UC-07 | Gérer son profil | Utilisateur connecté | US-S07, US-C01 |
@@ -74,7 +74,7 @@ flowchart LR
         UC01[UC-01 Rechercher une offre]
         UC02[UC-02 Consulter une fiche]
         UC03[UC-03 S'inscrire]
-        UC04[UC-04 Confirmer son e-mail]
+        UC04[UC-04 Se connecter dès l'inscription]
         UC05[UC-05 Se connecter]
         UC06[UC-06 Réinitialiser le mot de passe]
         UC07[UC-07 Gérer son profil]
@@ -123,7 +123,7 @@ flowchart LR
 |------|-----|-------|
 | 400 | JSON mal formé | `{ "message": "…" }` |
 | 401 | Non authentifié ou jeton expiré | `{ "message": "…" }` |
-| 403 | Authentifié mais non autorisé (rôle, Voter, compte non vérifié) | `{ "message": "…" }` |
+| 403 | Authentifié mais non autorisé (rôle, Voter, compte bloqué) | `{ "message": "…" }` |
 | 404 | Ressource introuvable | `{ "message": "…" }` |
 | 409 | Conflit métier (doublon, séance complète, délai dépassé) | `{ "message": "…" }` |
 | 422 | Données invalides (Symfony Validator ou JSON Schema) | `{ "message": "…", "errors": { "champ": "message" } }` |
@@ -134,15 +134,15 @@ flowchart LR
 |---|---|
 | **Acteur** | Visiteur (secondaire : Service e-mail) |
 | **Préconditions** | Le visiteur n'est pas connecté. |
-| **Postconditions** | Un compte non vérifié existe ; un e-mail de confirmation est envoyé ou mis en file. |
+| **Postconditions** | Un compte actif existe ; l'utilisateur peut se connecter immédiatement. |
 
 **Scénario nominal**
 1. Le visiteur ouvre `/inscription`.
 2. Il saisit prénom, nom, e-mail, téléphone, mot de passe et choisit son rôle (sportif, coach, gestionnaire).
 3. Le système valide les champs côté client, puis côté serveur.
-4. Le système crée le compte avec `isVerified = false` et le mot de passe haché.
-5. Le système envoie un e-mail contenant un lien signé de confirmation.
-6. Le système indique le résultat exact de l'envoi (envoyé, en file d'attente ou échec).
+4. Le système crée le compte actif (`isVerified = true`) avec le mot de passe haché.
+5. Le système envoie un e-mail de bienvenue (un échec d'envoi ne bloque rien).
+6. Le système affiche « Compte créé avec succès. Vous pouvez maintenant vous connecter. » et un lien vers la connexion.
 
 **Scénarios alternatifs**
 - 3a. Un champ est invalide → **422** ; le système affiche l'erreur sous le champ ; retour à l'étape 2.
@@ -155,7 +155,7 @@ flowchart LR
 | | |
 |---|---|
 | **Acteur** | Sportif (secondaire : Service e-mail) |
-| **Préconditions** | Le sportif est connecté (JWT valide) et son compte est vérifié. |
+| **Préconditions** | Le sportif est connecté (JWT valide) et son compte n'est pas bloqué. |
 | **Postconditions** | Une réservation `confirmee` existe ; une place de moins est disponible. |
 
 **Scénario nominal**

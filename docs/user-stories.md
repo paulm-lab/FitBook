@@ -54,13 +54,13 @@ puis trier les résultats *afin de* comparer les offres.
 - Les erreurs sont affichées sous chaque champ, côté client **et** côté serveur.
 - Une adresse déjà utilisée est refusée (409) avec un message clair.
 
-### US-V06 — Confirmer mon adresse e-mail · M · Phase 3
-*En tant que* visiteur inscrit, *je veux* confirmer mon adresse par un lien reçu par e-mail
-*afin d'*activer mon compte.
+### US-V06 — Me connecter dès l'inscription · M · Phase 3
+*En tant que* visiteur inscrit, *je veux* me connecter immédiatement après mon inscription
+*afin d'*utiliser mon compte sans attendre d'e-mail.
 
-- Le lien est signé et expire ; un lien modifié ou expiré est refusé.
-- Tant que l'adresse n'est pas confirmée, la connexion est refusée avec un message explicite.
-- Je peux demander un nouveau lien.
+- La confirmation affiche « Compte créé avec succès. Vous pouvez maintenant vous connecter. »
+- Un lien mène à la connexion, avec l'adresse déjà saisie.
+- Un e-mail de bienvenue est envoyé, mais son échec n'empêche ni l'inscription ni la connexion.
 
 ### US-V07 — Réinitialiser mon mot de passe · M · Phase 3
 *En tant qu'*utilisateur qui a oublié son mot de passe, *je veux* recevoir un lien de
