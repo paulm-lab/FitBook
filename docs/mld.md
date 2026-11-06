@@ -184,7 +184,7 @@ Contraintes `CHECK` :
 Table gérée par **SymfonyCasts ResetPasswordBundle** : `id` (PK), `user_id` (FK → `user.id`,
 ON DELETE CASCADE), `selector` VARCHAR(20), `hashed_token` VARCHAR(100), `requested_at`, `expires_at`.
 
-> La vérification d'e-mail (**VerifyEmailBundle**) utilise un lien signé : aucune table supplémentaire.
+> Pas de confirmation d'adresse : le compte est actif dès l'inscription (`is_verified` vaut 1 à la création).
 
 ## 3. Suppressions en cascade
 

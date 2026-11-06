@@ -50,7 +50,7 @@ import {
         <form class="form" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
           <div class="form-row">
             <label class="field">
-              <span>{{ 'Nom' | t }}</span>
+              <span>{{ 'Nom de l’activité' | t }}</span>
               <input
                 formControlName="nom"
                 maxlength="50"
@@ -140,7 +140,7 @@ import {
               <th scope="col">
                 <span class="sr-only">{{ 'Image' | t }}</span>
               </th>
-              <th scope="col">{{ 'Nom' | t }}</th>
+              <th scope="col">{{ 'Nom de l’activité' | t }}</th>
               <th scope="col">{{ 'Catégorie' | t }}</th>
               <th scope="col">{{ 'Description' | t }}</th>
               <th scope="col">

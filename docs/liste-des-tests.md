@@ -7,9 +7,9 @@
 
 | Niveau | Outil | Nombre | Résultat (5 novembre 2026) | Commande |
 |--------|-------|--------|---------------------------|----------|
-| Unitaires et fonctionnels API | PHPUnit 12 (SQLite en mémoire) | 82 tests, 320 assertions | ✅ tous verts | `cd backend && php bin/phpunit --exclude-group mysql` |
-| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` (MySQL 9.1 / WAMP) | 8 tests, 32 assertions | ✅ tous verts | `php bin/phpunit --group mysql` |
-| Frontend | Vitest (`ng test`) | 35 tests | ✅ tous verts | `cd frontend && npm test -- --watch=false` |
+| Unitaires et fonctionnels API | PHPUnit 12 (SQLite en mémoire) | 109 tests, 431 assertions | ✅ tous verts | `cd backend && php bin/phpunit --exclude-group mysql` |
+| Intégration MySQL (procédures, CHECK) | PHPUnit, groupe `mysql` (MySQL 9.1 / WAMP) | 8 tests, 33 assertions | ✅ tous verts | `php bin/phpunit --group mysql` |
+| Frontend | Vitest (`ng test`) | 50 tests | ✅ tous verts | `cd frontend && npm test -- --watch=false` |
 | API de bout en bout | Postman + Newman, sur SQLite puis sur MySQL (procédures stockées) | 60 requêtes, 106 assertions | ✅ 0 échec sur les deux bases | voir [`postman/README.md`](../postman/README.md) |
 | Parcours dans le navigateur | Recette (script Playwright headless + contrôle visuel) | 47 pages, 8 parcours | ✅ sans erreur | § 3 |
 | Qualité front | ESLint (angular-eslint, accessibilité des templates) + Prettier | — | ✅ 0 erreur | `npm run lint` · `npm run format:check` |
@@ -219,9 +219,10 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 - n’appelle pas l’API pour un formulaire invalide
 - réaffiche « Se connecter » dans la page après une erreur réseau
 
-#### `src/app/pages/inscription/inscription.spec.ts` (12)
+#### `src/app/pages/inscription/inscription.spec.ts` (13)
 
-- confirme la création du compte et propose de se connecter
+- connecte automatiquement le nouveau compte et ouvre son espace
+- propose de se connecter si la connexion automatique échoue
 - envoie le rôle choisi à l’API
 - envoie le rôle sportif par défaut et ne propose jamais administrateur
 - réactive le formulaire quand le service lève une exception synchrone
@@ -230,7 +231,7 @@ chaque rôle : aucune erreur JavaScript, aucune réponse 5xx.
 - réactive le formulaire et signale un e-mail déjà utilisé
 - réactive le formulaire et affiche un message si la requête expire
 - affiche « Création... » pendant l’envoi puis « Créer mon compte » après une erreur réseau
-- affiche la confirmation dans la page après la réponse du serveur
+- affiche la confirmation dans la page si la connexion automatique échoue
 - affiche les erreurs de champ renvoyées par le serveur
 - réactive le formulaire et affiche un message en cas d’erreur serveur
 

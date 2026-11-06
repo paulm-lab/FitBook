@@ -67,7 +67,7 @@ import {
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">{{ 'Nom' | t }}</th>
+              <th scope="col">{{ 'Utilisateur' | t }}</th>
               <th scope="col">{{ 'E-mail' | t }}</th>
               <th scope="col">{{ 'Rôle' | t }}</th>
               <th scope="col">{{ 'État' | t }}</th>

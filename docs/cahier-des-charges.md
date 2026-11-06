@@ -80,7 +80,7 @@ Le détail des besoins par rôle figure dans [`user-stories.md`](user-stories.md
 | EF-01 | Rechercher salles, coachs et séances avec filtres, tri et pagination | Tous |
 | EF-02 | Consulter la fiche d'une salle, d'un coach ou d'une séance | Tous |
 | EF-03 | Créer un compte en choisissant son rôle (sportif, coach, gestionnaire) | Visiteur |
-| EF-04 | Confirmer son adresse e-mail par lien signé ; connexion refusée sinon | Visiteur |
+| EF-04 | Être connecté automatiquement après l’inscription (compte actif dès sa création) | Visiteur |
 | EF-05 | Se connecter (JWT), se déconnecter, réinitialiser son mot de passe | Tous |
 | EF-06 | Réserver une séance si des places restent ; jamais deux fois la même | Sportif |
 | EF-07 | Annuler une réservation au plus tard 2 h avant le début de la séance | Sportif |
@@ -98,7 +98,7 @@ Le détail des besoins par rôle figure dans [`user-stories.md`](user-stories.md
 | ID | Règle |
 |----|-------|
 | RG-01 | Une adresse e-mail correspond à un seul compte. |
-| RG-02 | Un compte non vérifié (`isVerified = false`) ou bloqué ne peut pas se connecter. |
+| RG-02 | Un compte est actif dès sa création ; seul un compte bloqué ne peut pas se connecter. |
 | RG-03 | Une réservation n'est acceptée que si `réservations confirmées < capacité` ; sinon réponse **409**. Le contrôle est fait dans une transaction avec verrou pessimiste **et** dans la procédure `sp_reserver_seance`. |
 | RG-04 | Un sportif ne peut pas réserver deux fois la même séance. |
 | RG-05 | Une réservation est annulable uniquement si la séance commence dans **plus de 2 heures** (`sp_annuler_reservation`). |

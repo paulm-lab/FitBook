@@ -42,7 +42,6 @@ export const EN_SPORTIF: Record<string, string> = {
   'Aucune séance réservée': 'No sessions booked',
   'Yoga, boxe, running… trouvez la séance qui vous motive.':
     'Yoga, boxing, running… find the session that motivates you.',
-  'Lieu précisé par le coach': 'Venue specified by the coach',
   'Mon calendrier': 'My calendar',
 
   // Mes réservations
@@ -58,7 +57,6 @@ export const EN_SPORTIF: Record<string, string> = {
     'Book a session in a few clicks from the search page.',
   'Historique des réservations': 'Booking history',
   Date: 'Date',
-  Lieu: 'Venue',
   Prix: 'Price',
   Statut: 'Status',
   Actions: 'Actions',
@@ -154,7 +152,7 @@ export const EN_SPORTIF: Record<string, string> = {
     'This information is used for your bookings.',
   'Photo de profil': 'Profile photo',
   'Votre photo de profil': 'Your profile photo',
-  'Envoi…': 'Uploading…',
+  'Envoi de la photo…': 'Uploading…',
   'Choisir une image': 'Choose an image',
   'JPEG, PNG ou WebP, 2 Mo au maximum.': 'JPEG, PNG or WebP, 2 MB maximum.',
   'Supprimer la photo': 'Delete photo',
