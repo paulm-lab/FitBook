@@ -7,12 +7,13 @@ import { LangueService } from '../../core/i18n/langue.service';
 import { ConnexionComponent } from './connexion';
 
 describe('ConnexionComponent', () => {
-  const auth = { connexion: vi.fn(), espace: () => '/mon-espace' };
+  const auth = { connexion: vi.fn(), renvoyerVerification: vi.fn(), espace: () => '/mon-espace' };
   let returnUrl: string | null = null;
   let emailParam: string | null = null;
 
   beforeEach(async () => {
     auth.connexion.mockReset();
+    auth.renvoyerVerification.mockReset();
     returnUrl = null;
     emailParam = null;
     await TestBed.configureTestingModule({
@@ -111,6 +112,114 @@ describe('ConnexionComponent', () => {
     component.connecter();
 
     expect(component.erreur()).toContain('bloqué');
+    expect(component.nonVerifie()).toBe(false);
+  });
+
+  function refusNonVerifie(message: string, code?: string) {
+    return throwError(
+      () =>
+        new HttpErrorResponse({
+          status: 403,
+          error: code ? { message, code } : { message },
+        }),
+    );
+  }
+
+  it('propose de renvoyer le lien pour une adresse non confirmée (code de l’API)', async () => {
+    auth.connexion.mockReturnValue(
+      refusNonVerifie(
+        'Confirmez votre adresse e-mail avant de vous connecter.',
+        'email_non_verifie',
+      ),
+    );
+    const fixture = TestBed.createComponent(ConnexionComponent);
+    await fixture.whenStable();
+    fixture.componentInstance.formulaire.setValue({
+      email: 'camille@example.test',
+      password: 'MotDePasse-123!',
+    });
+
+    fixture.componentInstance.connecter();
+    await fixture.whenStable();
+
+    const alerte = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+    expect(alerte?.textContent).toContain('Confirmez votre adresse e-mail');
+    expect(alerte?.querySelector('button')?.textContent?.trim()).toBe(
+      'Renvoyer le lien de vérification',
+    );
+  });
+
+  it('reconnaît une adresse non confirmée en anglais, même sans code', () => {
+    auth.connexion.mockReturnValue(
+      refusNonVerifie('Please confirm your email address before logging in.'),
+    );
+    const component = creerComposant();
+
+    component.connecter();
+
+    expect(component.nonVerifie()).toBe(true);
+    expect(component.erreur()).toBe('Please confirm your email address before logging in.');
+  });
+
+  it('renvoie le lien à l’adresse saisie et affiche la réponse de l’API', () => {
+    auth.connexion.mockReturnValue(
+      refusNonVerifie(
+        'Confirmez votre adresse e-mail avant de vous connecter.',
+        'email_non_verifie',
+      ),
+    );
+    auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
+    const component = creerComposant();
+    component.connecter();
+
+    component.renvoyerLien();
+
+    expect(auth.renvoyerVerification).toHaveBeenCalledWith('camille@example.test');
+    expect(component.renvoiMessage()).toBe('Demande prise en compte.');
+    expect(component.renvoiEnCours()).toBe(false);
+  });
+
+  it('signale l’échec du renvoi et réactive le bouton', () => {
+    auth.renvoyerVerification.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 429, error: { message: 'Trop.' } })),
+    );
+    const component = creerComposant();
+
+    component.renvoyerLien();
+
+    expect(component.renvoiEnCours()).toBe(false);
+    expect(component.renvoiMessage()).toBe(
+      'Le lien n’a pas pu être renvoyé. Réessayez dans quelques minutes.',
+    );
+  });
+
+  it('affiche le bouton de renvoi en anglais', async () => {
+    const langue = TestBed.inject(LangueService);
+    langue.choisir('en');
+    try {
+      auth.connexion.mockReturnValue(
+        refusNonVerifie(
+          'Please confirm your email address before logging in.',
+          'email_non_verifie',
+        ),
+      );
+      const fixture = TestBed.createComponent(ConnexionComponent);
+      await fixture.whenStable();
+      fixture.componentInstance.formulaire.setValue({
+        email: 'camille@example.test',
+        password: 'MotDePasse-123!',
+      });
+
+      fixture.componentInstance.connecter();
+      await fixture.whenStable();
+
+      const bouton = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"] button');
+      expect(bouton?.textContent?.trim()).toBe('Resend the verification link');
+    } finally {
+      langue.choisir('fr');
+      TestBed.tick();
+      localStorage.removeItem('fitbook-langue');
+    }
   });
 
   it('affiche le message de limitation après trop de tentatives', () => {

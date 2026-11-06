@@ -22,9 +22,10 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\RawMessage;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
 
 /**
- * Authentification (Phase 3) : inscription avec rôle (compte actif immédiatement),
+ * Authentification (Phase 3) : inscription avec rôle, confirmation de l'adresse (VerifyEmailBundle),
  * connexion JWT (en-tête et cookie), limitation des tentatives, mot de passe oublié.
  */
 final class AuthenticationTest extends WebTestCase
@@ -37,7 +38,7 @@ final class AuthenticationTest extends WebTestCase
     // Inscription
     // -------------------------------------------------------------------------
 
-    public function testRegistrationPersistsAnActiveSportifWithHashedPassword(): void
+    public function testRegistrationPersistsAnUnverifiedSportifWithHashedPassword(): void
     {
         $client = $this->clientWithSchema();
 
@@ -47,33 +48,34 @@ final class AuthenticationTest extends WebTestCase
         $response = $this->json($client);
         self::assertSame('camille@example.test', $response['email']);
         self::assertSame('sportif', $response['role']);
-        self::assertSame('Compte créé avec succès. Vous pouvez maintenant vous connecter.', $response['message']);
-        self::assertArrayNotHasKey('verificationEmailStatus', $response);
+        self::assertSame('queued', $response['verificationEmailStatus']);
+        self::assertTrue($response['verificationEmailQueued']);
+        self::assertSame('Compte créé. L’e-mail de vérification est en file d’attente d’envoi : il n’est pas encore parti.', $response['message']);
 
         $user = $this->findUser('camille@example.test');
         self::assertSame('Camille', $user->getFirstName());
         self::assertSame('+33123456789', $user->getPhone());
         self::assertSame([User::ROLE_SPORTIF], $user->getRoles());
-        self::assertTrue($user->isVerified());
+        self::assertFalse($user->isVerified());
         self::assertNotSame(self::PASSWORD, $user->getPassword());
         self::assertTrue(static::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, self::PASSWORD));
         self::assertQueuedEmailCount(1);
+        self::assertSame('Vérifiez votre adresse e-mail FitBook', self::getMailerMessage()?->getSubject());
+        self::assertStringContainsString('signature=', $this->linkFromEmail('verify-email'));
     }
 
-    public function testNewAccountCanLogInImmediatelyAndReachItsProfile(): void
+    public function testNewAccountCannotLogInBeforeConfirmingItsAddress(): void
     {
         $client = $this->clientWithSchema();
         $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
         self::assertResponseStatusCodeSame(201);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
-        self::assertResponseIsSuccessful();
-        $token = $this->json($client)['token'];
 
-        $client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer ' . $token);
-        $client->request('GET', '/api/me');
-        self::assertResponseIsSuccessful();
-        self::assertSame('camille@example.test', $this->json($client)['email']);
+        self::assertResponseStatusCodeSame(403);
+        self::assertSame('Confirmez votre adresse e-mail avant de vous connecter.', $this->json($client)['message']);
+        self::assertSame('email_non_verifie', $this->json($client)['code']);
+        self::assertNull($client->getResponse()->headers->getCookies()[0] ?? null, 'Aucun cookie de session.');
     }
 
     public function testCoachRegistrationCreatesAnEmptyCoachProfile(): void
@@ -102,7 +104,23 @@ final class AuthenticationTest extends WebTestCase
         self::assertNull($this->findUser('pirate@example.test'));
     }
 
-    public function testSmtpFailureDoesNotPreventRegistrationNorLogin(): void
+    public function testRegistrationReportsAnEmailAcceptedSynchronouslyAsSent(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->useMailer(new class implements MailerInterface {
+            public function send(RawMessage $message, ?Envelope $envelope = null): void
+            {
+            }
+        });
+
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('sent', $this->json($client)['verificationEmailStatus']);
+        self::assertSame('Compte créé. L’e-mail de vérification a été envoyé.', $this->json($client)['message']);
+    }
+
+    public function testSmtpFailureStillCreatesTheAccountAndAllowsAResend(): void
     {
         $client = $this->clientWithSchema();
         $this->useMailer(new class implements MailerInterface {
@@ -113,10 +131,16 @@ final class AuthenticationTest extends WebTestCase
         });
 
         $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
-        self::assertResponseStatusCodeSame(201);
 
-        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
-        self::assertResponseIsSuccessful();
+        self::assertResponseStatusCodeSame(201);
+        $response = $this->json($client);
+        self::assertSame('failed', $response['verificationEmailStatus']);
+        self::assertFalse($response['verificationEmailQueued']);
+        self::assertStringContainsString('n’a pas pu être envoyé', $response['message']);
+        self::assertFalse($this->findUser('camille@example.test')->isVerified());
+
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
+        self::assertResponseStatusCodeSame(503);
     }
 
     public function testRegistrationNormalizesEmailAndRejectsDuplicates(): void
@@ -152,6 +176,87 @@ final class AuthenticationTest extends WebTestCase
         $client->request('POST', '/api/inscription', server: ['CONTENT_TYPE' => 'application/json'], content: '{pas du json');
 
         self::assertResponseStatusCodeSame(400);
+    }
+
+    // -------------------------------------------------------------------------
+    // Confirmation de l'adresse e-mail (VerifyEmailBundle)
+    // -------------------------------------------------------------------------
+
+    public function testSignedLinkFromTheEmailActivatesTheAccount(): void
+    {
+        $client = $this->clientWithSchema();
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
+
+        $client->request('GET', $this->linkFromEmail('verify-email'));
+
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=success');
+        self::assertTrue($this->findUser('camille@example.test')->isVerified());
+        // E-mail de bienvenue envoyé une fois l'adresse confirmée.
+        self::assertSame('Votre compte FitBook est activé', self::getMailerMessage()?->getSubject());
+        self::assertStringContainsString('votre adresse est vérifiée', (string) self::getMailerMessage()?->getHtmlBody());
+
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testTamperedLinkOrLinkForAnotherAddressIsRejected(): void
+    {
+        $client = $this->clientWithSchema();
+        $user = $this->createUser(verified: false);
+        $helper = static::getContainer()->get(VerifyEmailHelperInterface::class);
+        $link = $helper->generateSignature('api_auth_verify_email', (string) $user->getId(), (string) $user->getEmail(), ['id' => $user->getId()])->getSignedUrl();
+
+        // Lien modifié : la signature ne correspond plus.
+        $client->request('GET', str_replace('id=' . $user->getId(), 'id=999', $link));
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
+
+        // Signature falsifiée.
+        $client->request('GET', (string) preg_replace('/signature=[^&]+/', 'signature=falsifiee', $link));
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
+
+        // Adresse changée après l'envoi : l'ancien lien n'est plus valable.
+        $this->findUser('camille@example.test')->setEmail('nouvelle@example.test');
+        $this->entityManager()->flush();
+        $client->request('GET', $link);
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
+
+        self::assertFalse($this->findUser('nouvelle@example.test')->isVerified());
+    }
+
+    public function testResendVerificationQueuesANewLinkOnlyForUnverifiedAccounts(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->createUser(verified: false);
+
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
+        self::assertResponseIsSuccessful();
+        self::assertSame('Si le compte doit être vérifié, la demande de renvoi a été prise en compte.', $this->json($client)['message']);
+        self::assertQueuedEmailCount(1);
+
+        // Adresse inconnue : même réponse, aucun e-mail (pas d'énumération).
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
+        self::assertResponseIsSuccessful();
+        self::assertQueuedEmailCount(0);
+
+        // Compte déjà vérifié : même réponse, aucun e-mail.
+        $this->findUser('camille@example.test')->setIsVerified(true);
+        $this->entityManager()->flush();
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
+        self::assertResponseIsSuccessful();
+        self::assertQueuedEmailCount(0);
+    }
+
+    public function testResendVerificationIsRateLimited(): void
+    {
+        $client = $this->clientWithSchema();
+
+        for ($i = 1; $i <= 3; ++$i) {
+            $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
+            self::assertResponseIsSuccessful();
+        }
+
+        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
+        self::assertResponseStatusCodeSame(429);
     }
 
     // -------------------------------------------------------------------------
@@ -230,14 +335,22 @@ final class AuthenticationTest extends WebTestCase
         self::assertTrue($cookie->isCleared());
     }
 
-    public function testBlockedAccountCannotLogIn(): void
+    public function testUnverifiedOrBlockedAccountCannotLogIn(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser(verified: true, blocked: true);
+        $this->createUser(verified: false);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
         self::assertResponseStatusCodeSame(403);
+        self::assertSame('Confirmez votre adresse e-mail avant de vous connecter.', $this->json($client)['message']);
+        self::assertSame('email_non_verifie', $this->json($client)['code']);
+
+        $this->findUser('camille@example.test')->setIsVerified(true)->setIsBlocked(true);
+        $this->entityManager()->flush();
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertResponseStatusCodeSame(403);
         self::assertStringContainsString('bloqué', $this->json($client)['message']);
+        self::assertArrayNotHasKey('code', $this->json($client));
     }
 
     public function testBlockingAnAccountInvalidatesItsExistingToken(): void
@@ -255,7 +368,7 @@ final class AuthenticationTest extends WebTestCase
     public function testAccountStatusIsNotRevealedWithAWrongPassword(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser(verified: true, blocked: true);
+        $this->createUser(verified: false);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => 'Mauvais-mdp-1']);
 

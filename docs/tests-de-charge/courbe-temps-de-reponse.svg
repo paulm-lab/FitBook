@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="360" font-family="Arial, sans-serif" font-size="12">
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="360.0" y="24" text-anchor="middle" font-size="16" font-weight="bold">Temps de réponse selon la charge</text>
+<line x1="60" y1="300" x2="660" y2="300" stroke="#333"/>
+<line x1="60" y1="60" x2="60" y2="300" stroke="#333"/>
+<text x="360.0" y="342" text-anchor="middle">Utilisateurs simultanés</text>
+<text x="18" y="180.0" text-anchor="middle" transform="rotate(-90 18 180.0)">Millisecondes</text>
+<line x1="60" y1="300.0" x2="660" y2="300.0" stroke="#ddd"/>
+<text x="52" y="304.0" text-anchor="end">0</text>
+<line x1="60" y1="240.0" x2="660" y2="240.0" stroke="#ddd"/>
+<text x="52" y="244.0" text-anchor="end">974</text>
+<line x1="60" y1="180.0" x2="660" y2="180.0" stroke="#ddd"/>
+<text x="52" y="184.0" text-anchor="end">1948</text>
+<line x1="60" y1="120.00000000000003" x2="660" y2="120.00000000000003" stroke="#ddd"/>
+<text x="52" y="124.00000000000003" text-anchor="end">2922</text>
+<line x1="60" y1="60.0" x2="660" y2="60.0" stroke="#ddd"/>
+<text x="52" y="64.0" text-anchor="end">3896</text>
+<text x="72.0" y="316" text-anchor="middle">1</text>
+<text x="84.0" y="316" text-anchor="middle">2</text>
+<text x="120.0" y="316" text-anchor="middle">5</text>
+<text x="180.0" y="316" text-anchor="middle">10</text>
+<text x="300.0" y="316" text-anchor="middle">20</text>
+<text x="420.0" y="316" text-anchor="middle">30</text>
+<text x="660.0" y="316" text-anchor="middle">50</text>
+<polyline points="72.0,294.78291666987474 84.0,292.3807177339257 120.0,281.127339641672 180.0,258.87312231966183 300.0,226.2032167907546 420.0,188.32854690062442 660.0,123.54924892786471" fill="none" stroke="#ff642d" stroke-width="2.5"/>
+<circle cx="72.0" cy="294.78291666987474" r="3.5" fill="#ff642d"/>
+<circle cx="84.0" cy="292.3807177339257" r="3.5" fill="#ff642d"/>
+<circle cx="120.0" cy="281.127339641672" r="3.5" fill="#ff642d"/>
+<circle cx="180.0" cy="258.87312231966183" r="3.5" fill="#ff642d"/>
+<circle cx="300.0" cy="226.2032167907546" r="3.5" fill="#ff642d"/>
+<circle cx="420.0" cy="188.32854690062442" r="3.5" fill="#ff642d"/>
+<circle cx="660.0" cy="123.54924892786471" r="3.5" fill="#ff642d"/>
+<rect x="510" y="60" width="12" height="12" fill="#ff642d"/>
+<text x="528" y="70">Moyenne</text>
+<polyline points="72.0,293.3169593705007 84.0,290.23721714492495 120.0,278.6265889545045 180.0,251.58645221394968 300.0,214.03207551527936 420.0,173.41643504438676 660.0,91.30434782608694" fill="none" stroke="#10213a" stroke-width="2.5"/>
+<circle cx="72.0" cy="293.3169593705007" r="3.5" fill="#10213a"/>
+<circle cx="84.0" cy="290.23721714492495" r="3.5" fill="#10213a"/>
+<circle cx="120.0" cy="278.6265889545045" r="3.5" fill="#10213a"/>
+<circle cx="180.0" cy="251.58645221394968" r="3.5" fill="#10213a"/>
+<circle cx="300.0" cy="214.03207551527936" r="3.5" fill="#10213a"/>
+<circle cx="420.0" cy="173.41643504438676" r="3.5" fill="#10213a"/>
+<circle cx="660.0" cy="91.30434782608694" r="3.5" fill="#10213a"/>
+<rect x="510" y="78" width="12" height="12" fill="#10213a"/>
+<text x="528" y="88">95e centile</text>
+</svg>

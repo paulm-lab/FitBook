@@ -15,7 +15,8 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationFailureHandlerI
  * Réponse JSON d'une connexion refusée.
  *
  * - 429 : trop de tentatives (login_throttling) ;
- * - 403 : compte non vérifié ou bloqué (UserChecker), message explicite ;
+ * - 403 : compte non vérifié ou bloqué (UserChecker), message explicite
+ *   (+ code « email_non_verifie » pour une adresse non confirmée) ;
  * - 401 : identifiants incorrects, même message que l'adresse existe ou non.
  */
 final class ApiLoginFailureHandler implements AuthenticationFailureHandlerInterface
@@ -28,7 +29,13 @@ final class ApiLoginFailureHandler implements AuthenticationFailureHandlerInterf
 
         // Vérifié après le mot de passe : l'état du compte n'est révélé qu'à son propriétaire.
         if ($exception instanceof CustomUserMessageAccountStatusException) {
-            return new JsonResponse(['message' => $exception->getMessageKey()], 403);
+            $body = ['message' => $exception->getMessageKey()];
+            // Code stable, indépendant de la langue : le front propose alors de renvoyer le lien.
+            if ($exception->getMessageKey() === UserChecker::UNVERIFIED_MESSAGE) {
+                $body['code'] = 'email_non_verifie';
+            }
+
+            return new JsonResponse($body, 403);
         }
 
         return new JsonResponse(['message' => 'Adresse e-mail ou mot de passe incorrect.'], 401);

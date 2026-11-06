@@ -80,7 +80,7 @@ Le détail des besoins par rôle figure dans [`user-stories.md`](user-stories.md
 | EF-01 | Rechercher salles, coachs et séances avec filtres, tri et pagination | Tous |
 | EF-02 | Consulter la fiche d'une salle, d'un coach ou d'une séance | Tous |
 | EF-03 | Créer un compte en choisissant son rôle (sportif, coach, gestionnaire) | Visiteur |
-| EF-04 | Se connecter dès l'inscription, sans confirmation de l'adresse e-mail | Visiteur |
+| EF-04 | Confirmer son adresse e-mail par lien signé ; connexion refusée sinon | Visiteur |
 | EF-05 | Se connecter (JWT), se déconnecter, réinitialiser son mot de passe | Tous |
 | EF-06 | Réserver une séance si des places restent ; jamais deux fois la même | Sportif |
 | EF-07 | Annuler une réservation au plus tard 2 h avant le début de la séance | Sportif |
@@ -98,7 +98,7 @@ Le détail des besoins par rôle figure dans [`user-stories.md`](user-stories.md
 | ID | Règle |
 |----|-------|
 | RG-01 | Une adresse e-mail correspond à un seul compte. |
-| RG-02 | Un compte est actif dès sa création ; seul un compte bloqué ne peut pas se connecter. |
+| RG-02 | Un compte non vérifié (`isVerified = false`) ou bloqué ne peut pas se connecter. |
 | RG-03 | Une réservation n'est acceptée que si `réservations confirmées < capacité` ; sinon réponse **409**. Le contrôle est fait dans une transaction avec verrou pessimiste **et** dans la procédure `sp_reserver_seance`. |
 | RG-04 | Un sportif ne peut pas réserver deux fois la même séance. |
 | RG-05 | Une réservation est annulable uniquement si la séance commence dans **plus de 2 heures** (`sp_annuler_reservation`). |
@@ -185,3 +185,285 @@ pour la reproductibilité, mais l'installation documentée couvrira aussi WAMP +
 | 10 | Finalisation, `release/1.0.0`, tag `v1.0.0` | Livraison |
 
 Aucune phase ne démarre tant que la précédente ne compile pas et que ses tests ne passent pas.
+
+---
+
+## 12. Analyse et modélisation
+
+Les éléments d'analyse demandés par l'énoncé sont intégrés ci-dessous ; chaque document détaillé
+(dictionnaire de données, cardinalités, contraintes, scénarios) reste dans `docs/`.
+
+| Élément | Contenu | Document détaillé |
+|---------|---------|-------------------|
+| User stories | 32 stories par rôle, avec critères d'acceptation | [`user-stories.md`](user-stories.md) |
+| MCD (Merise) | Entités, associations et cardinalités | [`mcd.md`](mcd.md) |
+| MLD (MySQL) | Tables, clés, contraintes, procédures stockées | [`mld.md`](mld.md) |
+| Cas d'utilisation (UML) | Acteurs, diagramme et scénarios détaillés | [`use-cases.md`](use-cases.md) |
+| Diagramme de classes (UML) | Domaine et architecture du backend | [`diagramme-classes.md`](diagramme-classes.md) |
+
+### 12.1 Modèle conceptuel de données (MCD)
+
+```mermaid
+erDiagram
+    UTILISATEUR ||--o| PROFIL_COACH : "POSSEDER"
+    UTILISATEUR ||--o{ SALLE : "GERER"
+    ACTIVITE ||--o{ SEANCE : "RELEVER_DE"
+    SALLE |o--o{ SEANCE : "ACCUEILLIR"
+    PROFIL_COACH |o--o{ SEANCE : "ANIMER"
+    UTILISATEUR ||--o{ RESERVATION : "EFFECTUER"
+    SEANCE ||--o{ RESERVATION : "CONCERNER"
+    PROFIL_COACH |o--o{ DISPONIBILITE : "PROPOSER_COACH"
+    SALLE |o--o{ DISPONIBILITE : "PROPOSER_SALLE"
+    UTILISATEUR ||--o{ FAVORI : "AJOUTER"
+    SALLE |o--o{ FAVORI : "CIBLER"
+    PROFIL_COACH |o--o{ FAVORI : "CIBLER"
+    SEANCE |o--o{ FAVORI : "CIBLER"
+    UTILISATEUR ||--o{ AVIS : "REDIGER"
+    SALLE |o--o{ AVIS : "PORTER_SUR"
+    PROFIL_COACH |o--o{ AVIS : "PORTER_SUR"
+    SEANCE |o--o{ AVIS : "PORTER_SUR"
+    UTILISATEUR ||--o{ NOTIFICATION : "RECEVOIR"
+    UTILISATEUR ||--o{ DEMANDE_REINIT_MDP : "DEMANDER"
+
+    UTILISATEUR {
+        int id PK
+        string email
+        string mot_de_passe
+        string prenom
+        string nom
+        string telephone
+        string avatar
+        json roles
+        bool est_verifie
+        bool est_bloque
+        datetime date_creation
+    }
+    PROFIL_COACH {
+        int id PK
+        text bio
+        json specialites
+        int annees_experience
+        decimal tarif_horaire
+        string ville
+        text certifications
+    }
+    SALLE {
+        int id PK
+        string nom
+        text description
+        string adresse
+        string ville
+        string code_postal
+        decimal latitude
+        decimal longitude
+        string telephone
+        string email
+        json horaires_ouverture
+        json photos
+        datetime date_creation
+    }
+    ACTIVITE {
+        int id PK
+        string nom
+        text description
+        string icone
+        string categorie
+    }
+    SEANCE {
+        int id PK
+        string titre
+        text description
+        datetime debut
+        datetime fin
+        int capacite
+        decimal prix
+        string niveau
+        string statut
+    }
+    DISPONIBILITE {
+        int id PK
+        int jour_semaine
+        time heure_debut
+        time heure_fin
+        bool est_recurrente
+        date date
+    }
+    RESERVATION {
+        int id PK
+        string statut
+        datetime date_creation
+        datetime date_annulation
+        string jeton_qr
+        datetime date_rappel
+    }
+    FAVORI {
+        int id PK
+        string type_cible
+        datetime date_creation
+    }
+    AVIS {
+        int id PK
+        int note
+        text commentaire
+        bool est_modere
+        bool est_visible
+        datetime date_creation
+    }
+    NOTIFICATION {
+        int id PK
+        string type
+        string message
+        bool est_lue
+        datetime date_creation
+    }
+    DEMANDE_REINIT_MDP {
+        int id PK
+        string selecteur
+        string jeton_hache
+        datetime date_demande
+        datetime date_expiration
+    }
+```
+
+### 12.2 Modèle logique de données (MLD)
+
+```mermaid
+erDiagram
+    user ||--o| coach_profile : "user_id"
+    user ||--o{ gym : "manager_id"
+    activity ||--o{ session : "activity_id"
+    gym |o--o{ session : "gym_id"
+    coach_profile |o--o{ session : "coach_id"
+    user ||--o{ reservation : "user_id"
+    session ||--o{ reservation : "session_id"
+    coach_profile |o--o{ availability : "coach_id"
+    gym |o--o{ availability : "gym_id"
+    user ||--o{ favorite : "user_id"
+    gym |o--o{ favorite : "gym_id"
+    coach_profile |o--o{ favorite : "coach_id"
+    session |o--o{ favorite : "session_id"
+    user ||--o{ review : "author_id"
+    gym |o--o{ review : "gym_id"
+    coach_profile |o--o{ review : "coach_id"
+    session |o--o{ review : "session_id"
+    user ||--o{ notification : "user_id"
+    user ||--o{ reset_password_request : "user_id"
+
+    user {
+        int id PK
+        varchar email UK
+        varchar password
+        varchar first_name
+        varchar last_name
+        varchar phone
+        varchar avatar
+        json roles
+        tinyint is_verified
+        tinyint is_blocked
+        datetime created_at
+    }
+    coach_profile {
+        int id PK
+        int user_id FK, UK
+        longtext bio
+        json specialities
+        smallint experience_years
+        decimal hourly_rate
+        varchar city
+        longtext certifications
+    }
+    gym {
+        int id PK
+        int manager_id FK
+        varchar name
+        longtext description
+        varchar address
+        varchar city
+        varchar postal_code
+        decimal latitude
+        decimal longitude
+        varchar phone
+        varchar email
+        json opening_hours
+        json photos
+        datetime created_at
+    }
+    activity {
+        int id PK
+        varchar name UK
+        longtext description
+        varchar icon
+        varchar category
+    }
+    session {
+        int id PK
+        int activity_id FK
+        int gym_id FK
+        int coach_id FK
+        varchar title
+        longtext description
+        datetime start_at
+        datetime end_at
+        smallint capacity
+        decimal price
+        varchar level
+        varchar status
+    }
+    availability {
+        int id PK
+        int coach_id FK
+        int gym_id FK
+        tinyint day_of_week
+        time start_time
+        time end_time
+        tinyint is_recurring
+        date date
+    }
+    reservation {
+        int id PK
+        int user_id FK
+        int session_id FK
+        varchar status
+        datetime created_at
+        datetime cancelled_at
+        varchar qr_token UK
+        datetime reminder_sent_at
+    }
+    favorite {
+        int id PK
+        int user_id FK
+        int gym_id FK
+        int coach_id FK
+        int session_id FK
+        varchar type
+        datetime created_at
+    }
+    review {
+        int id PK
+        int author_id FK
+        int gym_id FK
+        int coach_id FK
+        int session_id FK
+        tinyint rating
+        longtext comment
+        tinyint is_moderated
+        tinyint is_visible
+        datetime created_at
+    }
+    notification {
+        int id PK
+        int user_id FK
+        varchar type
+        varchar message
+        tinyint is_read
+        datetime created_at
+    }
+    reset_password_request {
+        int id PK
+        int user_id FK
+        varchar selector
+        varchar hashed_token
+        datetime requested_at
+        datetime expires_at
+    }
+```

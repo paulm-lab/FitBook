@@ -10,6 +10,7 @@ use App\Tests\Support\ApiTestCase;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
 
 /**
  * API bilingue : français par défaut, anglais avec « Accept-Language: en » (envoyé par le front).
@@ -93,7 +94,7 @@ final class LocalizationTest extends ApiTestCase
         self::assertSame('Jeton d’authentification invalide. Reconnectez-vous.', $this->json()['message']);
     }
 
-    public function testRegistrationInEnglishStoresTheLocaleAndSendsAnEnglishEmail(): void
+    public function testRegistrationInEnglishStoresTheLocaleAndSendsAnEnglishVerificationEmail(): void
     {
         $this->client->jsonRequest('POST', '/api/inscription', [
             'prenom' => 'Camille',
@@ -104,16 +105,55 @@ final class LocalizationTest extends ApiTestCase
         ], self::EN);
 
         self::assertResponseStatusCodeSame(201);
-        self::assertSame('Account created successfully. You can now log in.', $this->json()['message']);
+        self::assertSame('Account created. The verification email is queued for sending: it has not been sent yet.', $this->json()['message']);
+        self::assertSame('queued', $this->json()['verificationEmailStatus']);
         self::assertSame('en', $this->em()->getRepository(User::class)->findOneBy(['email' => 'camille@example.test'])?->getLocale());
 
         self::assertQueuedEmailCount(1);
         $email = self::getMailerMessage();
         self::assertInstanceOf(TemplatedEmail::class, $email);
-        self::assertSame('Welcome to FitBook', $email->getSubject());
-        self::assertStringContainsString('Hello Camille', (string) $email->getHtmlBody());
-        self::assertStringContainsString('Move more. Live better.', (string) $email->getHtmlBody());
-        self::assertStringContainsString('lang="en"', (string) $email->getHtmlBody());
+        self::assertSame('Verify your FitBook email address', $email->getSubject());
+        $html = (string) $email->getHtmlBody();
+        self::assertStringContainsString('Hello Camille, confirm your address', $html);
+        self::assertStringContainsString('Verify my address', $html);
+        self::assertStringContainsString('/api/auth/verify-email?', $html);
+        self::assertStringContainsString('Move more. Live better.', $html);
+        self::assertStringContainsString('lang="en"', $html);
+    }
+
+    public function testUnverifiedLoginAndResendAnswersAreTranslated(): void
+    {
+        $this->account(verified: false);
+
+        $this->client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD], self::EN);
+        self::assertResponseStatusCodeSame(403);
+        self::assertSame('Please confirm your email address before logging in.', $this->json()['message']);
+        // Code machine identique dans les deux langues : le front s'y fie pour proposer le renvoi.
+        self::assertSame('email_non_verifie', $this->json()['code']);
+
+        $this->client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertSame('Confirmez votre adresse e-mail avant de vous connecter.', $this->json()['message']);
+        self::assertSame('email_non_verifie', $this->json()['code']);
+
+        $this->client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test'], self::EN);
+        self::assertResponseIsSuccessful();
+        self::assertSame('If the account needs to be verified, your request for a new link has been registered.', $this->json()['message']);
+    }
+
+    public function testWelcomeEmailAfterVerificationUsesTheAccountLanguage(): void
+    {
+        $user = $this->account(verified: false);
+        $this->reload($user)->setLocale('en');
+        $this->em()->flush();
+        $helper = static::getContainer()->get(VerifyEmailHelperInterface::class);
+        $link = $helper->generateSignature('api_auth_verify_email', (string) $user->getId(), 'camille@example.test', ['id' => $user->getId()])->getSignedUrl();
+
+        // Lien ouvert depuis la boîte mail : aucune langue de requête, celle du compte s'applique.
+        $this->client->request('GET', $link);
+
+        self::assertResponseRedirects('http://localhost:4200/verification-email?status=success');
+        self::assertSame('Your FitBook account is activated', self::getMailerMessage()?->getSubject());
+        self::assertStringContainsString('your address is verified', (string) self::getMailerMessage()?->getHtmlBody());
     }
 
     public function testNotificationsAndEmailsUseTheRecipientLanguage(): void
@@ -134,10 +174,13 @@ final class LocalizationTest extends ApiTestCase
         self::assertSame('Booking confirmed on FitBook', self::getMailerMessage()?->getSubject());
     }
 
-    private function account(): void
+    private function account(bool $verified = true): User
     {
-        $user = $this->user('camille@example.test');
+        $user = $this->user('camille@example.test', firstName: 'Camille');
         $user->setPassword(static::getContainer()->get(UserPasswordHasherInterface::class)->hashPassword($user, self::PASSWORD));
+        $user->setIsVerified($verified);
         $this->em()->flush();
+
+        return $user;
     }
 }

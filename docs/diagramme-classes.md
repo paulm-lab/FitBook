@@ -203,6 +203,8 @@ classDiagram
     }
     class RegistrationController {
         +register(Request) JsonResponse
+        +verifyEmail(Request) Response
+        +resendVerification(Request) JsonResponse
     }
 
     class ReservationService {
@@ -216,7 +218,7 @@ classDiagram
         +validate(array data, string schema) array
     }
     class FitBookMailer {
-        +sendRegistrationConfirmation(User) EmailDeliveryStatus
+        +sendVerification(User, string url) EmailDeliveryStatus
         +sendReservationConfirmation(Reservation) EmailDeliveryStatus
         +sendReservationCancellation(Reservation) EmailDeliveryStatus
         +sendReminder(Reservation) EmailDeliveryStatus
