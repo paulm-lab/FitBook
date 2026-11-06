@@ -148,7 +148,7 @@ final class SessionManagementTest extends ApiTestCase
         $this->client->request('POST', '/api/seances/' . $session->getId() . '/annuler');
         self::assertResponseIsSuccessful();
         self::assertSame(2, $this->json()['sportifsPrevenus']);
-        self::assertQueuedEmailCount(2);
+        self::assertEmailCount(2);
 
         $this->em()->clear();
         self::assertSame(SessionStatus::Annulee, $this->em()->find(Session::class, $session->getId())->getStatus());

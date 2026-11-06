@@ -95,7 +95,7 @@ final class CatalogueAndReservationTest extends WebTestCase
         self::assertSame(1, $response['nombrePlaces']);
         // SQLite (tests) et MySQL ne formatent pas les décimaux de la même façon : comparaison numérique.
         self::assertEqualsWithDelta(15.0, (float) $response['montantTotal'], 0.001);
-        self::assertQueuedEmailCount(1);
+        self::assertEmailCount(1);
 
         $this->client->jsonRequest('POST', '/api/reservations', ['seanceId' => $session->getId()]);
         self::assertResponseStatusCodeSame(409);

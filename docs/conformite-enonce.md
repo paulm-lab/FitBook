@@ -82,4 +82,4 @@
    des commits, gestion des activités et des coachs, choix de MySQL 9.1 (WAMP) compatible MySQL 8.
 4. **Avant la démonstration** : recharger les fixtures (`php bin/console doctrine:fixtures:load`),
    relancer Newman, faire la sauvegarde `03_fin` sur `fitbookdata`, lancer `demarrer.ps1`
-   (Mailpit et worker d'e-mails nécessaires à la confirmation d'adresse).
+   (Mailpit nécessaire pour recevoir les e-mails de confirmation d'adresse).
