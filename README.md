@@ -50,7 +50,7 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 | Backend | PHP 8.3, Symfony 7.4 (API REST JSON), Doctrine ORM, LexikJWT, Mailer + Messenger, NelmioApiDoc, opis/json-schema |
 | Base de données | MySQL 8+ (InnoDB), utilisateur dédié `fitbook_user`, 3 procédures stockées |
 | E-mails (dev) | Mailpit |
-| Tests et qualité | PHPUnit (93 tests), Vitest (50 tests), Postman + Newman (60 requêtes), ESLint + Prettier, PHPStan 6 et PHP-CS-Fixer (configurés) |
+| Tests et qualité | PHPUnit (124 tests), Vitest (71 tests), Postman + Newman (60 requêtes), ESLint + Prettier, PHPStan 6 et PHP-CS-Fixer (configurés) |
 
 ## Arborescence
 
