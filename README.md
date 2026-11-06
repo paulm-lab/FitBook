@@ -55,7 +55,7 @@ Projet de formation **UAA MI08 — Produire un projet Web**.
 ## Arborescence
 
 ```text
-fitbook-mi08/
+fitbook/
 ├── backend/            # API Symfony
 ├── frontend/           # Application Angular
 ├── database/
