@@ -1,10 +1,10 @@
 <main class="container page" id="contenu">
   <header class="page-header">
     <div>
-      <span class="section-kicker">Trouvez votre prochaine séance</span>
-      <h1>Rechercher</h1>
+      <span class="section-kicker">{{ 'Trouvez votre prochaine séance' | t }}</span>
+      <h1>{{ 'Rechercher' | t }}</h1>
     </div>
-    <div class="tabs" role="tablist" aria-label="Type de résultats">
+    <div class="tabs" role="tablist" [attr.aria-label]="'Type de résultats' | t">
       <button
         type="button"
         class="tab"
@@ -12,7 +12,7 @@
         [attr.aria-selected]="type() === 'seances'"
         (click)="changerType('seances')"
       >
-        Séances
+        {{ 'Séances' | t }}
       </button>
       <button
         type="button"
@@ -21,7 +21,7 @@
         [attr.aria-selected]="type() === 'salles'"
         (click)="changerType('salles')"
       >
-        Salles
+        {{ 'Salles' | t }}
       </button>
       <button
         type="button"
@@ -30,7 +30,7 @@
         [attr.aria-selected]="type() === 'coachs'"
         (click)="changerType('coachs')"
       >
-        Coachs
+        {{ 'Coachs' | t }}
       </button>
     </div>
   </header>
@@ -40,82 +40,86 @@
     <form
       class="panel filters"
       role="search"
-      aria-label="Filtres de recherche"
+      [attr.aria-label]="'Filtres de recherche' | t"
       (submit)="$event.preventDefault()"
     >
       <label class="field">
-        <span>Quoi ?</span>
+        <span>{{ 'Quoi ?' | t }}</span>
         <input
           type="search"
           name="q"
           [ngModel]="q()"
           (ngModelChange)="saisir('q', $event)"
           [placeholder]="
-            type() === 'coachs'
+            (type() === 'coachs'
               ? 'Nom, spécialité…'
               : type() === 'salles'
                 ? 'Nom de salle…'
                 : 'Yoga, boxe, coach…'
+            ) | t
           "
           autocomplete="off"
         />
       </label>
       <label class="field">
-        <span>Où ?</span>
+        <span>{{ 'Où ?' | t }}</span>
         <input
           type="search"
           name="ville"
           [ngModel]="ville()"
           (ngModelChange)="saisir('ville', $event)"
-          placeholder="Commune ou code postal"
+          [placeholder]="'Commune ou code postal' | t"
           autocomplete="address-level2"
         />
       </label>
 
-      <div class="field">
-        <span id="pos-label">Autour de moi</span>
-        @if (position()) {
-          <div class="row">
-            <select
-              class="input radius"
-              aria-labelledby="pos-label"
-              [ngModel]="params()['rayon'] ?? '10'"
-              (ngModelChange)="changer('rayon', $event)"
-              name="rayon"
-            >
-              @for (r of rayons; track r) {
-                <option [value]="r">{{ r }} km</option>
-              }
-            </select>
+      <!-- La recherche de coachs ne tient pas compte de la position. -->
+      @if (type() !== 'coachs') {
+        <div class="field">
+          <span id="pos-label">{{ 'Autour de moi' | t }}</span>
+          @if (position()) {
+            <div class="row">
+              <select
+                class="input radius"
+                aria-labelledby="pos-label"
+                [ngModel]="params()['rayon'] ?? '10'"
+                (ngModelChange)="changer('rayon', $event)"
+                name="rayon"
+              >
+                @for (r of rayons; track r) {
+                  <option [value]="r">{{ r }} km</option>
+                }
+              </select>
+              <button
+                type="button"
+                class="btn btn--sm btn--ghost"
+                (click)="retirer(['lat', 'lng', 'rayon'])"
+              >
+                {{ 'Retirer' | t }}
+              </button>
+            </div>
+          } @else {
             <button
               type="button"
               class="btn btn--sm btn--ghost"
-              (click)="retirer(['lat', 'lng', 'rayon'])"
+              (click)="autourDeMoi()"
+              [disabled]="localisation()"
+              [attr.aria-busy]="localisation()"
             >
-              Retirer
+              {{ (localisation() ? 'Localisation…' : '📍 Utiliser ma position') | t }}
             </button>
-          </div>
-        } @else {
-          <button
-            type="button"
-            class="btn btn--sm btn--ghost"
-            (click)="autourDeMoi()"
-            [disabled]="localisation()"
-            [attr.aria-busy]="localisation()"
-          >
-            {{ localisation() ? 'Localisation…' : '📍 Utiliser ma position' }}
-          </button>
-        }
-      </div>
+          }
+        </div>
+      }
 
       <label class="field">
-        <span>Activité</span>
+        <span>{{ 'Activité' | t }}</span>
         <select
           name="activiteId"
           [ngModel]="params()['activiteId'] ?? ''"
           (ngModelChange)="changerActivite($event)"
         >
-          <option value="">Toutes les activités</option>
+          <option value="">{{ 'Toutes les activités' | t }}</option>
           @for (a of activites(); track a.id) {
             <option [value]="'' + a.id">{{ a.nom }}</option>
           }
@@ -125,7 +129,7 @@
       @if (type() === 'seances') {
         <div class="form-row">
           <label class="field"
-            ><span>Du</span
+            ><span>{{ 'Du' | t }}</span
             ><input
               type="date"
               name="du"
@@ -133,7 +137,7 @@
               (ngModelChange)="changer('du', $event)"
           /></label>
           <label class="field"
-            ><span>Au</span
+            ><span>{{ 'Au' | t }}</span
             ><input
               type="date"
               name="au"
@@ -143,15 +147,15 @@
           /></label>
         </div>
         <label class="field">
-          <span>Niveau</span>
+          <span>{{ 'Niveau' | t }}</span>
           <select
             name="niveau"
             [ngModel]="params()['niveau'] ?? ''"
             (ngModelChange)="changer('niveau', $event)"
           >
-            <option value="">Tous niveaux</option>
+            <option value="">{{ 'Tous niveaux' | t }}</option>
             @for (n of niveaux; track n[0]) {
-              <option [value]="n[0]">{{ n[1] }}</option>
+              <option [value]="n[0]">{{ n[1] | t }}</option>
             }
           </select>
         </label>
@@ -159,7 +163,9 @@
 
       @if (type() !== 'salles') {
         <label class="field">
-          <span>{{ type() === 'coachs' ? 'Tarif horaire max (€)' : 'Prix maximum (€)' }}</span>
+          <span>{{
+            (type() === 'coachs' ? 'Tarif horaire max (€)' : 'Prix maximum (€)') | t
+          }}</span>
           <input
             type="number"
             name="prixMax"
@@ -173,15 +179,15 @@
       }
 
       <label class="field">
-        <span>Note minimale</span>
+        <span>{{ 'Note minimale' | t }}</span>
         <select
           name="noteMin"
           [ngModel]="params()['noteMin'] ?? ''"
           (ngModelChange)="changer('noteMin', $event)"
         >
-          <option value="">Toutes</option>
+          <option value="">{{ 'Toutes' | t }}</option>
           @for (n of [4, 3, 2]; track n) {
-            <option [value]="'' + n">{{ n }} ★ et plus</option>
+            <option [value]="'' + n">{{ '{n} ★ et plus' | t: { n } }}</option>
           }
         </select>
       </label>
@@ -191,14 +197,14 @@
       <div class="results-bar">
         <h2 id="resultats-titre" class="results-count" aria-live="polite">
           @if (chargement()) {
-            Recherche en cours…
+            {{ 'Recherche en cours…' | t }}
           } @else if (page(); as p) {
-            {{ p.total }} résultat{{ p.total > 1 ? 's' : '' }}
+            {{ (p.total > 1 ? '{n} résultats' : '{n} résultat') | t: { n: p.total } }}
           }
         </h2>
         <div class="row">
           <label class="sort">
-            <span>Trier par</span>
+            <span>{{ 'Trier par' | t }}</span>
             <select
               class="input"
               name="tri"
@@ -206,12 +212,12 @@
               (ngModelChange)="changer('tri', $event)"
             >
               @for (t of tris(); track t.valeur) {
-                <option [value]="t.valeur">{{ t.libelle }}</option>
+                <option [value]="t.valeur">{{ t.libelle | t }}</option>
               }
             </select>
           </label>
           @if (type() !== 'coachs') {
-            <div class="tabs view-switch" role="group" aria-label="Affichage">
+            <div class="tabs view-switch" role="group" [attr.aria-label]="'Affichage' | t">
               <button
                 type="button"
                 class="tab"
@@ -219,7 +225,7 @@
                 [class.active]="vue() === 'liste'"
                 (click)="basculerVue('liste')"
               >
-                Liste
+                {{ 'Liste' | t }}
               </button>
               <button
                 type="button"
@@ -228,7 +234,7 @@
                 [class.active]="vue() === 'carte'"
                 (click)="basculerVue('carte')"
               >
-                Carte
+                {{ 'Carte' | t }}
               </button>
             </div>
           }
@@ -236,20 +242,22 @@
       </div>
 
       @if (filtresActifs().length) {
-        <div class="chips active-filters" aria-label="Filtres actifs">
+        <div class="chips active-filters" [attr.aria-label]="'Filtres actifs' | t">
           @for (f of filtresActifs(); track f.libelle) {
             <span class="chip"
               >{{ f.libelle }}
               <button
                 type="button"
                 (click)="retirer(f.cle)"
-                [attr.aria-label]="'Retirer le filtre ' + f.libelle"
+                [attr.aria-label]="'Retirer le filtre {filtre}' | t: { filtre: f.libelle }"
               >
                 ×
               </button></span
             >
           }
-          <button type="button" class="link-btn" (click)="reinitialiser()">Réinitialiser</button>
+          <button type="button" class="link-btn" (click)="reinitialiser()">
+            {{ 'Réinitialiser' | t }}
+          </button>
         </div>
       }
 
@@ -264,7 +272,7 @@
           message="Aucune offre ne correspond à ces critères. Élargissez la zone, changez de dates ou retirez un filtre."
         >
           <button type="button" class="btn btn--ghost" (click)="reinitialiser()">
-            Réinitialiser les filtres
+            {{ 'Réinitialiser les filtres' | t }}
           </button>
         </app-etat-vide>
       } @else {
@@ -276,7 +284,7 @@
             (ouvrir)="ouvrir($event)"
           />
           @if (points().length === 0) {
-            <p class="muted">Aucun résultat n’a de position connue sur cette page.</p>
+            <p class="muted">{{ 'Aucun résultat n’a de position connue sur cette page.' | t }}</p>
           }
         } @else {
           <div class="grid">

@@ -1,6 +1,6 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { I18N } from '../core/i18n/pipes';
 import { Coach } from '../core/models';
 import { FavoriButtonComponent } from './favori-button';
 import { EtoilesComponent, ImageSecoursDirective } from './ui';
@@ -8,13 +8,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
 /** Carte d'un coach : photo (ou initiales), spécialités, tarif horaire, note. */
 @Component({
   selector: 'app-coach-card',
-  imports: [
-    RouterLink,
-    DecimalPipe,
-    FavoriButtonComponent,
-    EtoilesComponent,
-    ImageSecoursDirective,
-  ],
+  imports: [RouterLink, ...I18N, FavoriButtonComponent, EtoilesComponent, ImageSecoursDirective],
   template: `
     @let c = coach();
     <article class="card card--link coach-card">
@@ -36,7 +30,12 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
               <a [routerLink]="['/coachs', c.id]">{{ c.prenom }} {{ c.nom }}</a>
             </h3>
             @if (c.experienceAnnees != null) {
-              <p class="card-meta">{{ c.experienceAnnees }} ans d’expérience</p>
+              <p class="card-meta">
+                {{
+                  (c.experienceAnnees === 1 ? '{n} an d’expérience' : '{n} ans d’expérience')
+                    | t: { n: c.experienceAnnees }
+                }}
+              </p>
             }
           </div>
         </div>
@@ -50,7 +49,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
         <div class="card-footer">
           <app-etoiles [note]="c.noteMoyenne" [nbAvis]="c.nbAvis ?? null" />
           @if (c.tarifHoraire) {
-            <strong class="price">{{ c.tarifHoraire | number: '1.0-2' }} €/h</strong>
+            <strong class="price">{{ c.tarifHoraire | nombreL: '1.0-2' }} €/h</strong>
           }
         </div>
       </div>

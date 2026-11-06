@@ -69,6 +69,10 @@ final class ProfileController extends AbstractController
         }
 
         $user->setLastName($nom)->setFirstName($prenom)->setPhone($telephone);
+        // Langue du front mémorisée pour les e-mails (inchangée sans en-tête Accept-Language).
+        if ($request->headers->has('Accept-Language')) {
+            $user->setLocale($request->getLocale());
+        }
         $entityManager->flush();
 
         return $this->json($this->presenter->present($user));

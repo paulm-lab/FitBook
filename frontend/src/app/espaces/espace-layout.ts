@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@ang
 import { map } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { ROLES } from '../core/models';
+import { I18N } from '../core/i18n/pipes';
 import { ImageSecoursDirective } from '../shared/ui';
 
 export interface LienEspace {
@@ -19,10 +20,10 @@ export interface LienEspace {
  */
 @Component({
   selector: 'app-espace-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ImageSecoursDirective],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ImageSecoursDirective, ...I18N],
   template: `
     <div class="space">
-      <aside class="space-nav" [attr.aria-label]="titre()">
+      <aside class="space-nav" [attr.aria-label]="titre() | t">
         <div class="space-user">
           @if (auth.utilisateur()?.avatar) {
             <img class="avatar" [src]="auth.utilisateur()!.avatar" alt="" appSecours />
@@ -31,17 +32,17 @@ export interface LienEspace {
           }
           <div>
             <strong>{{ auth.utilisateur()?.prenom }} {{ auth.utilisateur()?.nom }}</strong>
-            <span class="space-role">{{ roleLibelle() }}</span>
+            <span class="space-role">{{ roleLibelle() | t }}</span>
           </div>
         </div>
-        <p class="space-title">{{ titre() }}</p>
+        <p class="space-title">{{ titre() | t }}</p>
         <nav>
           @for (lien of liens(); track lien.chemin) {
             <a
               [routerLink]="lien.chemin"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: !!lien.exact }"
-              >{{ lien.libelle }}</a
+              >{{ lien.libelle | t }}</a
             >
           }
         </nav>

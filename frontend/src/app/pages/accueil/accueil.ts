@@ -2,13 +2,14 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
+import { I18N } from '../../core/i18n/pipes';
 
 type Quand = 'Cette semaine' | 'Ce week-end' | 'La semaine prochaine' | "N'importe quand";
 
 /** Accueil : barre de recherche « quoi / où / quand » vers /recherche (US-V01). */
 @Component({
   selector: 'app-accueil',
-  imports: [RouterLink, FormsModule, VisualShowcaseComponent],
+  imports: [RouterLink, FormsModule, VisualShowcaseComponent, ...I18N],
   templateUrl: './accueil.html',
   styleUrl: './accueil.css',
 })

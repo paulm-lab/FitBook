@@ -101,7 +101,7 @@ final class AdminController extends AbstractController
      */
     #[OA\RequestBody(content: new OA\JsonContent(example: ['role' => 'gestionnaire', 'estBloque' => false]))]
     #[Route('/utilisateurs/{id}', name: 'api_admin_users_update', requirements: ['id' => '\d+'], methods: ['PATCH'])]
-    public function updateUser(int $id, Request $request, ApiRequest $api): JsonResponse
+    public function updateUser(int $id, Request $request, ApiRequest $api, SessionRepository $sessions, GymRepository $gyms): JsonResponse
     {
         $user = $this->em->find(User::class, $id) ?? throw ApiException::notFound('Utilisateur introuvable.');
         $data = $api->json($request);
@@ -111,6 +111,15 @@ final class AdminController extends AbstractController
             $role = self::ROLES[\is_string($data['role']) ? $data['role'] : ''] ?? throw ApiException::validation(['role' => 'Rôle attendu : sportif, coach, gestionnaire ou admin.']);
             if ($self && $role !== User::ROLE_ADMIN) {
                 throw ApiException::conflict('Vous ne pouvez pas retirer votre propre rôle administrateur.');
+            }
+            // Mêmes règles que la suppression : salles et séances à venir à réattribuer d'abord.
+            if ($role !== User::ROLE_GESTIONNAIRE && $gyms->count(['manager' => $user]) > 0) {
+                throw ApiException::conflict('Ce compte gère des salles : confiez-les d’abord à un autre gestionnaire.');
+            }
+            $coachProfile = $user->getCoachProfile();
+            if ($role !== User::ROLE_COACH && $user->hasRole(User::ROLE_COACH) && $coachProfile !== null
+                && $sessions->countUpcomingFor($coachProfile, new \DateTimeImmutable()) > 0) {
+                throw ApiException::conflict('Ce coach anime des séances à venir : annulez-les ou confiez-les à un autre coach d’abord.');
             }
             $user->setRoles([$role]);
             // Un nouveau coach reçoit un profil vide, à compléter depuis son espace.

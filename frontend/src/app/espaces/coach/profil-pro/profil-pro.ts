@@ -2,6 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { erreursChamps, messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LoaderComponent } from '../../../shared/ui';
@@ -11,16 +13,18 @@ const MAX_SPECIALITES = 10;
 /** Profil professionnel du coach (US-C01), affiché sur sa fiche publique /coachs/:id. */
 @Component({
   selector: 'app-profil-pro',
-  imports: [ReactiveFormsModule, RouterLink, LoaderComponent],
+  imports: [ReactiveFormsModule, RouterLink, LoaderComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Profil professionnel</span>
-        <h1>Ma fiche coach</h1>
-        <p>Ces informations sont visibles par tous les visiteurs.</p>
+        <span class="section-kicker">{{ 'Profil professionnel' | t }}</span>
+        <h1>{{ 'Ma fiche coach' | t }}</h1>
+        <p>{{ 'Ces informations sont visibles par tous les visiteurs.' | t }}</p>
       </div>
       @if (coachId()) {
-        <a class="btn btn--ghost" [routerLink]="['/coachs', coachId()]">Voir ma fiche publique →</a>
+        <a class="btn btn--ghost" [routerLink]="['/coachs', coachId()]">{{
+          'Voir ma fiche publique →' | t
+        }}</a>
       }
     </header>
 
@@ -32,7 +36,7 @@ const MAX_SPECIALITES = 10;
       }
       <form class="panel form" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
         <div class="field">
-          <label for="p-bio">Biographie</label>
+          <label for="p-bio">{{ 'Biographie' | t }}</label>
           <textarea
             id="p-bio"
             formControlName="biographie"
@@ -41,9 +45,9 @@ const MAX_SPECIALITES = 10;
             aria-describedby="p-bio-aide"
             [attr.aria-invalid]="!!serveur()['biographie']"
           ></textarea>
-          <span class="field-hint" id="p-bio-aide"
-            >{{ form.controls.biographie.value.length }} / 3000 caractères</span
-          >
+          <span class="field-hint" id="p-bio-aide">{{
+            '{n} / 3000 caractères' | t: { n: form.controls.biographie.value.length }
+          }}</span>
           @if (serveur()['biographie']) {
             <small class="field-error">{{ serveur()['biographie'] }}</small>
           }
@@ -51,16 +55,20 @@ const MAX_SPECIALITES = 10;
 
         <div class="field">
           <label for="p-spec"
-            >Spécialités
-            <span class="field-hint"
-              >(Entrée pour ajouter, {{ maxSpecialites }} au maximum)</span
-            ></label
+            >{{ 'Spécialités' | t }}
+            <span class="field-hint">{{
+              '(Entrée pour ajouter, {n} au maximum)' | t: { n: maxSpecialites }
+            }}</span></label
           >
           <div class="chips" style="margin-bottom:6px">
             @for (s of specialites(); track s) {
               <span class="chip"
                 >{{ s }}
-                <button type="button" (click)="retirer(s)" [attr.aria-label]="'Retirer ' + s">
+                <button
+                  type="button"
+                  (click)="retirer(s)"
+                  [attr.aria-label]="'Retirer {nom}' | t: { nom: s }"
+                >
                   ×
                 </button></span
               >
@@ -71,7 +79,7 @@ const MAX_SPECIALITES = 10;
             #spec
             maxlength="50"
             [disabled]="specialites().length >= maxSpecialites"
-            placeholder="Ex. Yoga, Pilates…"
+            [placeholder]="'Ex. Yoga, Pilates…' | t"
             (keydown.enter)="$event.preventDefault(); ajouter(spec)"
             (blur)="ajouter(spec)"
           />
@@ -82,7 +90,7 @@ const MAX_SPECIALITES = 10;
 
         <div class="form-row form-row--3">
           <div class="field">
-            <label for="p-exp">Années d'expérience</label>
+            <label for="p-exp">{{ 'Années d’expérience' | t }}</label>
             <input
               id="p-exp"
               type="number"
@@ -93,12 +101,12 @@ const MAX_SPECIALITES = 10;
             />
             @if (invalide('experienceAnnees')) {
               <small class="field-error">{{
-                serveur()['experienceAnnees'] || 'Entre 0 et 60 ans.'
+                serveur()['experienceAnnees'] || ('Entre 0 et 60 ans.' | t)
               }}</small>
             }
           </div>
           <div class="field">
-            <label for="p-tarif">Tarif horaire (€)</label>
+            <label for="p-tarif">{{ 'Tarif horaire (€)' | t }}</label>
             <input
               id="p-tarif"
               type="number"
@@ -110,12 +118,12 @@ const MAX_SPECIALITES = 10;
             />
             @if (invalide('tarifHoraire')) {
               <small class="field-error">{{
-                serveur()['tarifHoraire'] || 'Entre 0 et 1000 €.'
+                serveur()['tarifHoraire'] || ('Entre 0 et 1000 €.' | t)
               }}</small>
             }
           </div>
           <div class="field">
-            <label for="p-ville">Ville</label>
+            <label for="p-ville">{{ 'Ville' | t }}</label>
             <input
               id="p-ville"
               formControlName="ville"
@@ -129,7 +137,7 @@ const MAX_SPECIALITES = 10;
         </div>
 
         <div class="field">
-          <label for="p-certif">Certifications</label>
+          <label for="p-certif">{{ 'Certifications' | t }}</label>
           <textarea
             id="p-certif"
             formControlName="certifications"
@@ -143,7 +151,7 @@ const MAX_SPECIALITES = 10;
 
         <div class="row">
           <button class="btn" type="submit" [disabled]="envoi()" [attr.aria-busy]="envoi()">
-            {{ envoi() ? 'Enregistrement…' : 'Enregistrer mon profil' }}
+            {{ (envoi() ? 'Enregistrement…' : 'Enregistrer mon profil') | t }}
           </button>
         </div>
       </form>
@@ -154,6 +162,7 @@ export class ProfilProComponent {
   private readonly gestion = inject(GestionService);
   private readonly toasts = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  private readonly langue = inject(LangueService);
 
   readonly maxSpecialites = MAX_SPECIALITES;
   readonly chargement = signal(true);
@@ -186,7 +195,7 @@ export class ProfilProComponent {
         this.chargement.set(false);
       },
       error: (error) => {
-        this.erreur.set(messageErreur(error, 'Impossible de charger votre profil.'));
+        this.erreur.set(messageErreur(error, this.langue.t('Impossible de charger votre profil.')));
         this.chargement.set(false);
       },
     });
@@ -226,14 +235,16 @@ export class ProfilProComponent {
       .subscribe({
         next: () => {
           this.envoi.set(false);
-          this.toasts.succes('Profil enregistré.');
+          this.toasts.succes(this.langue.t('Profil enregistré.'));
         },
         error: (error: unknown) => {
           this.envoi.set(false);
           const champs = erreursChamps(error);
           this.serveur.set(champs);
           this.erreur.set(
-            Object.keys(champs).length ? 'Certains champs sont invalides.' : messageErreur(error),
+            Object.keys(champs).length
+              ? this.langue.t('Certains champs sont invalides.')
+              : messageErreur(error),
           );
         },
       });

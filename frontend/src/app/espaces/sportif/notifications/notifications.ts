@@ -1,6 +1,7 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { NotificationFitBook } from '../../../core/models';
 import { CompteService } from '../../../core/services/compte.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -16,19 +17,26 @@ const ICONES: Record<string, string> = {
 /** Notifications internes (bonus) : réservations, annulations, rappels. */
 @Component({
   selector: 'app-notifications',
-  imports: [DatePipe, LoaderComponent, EtatVideComponent],
+  imports: [LoaderComponent, EtatVideComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Mon espace</span>
-        <h1>Notifications</h1>
+        <span class="section-kicker">{{ 'Mon espace' | t }}</span>
+        <h1>{{ 'Notifications' | t }}</h1>
         <p>
-          {{ nonLues() > 0 ? nonLues() + ' notification(s) non lue(s).' : 'Vous êtes à jour.' }}
+          {{
+            (nonLues() === 0
+              ? 'Vous êtes à jour.'
+              : nonLues() === 1
+                ? '1 notification non lue.'
+                : '{n} notifications non lues.'
+            ) | t: { n: nonLues() }
+          }}
         </p>
       </div>
       @if (nonLues() > 0) {
         <button type="button" class="btn btn--ghost" [disabled]="envoi()" (click)="toutLire()">
-          Tout marquer comme lu
+          {{ 'Tout marquer comme lu' | t }}
         </button>
       }
     </header>
@@ -37,8 +45,8 @@ const ICONES: Record<string, string> = {
       <app-loader />
     } @else if (items().length === 0) {
       <app-etat-vide
-        titre="Aucune notification"
-        message="Vos confirmations de réservation, annulations et rappels apparaîtront ici."
+        [titre]="'Aucune notification' | t"
+        [message]="'Vos confirmations de réservation, annulations et rappels apparaîtront ici.' | t"
         icone="🔔"
       />
     } @else {
@@ -49,11 +57,11 @@ const ICONES: Record<string, string> = {
             <div>
               <p>{{ n.message }}</p>
               <time class="muted" [attr.datetime]="n.date">{{
-                n.date | date: 'EEEE d MMMM y · HH:mm'
+                n.date | dateL: 'EEEE d MMMM y · HH:mm'
               }}</time>
             </div>
             @if (!n.lue) {
-              <span class="badge badge--primary">Nouveau</span>
+              <span class="badge badge--primary">{{ 'Nouveau' | t }}</span>
             }
           </li>
         }
@@ -110,6 +118,7 @@ const ICONES: Record<string, string> = {
 export class NotificationsComponent {
   private readonly compte = inject(CompteService);
   private readonly toasts = inject(ToastService);
+  private readonly langue = inject(LangueService);
 
   readonly items = signal<NotificationFitBook[]>([]);
   readonly nonLues = signal(0);
@@ -124,7 +133,9 @@ export class NotificationsComponent {
         this.chargement.set(false);
       },
       error: (error: unknown) => {
-        this.toasts.erreur(messageErreur(error, 'Les notifications n’ont pas pu être chargées.'));
+        this.toasts.erreur(
+          messageErreur(error, this.langue.t('Les notifications n’ont pas pu être chargées.')),
+        );
         this.chargement.set(false);
       },
     });

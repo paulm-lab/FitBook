@@ -1,75 +1,87 @@
 <section
   class="visual-showcase"
-  [class.visual-showcase--compact]="compact"
-  aria-label="Visuels sportifs FitBook"
+  [class.visual-showcase--compact]="compact()"
+  [attr.aria-label]="'Visuels sportifs FitBook' | t"
 >
+  @let v = visuals();
   <article class="visual-lead">
     <img
-      [src]="visuals.hero.src"
-      [alt]="visuals.hero.alt"
+      [src]="v.hero.src"
+      [alt]="v.hero.alt | t"
       loading="lazy"
       decoding="async"
       (error)="useFallback($event)"
     />
     <div class="visual-lead-copy">
-      <span>{{ visuals.kicker }}</span>
-      <h2>{{ visuals.title }}</h2>
-      <p>{{ visuals.description }}</p>
+      <span>{{ v.kicker | t }}</span>
+      <h2>{{ v.title | t }}</h2>
+      <p>{{ v.description | t }}</p>
     </div>
   </article>
 
-  <section class="visual-carousel" aria-label="Galerie photo sportive">
+  <section class="visual-carousel" [attr.aria-label]="'Galerie photo sportive' | t">
     <header class="visual-carousel-heading">
       <div>
-        <span class="visual-kicker">EN IMAGES</span>
-        <h3>Inspirez-vous</h3>
+        <span class="visual-kicker">{{ 'EN IMAGES' | t }}</span>
+        <h3>{{ 'Inspirez-vous' | t }}</h3>
       </div>
       <div class="visual-controls">
-        <button type="button" aria-label="Photos precedentes" (click)="scrollGallery(-1)">←</button
-        ><button type="button" aria-label="Photos suivantes" (click)="scrollGallery(1)">→</button>
+        <button
+          type="button"
+          [attr.aria-label]="'Photos precedentes' | t"
+          (click)="scrollGallery(-1)"
+        >
+          ←</button
+        ><button
+          type="button"
+          [attr.aria-label]="'Photos suivantes' | t"
+          (click)="scrollGallery(1)"
+        >
+          →
+        </button>
       </div>
     </header>
     <div
       #galleryTrack
       class="visual-track"
       tabindex="0"
-      aria-label="Carrousel horizontal de photos"
+      [attr.aria-label]="'Carrousel horizontal de photos' | t"
     >
-      @for (item of visuals.photos; track item.src) {
+      @for (item of v.photos; track item.src) {
         <figure class="visual-photo">
           <img
             [src]="item.src"
-            [alt]="item.alt"
+            [alt]="item.alt | t"
             loading="lazy"
             decoding="async"
             (error)="useFallback($event)"
           />
-          <figcaption>{{ item.label }}</figcaption>
+          <figcaption>{{ item.label | t }}</figcaption>
         </figure>
       }
     </div>
   </section>
 
-  <section class="visual-video" aria-label="Video sportive">
+  <section class="visual-video" [attr.aria-label]="'Video sportive' | t">
     <div class="visual-video-copy">
-      <span class="visual-kicker">A VOUS DE JOUER</span>
-      <h3>Le sport en mouvement</h3>
-      <p>{{ visuals.videoLabel }}</p>
+      <span class="visual-kicker">{{ 'A VOUS DE JOUER' | t }}</span>
+      <h3>{{ 'Le sport en mouvement' | t }}</h3>
+      <p>{{ v.videoLabel | t }}</p>
     </div>
     <div class="visual-video-frame">
       <video
         controls
         playsinline
         preload="none"
-        [poster]="visuals.videoPoster"
-        [attr.aria-label]="visuals.videoLabel"
+        [poster]="v.videoPoster"
+        [attr.aria-label]="v.videoLabel | t"
         (error)="markVideoUnavailable()"
       >
-        <source [src]="visuals.video" type="video/mp4" />
-        Votre navigateur ne prend pas en charge la video HTML5.
+        <source [src]="v.video" type="video/mp4" />
+        {{ 'Votre navigateur ne prend pas en charge la video HTML5.' | t }}
       </video>
-      @if (videoUnavailable) {
-        <p class="video-fallback">Video temporairement indisponible.</p>
+      @if (videoUnavailable()) {
+        <p class="video-fallback">{{ 'Video temporairement indisponible.' | t }}</p>
       }
     </div>
   </section>

@@ -2,6 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { EventInput } from '@fullcalendar/core';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Disponibilite, Salle, SeanceResume } from '../../../core/models';
 import { CatalogueService } from '../../../core/services/catalogue.service';
 import { GestionService } from '../../../core/services/gestion.service';
@@ -16,7 +18,7 @@ import { dateLocale, espaceCourant } from '../espace';
 /** Calendrier des séances et disponibilités de l'espace (US-C04). */
 @Component({
   selector: 'app-calendrier-espace',
-  imports: [CalendrierComponent],
+  imports: [CalendrierComponent, ...I18N],
   styles: `
     .legend {
       display: flex;
@@ -42,15 +44,19 @@ import { dateLocale, espaceCourant } from '../espace';
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Calendrier</span>
-        <h1>Mon planning</h1>
-        <p>Cliquez sur une séance pour voir les inscrits, sur un jour pour créer une séance.</p>
+        <span class="section-kicker">{{ 'Calendrier' | t }}</span>
+        <h1>{{ 'Mon planning' | t }}</h1>
+        <p>
+          {{
+            'Cliquez sur une séance pour voir les inscrits, sur un jour pour créer une séance.' | t
+          }}
+        </p>
       </div>
       @if (espace === 'gestionnaire') {
         <label class="field" style="min-width:220px">
-          <span>Salle</span>
+          <span>{{ 'Salle' | t }}</span>
           <select [value]="salleId() ?? ''" (change)="changerSalle($any($event.target).value)">
-            <option value="">Toutes mes salles</option>
+            <option value="">{{ 'Toutes mes salles' | t }}</option>
             @for (s of salles(); track s.id) {
               <option [value]="s.id">{{ s.nom }}</option>
             }
@@ -59,11 +65,11 @@ import { dateLocale, espaceCourant } from '../espace';
       }
     </header>
 
-    <ul class="legend" aria-label="Légende">
-      <li><span style="background:#ff642d"></span>Séance avec places</li>
-      <li><span style="background:#10213a"></span>Complète</li>
-      <li><span style="background:#9aa4b2"></span>Annulée</li>
-      <li><span style="background:rgba(22,112,68,.35)"></span>Disponibilité</li>
+    <ul class="legend" [attr.aria-label]="'Légende' | t">
+      <li><span style="background:#ff642d"></span>{{ 'Séance avec places' | t }}</li>
+      <li><span style="background:#10213a"></span>{{ 'Complète' | t }}</li>
+      <li><span style="background:#9aa4b2"></span>{{ 'Annulée' | t }}</li>
+      <li><span style="background:rgba(22,112,68,.35)"></span>{{ 'Disponibilité' | t }}</li>
     </ul>
 
     <app-calendrier
@@ -79,6 +85,7 @@ export class CalendrierEspaceComponent {
   private readonly catalogue = inject(CatalogueService);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly langue = inject(LangueService);
 
   readonly espace = espaceCourant();
   readonly seances = signal<SeanceResume[]>([]);
@@ -126,7 +133,9 @@ export class CalendrierEspaceComponent {
       .subscribe({
         next: (reponse) => this.seances.set(Array.isArray(reponse) ? reponse : reponse.items),
         error: (error) =>
-          this.toasts.erreur(messageErreur(error, 'Impossible de charger le calendrier.')),
+          this.toasts.erreur(
+            messageErreur(error, this.langue.t('Impossible de charger le calendrier.')),
+          ),
       });
   }
 

@@ -1,0 +1,96 @@
+# Messages des contraintes Symfony Validator (DTO de src/Dto, Assert\Callback, contrôleurs),
+# traduits par le validateur lui-même dans la langue de la requête.
+# La clé est le message français déclaré dans le code ; {{ limit }}, {{ min }}, {{ max }}
+# sont remplacés par le validateur.
+
+# --- Champs communs ---------------------------------------------------------------------------
+"Le nom est obligatoire.": "Name is required."
+"Le nom ne peut pas dépasser {{ limit }} caractères.": "Name cannot exceed {{ limit }} characters."
+"La description ne peut pas dépasser {{ limit }} caractères.": "Description cannot exceed {{ limit }} characters."
+"Saisissez une adresse e-mail valide.": "Enter a valid email address."
+"Saisissez un numéro de téléphone valide.": "Enter a valid phone number."
+"La latitude doit être comprise entre {{ min }} et {{ max }}.": "Latitude must be between {{ min }} and {{ max }}."
+"La longitude doit être comprise entre {{ min }} et {{ max }}.": "Longitude must be between {{ min }} and {{ max }}."
+"La salle est invalide.": "The gym is invalid."
+"L’activité est invalide.": "The activity is invalid."
+"Niveau attendu : debutant, intermediaire ou avance.": "Expected level: debutant, intermediaire or avance."
+
+# --- Inscription et mot de passe --------------------------------------------------------------
+"Le prénom est obligatoire.": "First name is required."
+"Le prénom ne peut pas dépasser {{ limit }} caractères.": "First name cannot exceed {{ limit }} characters."
+"L’adresse e-mail est obligatoire.": "Email address is required."
+"L’adresse e-mail ne peut pas dépasser {{ limit }} caractères.": "Email address cannot exceed {{ limit }} characters."
+"Le téléphone est obligatoire.": "Phone number is required."
+"Saisissez un numéro de téléphone valide (7 à 20 caractères).": "Enter a valid phone number (7 to 20 characters)."
+"Le mot de passe est obligatoire.": "Password is required."
+"Le mot de passe doit contenir au moins {{ limit }} caractères.": "Password must contain at least {{ limit }} characters."
+"Choisissez un rôle : sportif, coach ou gestionnaire.": "Choose a role: sportif, coach or gestionnaire."
+
+# --- Activités --------------------------------------------------------------------------------
+"La catégorie est obligatoire.": "Category is required."
+"La catégorie ne peut pas dépasser {{ limit }} caractères.": "Category cannot exceed {{ limit }} characters."
+"L’image doit être une adresse web valide.": "The image must be a valid web address."
+
+# --- Disponibilités ---------------------------------------------------------------------------
+"Le jour doit être compris entre {{ min }} (lundi) et {{ max }} (dimanche).": "The day must be between {{ min }} (Monday) and {{ max }} (Sunday)."
+"L’heure de début est obligatoire.": "Start time is required."
+"L’heure de fin est obligatoire.": "End time is required."
+"Heure attendue au format HH:MM.": "Time expected in HH:MM format."
+"Choisissez le jour de la semaine.": "Choose the day of the week."
+"Date attendue au format AAAA-MM-JJ.": "Date expected in YYYY-MM-DD format."
+"Choisissez la date du créneau.": "Choose the date of the time slot."
+"L’heure de fin doit suivre l’heure de début.": "End time must be after start time."
+
+# --- Profil de coach --------------------------------------------------------------------------
+"La bio ne peut pas dépasser {{ limit }} caractères.": "Bio cannot exceed {{ limit }} characters."
+"{{ limit }} spécialités au maximum.": "{{ limit }} specialities at most."
+"Une spécialité ne dépasse pas {{ limit }} caractères.": "A speciality cannot exceed {{ limit }} characters."
+"L’expérience doit être comprise entre {{ min }} et {{ max }} ans.": "Experience must be between {{ min }} and {{ max }} years."
+"Le tarif horaire doit être compris entre {{ min }} et {{ max }} €.": "Hourly rate must be between {{ min }} and {{ max }} €."
+"Les certifications ne peuvent pas dépasser {{ limit }} caractères.": "Certifications cannot exceed {{ limit }} characters."
+
+# --- Salles -----------------------------------------------------------------------------------
+"L’adresse est obligatoire.": "Address is required."
+"La ville est obligatoire.": "City is required."
+"Le code postal est obligatoire.": "Postcode is required."
+"Le code postal doit contenir 4 ou 5 chiffres.": "Postcode must contain 4 or 5 digits."
+"{{ limit }} photos au maximum.": "{{ limit }} photos at most."
+"Chaque photo doit être une adresse web valide.": "Each photo must be a valid web address."
+"Le gestionnaire est invalide.": "The gym manager is invalid."
+"Horaires attendus : { \"lundi\": \"07:00-22:00\", … }, fin après début.": "Expected opening hours: { \"lundi\": \"07:00-22:00\", … }, end after start."
+
+# --- Avis -------------------------------------------------------------------------------------
+"La note est obligatoire.": "Rating is required."
+"La note doit être comprise entre {{ min }} et {{ max }}.": "Rating must be between {{ min }} and {{ max }}."
+"Le commentaire ne peut pas dépasser {{ limit }} caractères.": "Comment cannot exceed {{ limit }} characters."
+
+# --- Recherche --------------------------------------------------------------------------------
+"Type attendu : seances, salles ou coachs.": "Expected type: seances, salles or coachs."
+"Le prix maximum doit être positif.": "Maximum price must be positive."
+"La note minimale doit être comprise entre {{ min }} et {{ max }}.": "Minimum rating must be between {{ min }} and {{ max }}."
+"Le rayon doit être compris entre {{ min }} et {{ max }} km.": "Radius must be between {{ min }} and {{ max }} km."
+"Tri attendu : date, prix, note, distance ou nom.": "Expected sort: date, prix, note, distance or nom."
+"Les dates doivent être au format AAAA-MM-JJ.": "Dates must be in YYYY-MM-DD format."
+"La date de fin doit suivre la date de début.": "End date must be after start date."
+"La latitude et la longitude vont ensemble.": "Latitude and longitude must be provided together."
+"Le tri par distance demande une position (lat, lng).": "Sorting by distance requires a position (lat, lng)."
+
+# --- Séances ----------------------------------------------------------------------------------
+"Le titre est obligatoire.": "Title is required."
+"Le titre ne peut pas dépasser {{ limit }} caractères.": "Title cannot exceed {{ limit }} characters."
+"L’activité est obligatoire.": "Activity is required."
+"Le coach est invalide.": "The coach is invalid."
+"La date de début est obligatoire (format ISO 8601).": "Start date is required (ISO 8601 format)."
+"La séance doit commencer dans le futur.": "The session must start in the future."
+"La date de fin est obligatoire (format ISO 8601).": "End date is required (ISO 8601 format)."
+"La capacité est obligatoire.": "Capacity is required."
+"La capacité doit être comprise entre {{ min }} et {{ max }}.": "Capacity must be between {{ min }} and {{ max }}."
+"Le prix est obligatoire (0 pour une séance gratuite).": "Price is required (0 for a free session)."
+"Le prix doit être compris entre {{ min }} et {{ max }} €.": "Price must be between {{ min }} and {{ max }} €."
+"La fin doit être postérieure au début.": "The end must be after the start."
+"Une séance ne peut pas durer plus de 12 heures.": "A session cannot last more than 12 hours."
+
+# --- Photo de profil --------------------------------------------------------------------------
+"L’image ne doit pas dépasser 2 Mo.": "The image must not exceed 2 MB."
+"Formats acceptés : JPEG, PNG ou WebP.": "Accepted formats: JPEG, PNG or WebP."
+"L’image est trop grande (4000 px au maximum).": "The image is too large (4000 px maximum)."

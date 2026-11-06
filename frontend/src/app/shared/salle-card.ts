@@ -1,6 +1,6 @@
-import { DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { I18N } from '../core/i18n/pipes';
 import { Salle } from '../core/models';
 import { FavoriButtonComponent } from './favori-button';
 import { EtoilesComponent, ImageSecoursDirective } from './ui';
@@ -8,13 +8,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
 /** Carte d'une salle dans les résultats de recherche et les favoris. */
 @Component({
   selector: 'app-salle-card',
-  imports: [
-    RouterLink,
-    DecimalPipe,
-    FavoriButtonComponent,
-    EtoilesComponent,
-    ImageSecoursDirective,
-  ],
+  imports: [RouterLink, ...I18N, FavoriButtonComponent, EtoilesComponent, ImageSecoursDirective],
   template: `
     @let s = salle();
     <article class="card card--link">
@@ -29,7 +23,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
       </a>
       <div class="card-body">
         <div class="card-top">
-          <span class="card-kicker">Salle · {{ s.ville }}</span>
+          <span class="card-kicker">{{ 'Salle · {ville}' | t: { ville: s.ville } }}</span>
           <app-favori type="salle" [cibleId]="s.id" />
         </div>
         <h3 class="card-title">
@@ -37,11 +31,15 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
         </h3>
         <p class="card-meta">{{ s.adresse }}</p>
         @if (s.distanceKm != null) {
-          <p class="card-meta">À {{ s.distanceKm | number: '1.1-1' }} km</p>
+          <p class="card-meta">
+            {{ 'À {distance} km' | t: { distance: s.distanceKm | nombreL: '1.1-1' } }}
+          </p>
         }
         <div class="card-footer">
           <app-etoiles [note]="s.noteMoyenne" [nbAvis]="s.nbAvis ?? null" />
-          <a class="btn btn--sm btn--ghost" [routerLink]="['/salles', s.id]">Voir la salle</a>
+          <a class="btn btn--sm btn--ghost" [routerLink]="['/salles', s.id]">{{
+            'Voir la salle' | t
+          }}</a>
         </div>
       </div>
     </article>

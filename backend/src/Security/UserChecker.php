@@ -10,7 +10,7 @@ use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * Refuse la connexion d'un compte bloqué ou non vérifié (RG-02).
+ * Refuse la connexion d'un compte bloqué (RG-02).
  */
 final class UserChecker implements UserCheckerInterface
 {
@@ -26,9 +26,6 @@ final class UserChecker implements UserCheckerInterface
         }
         if ($user->isBlocked()) {
             throw new CustomUserMessageAccountStatusException('Ce compte a été bloqué. Contactez l’administrateur.');
-        }
-        if (!$user->isVerified()) {
-            throw new CustomUserMessageAccountStatusException('Confirmez votre adresse e-mail avant de vous connecter.');
         }
     }
 }

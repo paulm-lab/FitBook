@@ -1,7 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Page, Reservation } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { EtatVideComponent, LoaderComponent, PaginationComponent } from '../../../shared/ui';
@@ -15,18 +16,18 @@ const STATUTS: Record<string, string> = {
 /** Réservations des séances de mes salles (US-G04). */
 @Component({
   selector: 'app-reservations-gestionnaire',
-  imports: [RouterLink, DatePipe, LoaderComponent, EtatVideComponent, PaginationComponent],
+  imports: [RouterLink, LoaderComponent, EtatVideComponent, PaginationComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Réservations</span>
-        <h1>Réservations de mes salles</h1>
-        <p>Préparez l'accueil des sportifs.</p>
+        <span class="section-kicker">{{ 'Réservations' | t }}</span>
+        <h1>{{ 'Réservations de mes salles' | t }}</h1>
+        <p>{{ 'Préparez l’accueil des sportifs.' | t }}</p>
       </div>
     </header>
 
     <div class="row" style="margin-bottom:16px">
-      <div class="tabs" role="tablist" aria-label="Période" style="margin:0">
+      <div class="tabs" role="tablist" [attr.aria-label]="'Période' | t" style="margin:0">
         <button
           type="button"
           class="tab"
@@ -34,7 +35,7 @@ const STATUTS: Record<string, string> = {
           [attr.aria-selected]="periode() === 'a_venir'"
           (click)="periode.set('a_venir'); charger(1)"
         >
-          À venir
+          {{ 'À venir' | t }}
         </button>
         <button
           type="button"
@@ -43,20 +44,20 @@ const STATUTS: Record<string, string> = {
           [attr.aria-selected]="periode() === 'toutes'"
           (click)="periode.set('toutes'); charger(1)"
         >
-          Toutes
+          {{ 'Toutes' | t }}
         </button>
       </div>
       <label class="field" style="min-width:200px">
-        <span class="sr-only">Statut</span>
+        <span class="sr-only">{{ 'Statut' | t }}</span>
         <select
           [value]="statut()"
           (change)="statut.set($any($event.target).value); charger(1)"
-          aria-label="Filtrer par statut"
+          [attr.aria-label]="'Filtrer par statut' | t"
         >
-          <option value="">Tous les statuts</option>
-          <option value="confirmee">Confirmées</option>
-          <option value="annulee">Annulées</option>
-          <option value="terminee">Terminées</option>
+          <option value="">{{ 'Tous les statuts' | t }}</option>
+          <option value="confirmee">{{ 'Confirmées' | t }}</option>
+          <option value="annulee">{{ 'Annulées' | t }}</option>
+          <option value="terminee">{{ 'Terminées' | t }}</option>
         </select>
       </label>
     </div>
@@ -68,22 +69,24 @@ const STATUTS: Record<string, string> = {
     } @else if (page(); as p) {
       @if (p.items.length === 0) {
         <app-etat-vide
-          titre="Aucune réservation"
-          message="Aucune réservation ne correspond à ces filtres."
+          [titre]="'Aucune réservation' | t"
+          [message]="'Aucune réservation ne correspond à ces filtres.' | t"
           icone="🎟"
         />
       } @else {
-        <p class="muted">{{ p.total }} réservation(s)</p>
+        <p class="muted">
+          {{ (p.total === 1 ? '{n} réservation' : '{n} réservations') | t: { n: p.total } }}
+        </p>
         <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
-                <th scope="col">Séance</th>
-                <th scope="col">Date</th>
-                <th scope="col">Salle</th>
-                <th scope="col">Sportif</th>
-                <th scope="col">E-mail</th>
-                <th scope="col">Statut</th>
+                <th scope="col">{{ 'Séance' | t }}</th>
+                <th scope="col">{{ 'Date' | t }}</th>
+                <th scope="col">{{ 'Salle' | t }}</th>
+                <th scope="col">{{ 'Sportif' | t }}</th>
+                <th scope="col">{{ 'E-mail' | t }}</th>
+                <th scope="col">{{ 'Statut' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -96,7 +99,7 @@ const STATUTS: Record<string, string> = {
                       }}</a>
                     }
                   </td>
-                  <td>{{ r.seance?.dateDebut | date: 'EEE d MMM y · HH:mm' }}</td>
+                  <td>{{ r.seance?.dateDebut | dateL: 'EEE d MMM y · HH:mm' }}</td>
                   <td>{{ r.seance?.salle?.nom ?? '—' }}</td>
                   <td>{{ r.sportif?.prenom }} {{ r.sportif?.nom }}</td>
                   <td>
@@ -105,7 +108,7 @@ const STATUTS: Record<string, string> = {
                     }
                   </td>
                   <td>
-                    <span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) }}</span>
+                    <span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) | t }}</span>
                   </td>
                 </tr>
               }
@@ -119,6 +122,7 @@ const STATUTS: Record<string, string> = {
 })
 export class ReservationsGestionnaireComponent {
   private readonly gestion = inject(GestionService);
+  private readonly langue = inject(LangueService);
   readonly periode = signal<'a_venir' | 'toutes'>('a_venir');
   readonly statut = signal('');
   readonly page = signal<Page<Reservation> | null>(null);
@@ -148,7 +152,9 @@ export class ReservationsGestionnaireComponent {
           this.chargement.set(false);
         },
         error: (error) => {
-          this.erreur.set(messageErreur(error, 'Impossible de charger les réservations.'));
+          this.erreur.set(
+            messageErreur(error, this.langue.t('Impossible de charger les réservations.')),
+          );
           this.chargement.set(false);
         },
       });

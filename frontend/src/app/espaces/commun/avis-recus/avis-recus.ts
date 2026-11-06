@@ -1,7 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Avis, Cible, Page } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import {
@@ -17,18 +18,18 @@ import { espaceCourant } from '../espace';
   selector: 'app-avis-recus',
   imports: [
     RouterLink,
-    DatePipe,
     LoaderComponent,
     EtatVideComponent,
     EtoilesComponent,
     PaginationComponent,
+    ...I18N,
   ],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Avis</span>
-        <h1>{{ espace === 'gestionnaire' ? 'Avis sur mes salles' : 'Avis reçus' }}</h1>
-        <p>Les avis visibles publiés par les sportifs après leurs séances.</p>
+        <span class="section-kicker">{{ 'Avis' | t }}</span>
+        <h1>{{ (espace === 'gestionnaire' ? 'Avis sur mes salles' : 'Avis reçus') | t }}</h1>
+        <p>{{ 'Les avis visibles publiés par les sportifs après leurs séances.' | t }}</p>
       </div>
       @if (moyenne() !== null) {
         <app-etoiles [note]="moyenne()" [nbAvis]="page()?.total ?? null" />
@@ -42,8 +43,8 @@ import { espaceCourant } from '../espace';
     } @else if (page(); as p) {
       @if (p.items.length === 0) {
         <app-etat-vide
-          titre="Aucun avis pour le moment"
-          message="Les avis apparaîtront ici après les premières séances terminées."
+          [titre]="'Aucun avis pour le moment' | t"
+          [message]="'Les avis apparaîtront ici après les premières séances terminées.' | t"
           icone="★"
         />
       } @else {
@@ -52,7 +53,7 @@ import { espaceCourant } from '../espace';
             <article class="panel">
               <div class="row row--between">
                 <app-etoiles [note]="a.note" [avecTexte]="false" />
-                <span class="muted">{{ a.date | date: 'd MMMM y' }}</span>
+                <span class="muted">{{ a.date | dateL: 'd MMMM y' }}</span>
               </div>
               <!-- Commentaire affiché en texte : jamais interprété comme du HTML. -->
               @if (a.commentaire) {
@@ -61,7 +62,7 @@ import { espaceCourant } from '../espace';
               <p class="muted" style="margin:0">
                 {{ a.auteur }}
                 @if (a.cible; as c) {
-                  · sur <a [routerLink]="lien(c)">{{ c.nom }}</a>
+                  · {{ 'sur' | t }} <a [routerLink]="lien(c)">{{ c.nom }}</a>
                 }
               </p>
             </article>
@@ -74,6 +75,7 @@ import { espaceCourant } from '../espace';
 })
 export class AvisRecusComponent {
   private readonly gestion = inject(GestionService);
+  private readonly langue = inject(LangueService);
   readonly espace = espaceCourant();
   readonly page = signal<Page<Avis> | null>(null);
   readonly chargement = signal(true);
@@ -99,7 +101,7 @@ export class AvisRecusComponent {
         this.chargement.set(false);
       },
       error: (error) => {
-        this.erreur.set(messageErreur(error, 'Impossible de charger les avis.'));
+        this.erreur.set(messageErreur(error, this.langue.t('Impossible de charger les avis.')));
         this.chargement.set(false);
       },
     });

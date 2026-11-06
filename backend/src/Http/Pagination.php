@@ -17,6 +17,8 @@ final class Pagination
 {
     public const DEFAULT_PER_PAGE = 20;
     public const MAX_PER_PAGE = 50;
+    /** Borne de ?page : au-delà, le décalage (page - 1) × parPage dépasserait les entiers PHP. */
+    public const MAX_PAGE = 10000;
 
     private function __construct(
         public readonly int $page,
@@ -26,7 +28,7 @@ final class Pagination
 
     public static function fromRequest(Request $request, int $defaultPerPage = self::DEFAULT_PER_PAGE): self
     {
-        $page = max(1, $request->query->getInt('page', 1));
+        $page = min(self::MAX_PAGE, max(1, $request->query->getInt('page', 1)));
         $perPage = min(self::MAX_PER_PAGE, max(1, $request->query->getInt('parPage', $defaultPerPage)));
 
         return new self($page, $perPage);

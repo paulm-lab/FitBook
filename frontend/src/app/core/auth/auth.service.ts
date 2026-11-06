@@ -1,11 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, map, of, tap, timeout } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, tap, timeout } from 'rxjs';
 import { API_URL } from '../http';
 import { Role, Utilisateur } from '../models';
-
-// sent : accepté par le serveur SMTP ; queued : en file Messenger, pas encore parti ; failed : ni l'un ni l'autre.
-export type StatutEmailVerification = 'sent' | 'queued' | 'failed';
 
 export interface InscriptionSaisie {
   prenom: string;
@@ -20,8 +17,6 @@ export interface InscriptionResponse {
   message: string;
   email: string;
   role?: Role;
-  verificationEmailQueued: boolean;
-  verificationEmailStatus?: StatutEmailVerification;
 }
 
 /** Espace d'accueil de chaque rôle après la connexion. */
@@ -47,6 +42,8 @@ export class AuthService {
   private readonly utilisateurCourant = signal<Utilisateur | null>(null);
   private readonly sessionVerifiee = signal(false);
   private jeton: string | null = null;
+  /** Effacement du cookie en cours : partagé par les requêtes refusées en même temps. */
+  private effacement: Observable<void> | null = null;
 
   /** Utilisateur connecté, ou null. */
   readonly utilisateur = this.utilisateurCourant.asReadonly();
@@ -104,6 +101,18 @@ export class AuthService {
     this.utilisateurCourant.set(null);
   }
 
+  /**
+   * Cookie JWT invalide ou expiré chez un visiteur (401 sur une page publique) : /api/logout
+   * demande au navigateur de l'oublier. Un seul appel à la fois, erreurs ignorées.
+   */
+  effacerCookie(): Observable<void> {
+    this.effacement ??= this.deconnexion().pipe(
+      finalize(() => (this.effacement = null)),
+      shareReplay(1),
+    );
+    return this.effacement;
+  }
+
   mettreAJour(user: Utilisateur): void {
     this.utilisateurCourant.set(user);
   }
@@ -111,12 +120,6 @@ export class AuthService {
   inscription(data: InscriptionSaisie): Observable<InscriptionResponse> {
     return this.http
       .post<InscriptionResponse>(`${API_URL}/inscription`, data)
-      .pipe(timeout({ first: 20000 }));
-  }
-
-  renvoyerVerification(email: string): Observable<{ message: string }> {
-    return this.http
-      .post<{ message: string }>(`${API_URL}/auth/resend-verification`, { email })
       .pipe(timeout({ first: 20000 }));
   }
 

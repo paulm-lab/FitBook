@@ -1,8 +1,9 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { erreursChamps, messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Avis, TypeCible } from '../../../core/models';
 import { CompteService } from '../../../core/services/compte.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -29,19 +30,23 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
   selector: 'app-mes-avis',
   imports: [
     RouterLink,
-    DatePipe,
     FormsModule,
     LoaderComponent,
     EtatVideComponent,
     EtoilesComponent,
     SaisieNoteComponent,
+    ...I18N,
   ],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Mon espace</span>
-        <h1>Mes avis</h1>
-        <p>Un avis par salle, coach ou séance. Une modification repasse par la modération.</p>
+        <span class="section-kicker">{{ 'Mon espace' | t }}</span>
+        <h1>{{ 'Mes avis' | t }}</h1>
+        <p>
+          {{
+            'Un avis par salle, coach ou séance. Une modification repasse par la modération.' | t
+          }}
+        </p>
       </div>
     </header>
 
@@ -49,8 +54,11 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
       <app-loader />
     } @else if (avis().length === 0) {
       <app-etat-vide
-        titre="Vous n'avez pas encore donné d'avis"
-        message="Après une séance terminée, partagez votre expérience depuis la fiche de la salle, du coach ou de la séance."
+        [titre]="textes.aucunAvis | t"
+        [message]="
+          'Après une séance terminée, partagez votre expérience depuis la fiche de la salle, du coach ou de la séance.'
+            | t
+        "
         icone="★"
       />
     } @else {
@@ -59,25 +67,23 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
           <li class="panel">
             <div class="row row--between">
               <div>
-                <span class="card-kicker">{{ types[a.cible?.type ?? 'seance'] }}</span>
+                <span class="card-kicker">{{ types[a.cible?.type ?? 'seance'] | t }}</span>
                 <h2>
                   @if (a.cible) {
                     <a [routerLink]="[chemins[a.cible.type], a.cible.id]">{{ a.cible.nom }}</a>
                   } @else {
-                    Élément supprimé
+                    {{ 'Élément supprimé' | t }}
                   }
                 </h2>
               </div>
               @if (!a.estVisible) {
-                <span
-                  class="badge badge--annulee"
-                  title="Masqué par la modération : il n'apparaît plus sur la fiche"
-                  >Masqué</span
-                >
+                <span class="badge badge--annulee" [title]="textes.masque | t">{{
+                  'Masqué' | t
+                }}</span>
               } @else if (a.estModere) {
-                <span class="badge badge--confirmee">Publié · validé</span>
+                <span class="badge badge--confirmee">{{ 'Publié · validé' | t }}</span>
               } @else {
-                <span class="badge">Publié</span>
+                <span class="badge">{{ 'Publié' | t }}</span>
               }
             </div>
 
@@ -88,7 +94,7 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
                   <small class="field-error" role="alert">{{ erreurs()['note'] }}</small>
                 }
                 <label class="field">
-                  <span>Commentaire (facultatif)</span>
+                  <span>{{ 'Commentaire (facultatif)' | t }}</span>
                   <textarea
                     name="commentaire"
                     [(ngModel)]="commentaire"
@@ -101,10 +107,10 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
                 </label>
                 <div class="row">
                   <button type="submit" class="btn btn--sm" [disabled]="envoi() || note < 1">
-                    Enregistrer
+                    {{ 'Enregistrer' | t }}
                   </button>
                   <button type="button" class="btn btn--sm btn--ghost" (click)="edition.set(null)">
-                    Annuler
+                    {{ 'Annuler' | t }}
                   </button>
                 </div>
               </form>
@@ -114,13 +120,15 @@ const TYPES: Record<TypeCible, string> = { salle: 'Salle', coach: 'Coach', seanc
                 <p class="comment">{{ a.commentaire }}</p>
               }
               <div class="row row--between">
-                <span class="muted">Le {{ a.date | date: 'd MMMM y' }}</span>
+                <span class="muted">{{
+                  'Le {date}' | t: { date: a.date | dateL: 'd MMMM y' }
+                }}</span>
                 <div class="row">
                   <button type="button" class="btn btn--sm btn--ghost" (click)="modifier(a)">
-                    Modifier
+                    {{ 'Modifier' | t }}
                   </button>
                   <button type="button" class="btn btn--sm btn--ghost" (click)="supprimer(a)">
-                    Supprimer
+                    {{ 'Supprimer' | t }}
                   </button>
                 </div>
               </div>
@@ -159,8 +167,14 @@ export class MesAvisComponent {
   private readonly compte = inject(CompteService);
   private readonly confirm = inject(ConfirmService);
   private readonly toasts = inject(ToastService);
+  private readonly langue = inject(LangueService);
 
   readonly chemins = CHEMINS;
+  /** Textes contenant une apostrophe, impossibles à écrire dans un attribut lié du gabarit. */
+  readonly textes = {
+    aucunAvis: "Vous n'avez pas encore donné d'avis",
+    masque: "Masqué par la modération : il n'apparaît plus sur la fiche",
+  };
   readonly types = TYPES;
   readonly avis = signal<Avis[]>([]);
   readonly chargement = signal(true);
@@ -188,31 +202,33 @@ export class MesAvisComponent {
         this.avis.update((liste) => liste.map((a) => (a.id === modifie.id ? modifie : a)));
         this.edition.set(null);
         this.envoi.set(false);
-        this.toasts.succes('Avis modifié.');
+        this.toasts.succes(this.langue.t('Avis modifié.'));
       },
       error: (error: unknown) => {
         this.erreurs.set(erreursChamps(error));
         this.envoi.set(false);
-        this.toasts.erreur(messageErreur(error, 'L’avis n’a pas pu être modifié.'));
+        this.toasts.erreur(messageErreur(error, this.langue.t('L’avis n’a pas pu être modifié.')));
       },
     });
   }
 
   async supprimer(avis: Avis): Promise<void> {
     const ok = await this.confirm.demander({
-      titre: 'Supprimer cet avis ?',
-      message: 'Il disparaîtra de la fiche et ne comptera plus dans la note moyenne.',
-      confirmer: 'Supprimer',
+      titre: this.langue.t('Supprimer cet avis ?'),
+      message: this.langue.t(
+        'Il disparaîtra de la fiche et ne comptera plus dans la note moyenne.',
+      ),
+      confirmer: this.langue.t('Supprimer'),
       danger: true,
     });
     if (!ok) return;
     this.compte.supprimerAvis(avis.id).subscribe({
       next: () => {
         this.avis.update((liste) => liste.filter((a) => a.id !== avis.id));
-        this.toasts.succes('Avis supprimé.');
+        this.toasts.succes(this.langue.t('Avis supprimé.'));
       },
       error: (error: unknown) =>
-        this.toasts.erreur(messageErreur(error, 'L’avis n’a pas pu être supprimé.')),
+        this.toasts.erreur(messageErreur(error, this.langue.t('L’avis n’a pas pu être supprimé.'))),
     });
   }
 
@@ -223,7 +239,9 @@ export class MesAvisComponent {
         this.chargement.set(false);
       },
       error: (error: unknown) => {
-        this.toasts.erreur(messageErreur(error, 'Vos avis n’ont pas pu être chargés.'));
+        this.toasts.erreur(
+          messageErreur(error, this.langue.t('Vos avis n’ont pas pu être chargés.')),
+        );
         this.chargement.set(false);
       },
     });

@@ -1,4 +1,5 @@
 import { HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { traduire } from './i18n/langue.service';
 import { ApiErreur } from './models';
 
 // Relatif : passe par le proxy du serveur Angular (proxy.conf.json → Symfony), ce qui garde
@@ -30,16 +31,19 @@ export function serveurInjoignable(error: unknown): boolean {
 export const MESSAGE_INJOIGNABLE =
   'Le serveur FitBook est injoignable. Vérifiez votre connexion ; en développement, vérifiez que l’API est démarrée (symfony serve).';
 
-/** Message lisible d'une erreur HTTP, pour un toast ou un bandeau. */
+/**
+ * Message lisible d'une erreur HTTP, pour un toast ou un bandeau. Les messages de l'API sont
+ * déjà dans la langue demandée (Accept-Language) ; les messages du front sont traduits ici.
+ */
 export function messageErreur(
   error: unknown,
   defaut = 'Une erreur est survenue. Réessayez.',
 ): string {
-  if (!(error instanceof HttpErrorResponse)) return defaut;
-  if (serveurInjoignable(error)) return MESSAGE_INJOIGNABLE;
+  if (!(error instanceof HttpErrorResponse)) return traduire(defaut);
+  if (serveurInjoignable(error)) return traduire(MESSAGE_INJOIGNABLE);
   const body = error.error as ApiErreur | null;
   if (body?.errors && Object.keys(body.errors).length > 0) return Object.values(body.errors)[0];
-  return typeof body?.message === 'string' && body.message ? body.message : defaut;
+  return typeof body?.message === 'string' && body.message ? body.message : traduire(defaut);
 }
 
 /** Erreurs de validation 422 par champ ({} si la réponse n'en contient pas). */

@@ -16,6 +16,7 @@ use App\Repository\SessionRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Réservation et annulation (RG-03 à RG-05, RG-12).
@@ -51,25 +52,37 @@ final class ReservationService
         private readonly SessionRepository $sessions,
         private readonly FitBookMailer $mailer,
         private readonly LoggerInterface $logger,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
     public function reserve(User $user, int $sessionId): Reservation
     {
+        // Séance d'un coach bloqué : retirée du catalogue, donc indisponible.
+        $session = $this->sessions->find($sessionId);
+        if ($session !== null && !$session->hasAvailableCoach()) {
+            $this->failOn(2, self::RESERVE_ERRORS);
+        }
+
         if ($this->reservations->supportsStoredProcedures()) {
             ['code' => $code, 'reservationId' => $id] = $this->reservations->callReserveProcedure((int) $user->getId(), $sessionId);
             $this->failOn($code, self::RESERVE_ERRORS);
             $reservation = $this->reservations->find($id);
-            // La procédure a écrit directement en base : on recharge l'état à jour.
-            $this->em->refresh($reservation);
         } else {
             $reservation = $this->reserveWithDoctrine($user, $sessionId);
         }
 
-        // Jeton du QR code présenté à l'accueil (bonus) : aléatoire, non devinable.
-        $reservation->setQrToken(bin2hex(random_bytes(16)));
-        $this->inApp($reservation->getUser(), 'reservation_confirmee', sprintf('Réservation confirmée : %s.', $this->label($reservation)));
-        $this->em->flush();
+        // La place est prise (transaction validée) : la suite ne doit plus faire échouer la requête.
+        $this->assignQrToken($reservation);
+        try {
+            $this->inApp($reservation, 'reservation_confirmee', 'Réservation confirmée : {session}.');
+            $this->em->flush();
+        } catch (\Throwable $exception) {
+            $this->logger->error('Réservation enregistrée, mais échec de la notification interne.', [
+                'reservation' => $reservation->getId(),
+                'exception_class' => $exception::class,
+            ]);
+        }
 
         $this->notify(fn () => $this->mailer->sendReservationConfirmation($reservation), 'confirmation de réservation');
 
@@ -86,7 +99,7 @@ final class ReservationService
             $this->failOn($this->cancelWithDoctrine($user, $reservation), self::CANCEL_ERRORS);
         }
 
-        $this->inApp($reservation->getUser(), 'reservation_annulee', sprintf('Réservation annulée : %s.', $this->label($reservation)));
+        $this->inApp($reservation, 'reservation_annulee', 'Réservation annulée : {session}.');
         $this->em->flush();
         $this->notify(fn () => $this->mailer->sendReservationCancellation($reservation), 'annulation de réservation');
 
@@ -101,7 +114,7 @@ final class ReservationService
         }
 
         $reservation->setStatus(ReservationStatus::Annulee)->setCancelledAt(new \DateTimeImmutable());
-        $this->inApp($reservation->getUser(), 'reservation_annulee', sprintf('Votre réservation « %s » a été annulée par l’équipe FitBook.', $this->label($reservation)));
+        $this->inApp($reservation, 'reservation_annulee', 'Votre réservation « {session} » a été annulée par l’équipe FitBook.');
         $this->em->flush();
         $this->notify(fn () => $this->mailer->sendReservationCancellation($reservation), 'annulation de réservation');
 
@@ -116,21 +129,34 @@ final class ReservationService
      */
     public function cancelSession(Session $session): int
     {
-        if ($session->getStatus() === SessionStatus::Annulee) {
-            throw ApiException::conflict('Cette séance est déjà annulée.');
-        }
+        // Séance verrouillée (même verrou que sp_reserver_seance) avant de lire les réservations :
+        // une réservation simultanée attend, puis trouve la séance annulée.
+        $this->em->beginTransaction();
+        try {
+            $this->em->refresh($session, LockMode::PESSIMISTIC_WRITE);
+            $now = new \DateTimeImmutable();
+            if ($session->getStatus() === SessionStatus::Annulee) {
+                throw ApiException::conflict('Cette séance est déjà annulée.');
+            }
+            if ($session->getStartAt() <= $now) {
+                throw ApiException::conflict('Cette séance a déjà commencé : elle ne peut plus être annulée.');
+            }
 
-        $now = new \DateTimeImmutable();
-        $session->setStatus(SessionStatus::Annulee);
-        $cancelled = [];
-        foreach ($session->getReservations() as $reservation) {
-            if ($reservation->getStatus() === ReservationStatus::Confirmee) {
+            $session->setStatus(SessionStatus::Annulee);
+            $cancelled = [];
+            foreach ($this->reservations->findBy(['session' => $session, 'status' => ReservationStatus::Confirmee]) as $reservation) {
                 $reservation->setStatus(ReservationStatus::Annulee)->setCancelledAt($now);
-                $this->inApp($reservation->getUser(), 'seance_annulee', sprintf('La séance « %s » a été annulée par l’organisateur.', $this->label($reservation)));
+                $this->inApp($reservation, 'seance_annulee', 'La séance « {session} » a été annulée par l’organisateur.');
                 $cancelled[] = $reservation;
             }
+            $this->em->flush();
+            $this->em->commit();
+        } catch (\Throwable $exception) {
+            if ($this->em->getConnection()->isTransactionActive()) {
+                $this->em->rollback();
+            }
+            throw $exception;
         }
-        $this->em->flush();
 
         foreach ($cancelled as $reservation) {
             $this->notify(fn () => $this->mailer->sendSessionCancelled($reservation), 'annulation de séance');
@@ -165,7 +191,8 @@ final class ReservationService
 
             // Une seule ligne par couple (sportif, séance) : réactivée si elle était annulée.
             $reservation = $existing ?? (new Reservation())->setUser($user)->setSession($session);
-            $reservation->setStatus(ReservationStatus::Confirmee)->setCreatedAt(new \DateTimeImmutable())->setCancelledAt(null);
+            // Rappel remis à zéro : une réservation réactivée doit recevoir son rappel.
+            $reservation->setStatus(ReservationStatus::Confirmee)->setCreatedAt(new \DateTimeImmutable())->setCancelledAt(null)->setReminderSentAt(null);
             $this->em->persist($reservation);
             $this->em->flush();
             $this->em->commit();
@@ -201,6 +228,36 @@ final class ReservationService
 
     // -------------------------------------------------------------------------
 
+    /**
+     * Jeton du QR code présenté à l'accueil (bonus) : aléatoire, non devinable. Écrit par une
+     * requête directe, avec un nouvel essai (autre jeton) en cas d'échec ; s'il échoue encore,
+     * la réservation reste valable sans QR code et l'incident est journalisé. L'entité est
+     * ensuite relue en base (la procédure stockée y a aussi écrit directement).
+     */
+    private function assignQrToken(Reservation $reservation): void
+    {
+        for ($attempt = 1; $attempt <= 2; ++$attempt) {
+            try {
+                $this->reservations->storeQrToken((int) $reservation->getId(), bin2hex(random_bytes(16)));
+                break;
+            } catch (\Throwable $exception) {
+                $this->logger->error(sprintf('Réservation enregistrée, mais échec de l’enregistrement du jeton QR (essai %d).', $attempt), [
+                    'reservation' => $reservation->getId(),
+                    'exception_class' => $exception::class,
+                ]);
+            }
+        }
+
+        try {
+            $this->em->refresh($reservation);
+        } catch (\Throwable $exception) {
+            $this->logger->error('Réservation enregistrée, mais relecture impossible.', [
+                'reservation' => $reservation->getId(),
+                'exception_class' => $exception::class,
+            ]);
+        }
+    }
+
     /** @param array<int, array{0: int, 1: string}> $errors */
     private function failOn(int $code, array $errors): void
     {
@@ -212,21 +269,30 @@ final class ReservationService
         throw new ApiException($status, $message);
     }
 
-    /** Notification interne (bonus), enregistrée avec la prochaine écriture. */
-    private function inApp(?User $user, string $type, string $message): void
+    /**
+     * Notification interne (bonus), enregistrée avec la prochaine écriture. Le message est
+     * rédigé dans la langue du sportif (clé française, {session} remplacé par la séance).
+     */
+    private function inApp(Reservation $reservation, string $type, string $message): void
     {
+        $user = $reservation->getUser();
         if ($user === null) {
             return;
         }
-        $this->em->persist((new Notification())->setUser($user)->setType($type)->setMessage(mb_substr($message, 0, 255)));
+        $text = $this->translator->trans($message, ['{session}' => $this->label($reservation, $user->getLocale())], 'messages', $user->getLocale());
+        $this->em->persist((new Notification())->setUser($user)->setType($type)->setMessage(mb_substr($text, 0, 255)));
     }
 
-    private function label(Reservation $reservation): string
+    private function label(Reservation $reservation, string $locale): string
     {
         $session = $reservation->getSession();
         $start = $session?->getStartAt()?->setTimezone(new \DateTimeZone(CataloguePresenter::LOCAL_TIMEZONE));
 
-        return sprintf('%s du %s', $session?->getTitle() ?? 'séance', $start?->format('d/m/Y à H:i') ?? '');
+        return $this->translator->trans('{title} du {date} à {time}', [
+            '{title}' => $session?->getTitle() ?? $this->translator->trans('séance', [], 'messages', $locale),
+            '{date}' => $start?->format('d/m/Y') ?? '',
+            '{time}' => $start?->format('H:i') ?? '',
+        ], 'messages', $locale);
     }
 
     /** Un e-mail qui échoue ne doit jamais annuler l'opération déjà enregistrée. */

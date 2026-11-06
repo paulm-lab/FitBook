@@ -1,0 +1,175 @@
+# Messages de l'API, des e-mails et des notifications en anglais (UK).
+#
+# La clé est le message français lui-même : le français (langue par défaut) n'a donc pas de
+# fichier, et une clé absente ici renvoie simplement le texte français.
+# Les paramètres sont notés {nom} (même écriture dans la clé et dans la traduction).
+# Vocabulaire aligné sur le front : sportif → athlete, gestionnaire → gym manager,
+# séance → session, salle → gym, réservation → booking, avis → review, inscrits → attendees.
+
+# --- Erreurs génériques (ApiException, ApiExceptionListener, ApiRequest) ---------------------
+"Accès refusé.": "Access denied."
+"Authentification requise.": "Authentication required."
+"Certains champs sont invalides.": "Some fields are invalid."
+"Requête invalide.": "Invalid request."
+"Ressource introuvable.": "Resource not found."
+"Méthode non autorisée.": "Method not allowed."
+"La requête n’a pas pu aboutir.": "The request could not be completed."
+"Le corps de la requête doit être un objet JSON valide.": "The request body must be a valid JSON object."
+"Le corps de la requête doit être un JSON valide.": "The request body must be valid JSON."
+"Corps JSON invalide.": "Invalid JSON body."
+
+# --- Validation par JSON Schema (JsonSchemaValidator) ----------------------------------------
+"Ce champ doit être de type {type}.": "This field must be of type {type}."
+"Ce champ doit être supérieur ou égal à {min}.": "This field must be greater than or equal to {min}."
+"Ce champ doit valoir {value}.": "This field must be {value}."
+"Ce champ est obligatoire.": "This field is required."
+"Ce champ n’est pas accepté.": "This field is not allowed."
+"Le corps de la requête ne respecte pas le format attendu.": "The request body does not match the expected format."
+"nombre entier": "integer"
+"nombre": "number"
+"texte": "text"
+"booléen": "boolean"
+"objet": "object"
+"liste": "list"
+"ou": "or"
+
+# --- Connexion, inscription, mot de passe ----------------------------------------------------
+"Adresse e-mail ou mot de passe incorrect.": "Incorrect email address or password."
+"Trop de tentatives de connexion. Réessayez dans quelques minutes.": "Too many login attempts. Please try again in a few minutes."
+"Ce compte a été bloqué. Contactez l’administrateur.": "This account has been blocked. Please contact the administrator."
+"Trop de tentatives d’inscription. Réessayez plus tard.": "Too many sign-up attempts. Please try again later."
+"Le compte n’a pas pu être enregistré. Réessayez plus tard.": "The account could not be saved. Please try again later."
+"Compte créé avec succès. Vous pouvez maintenant vous connecter.": "Account created successfully. You can now log in."
+"Cette adresse e-mail est déjà utilisée.": "This email address is already in use."
+"Si un compte correspond à cette adresse, un lien de réinitialisation va lui être envoyé.": "If an account matches this address, a reset link will be sent to it."
+"Trop de demandes. Réessayez dans quelques minutes.": "Too many requests. Please try again in a few minutes."
+"Ce lien de réinitialisation est invalide ou a expiré. Faites une nouvelle demande.": "This reset link is invalid or has expired. Please make a new request."
+"Votre mot de passe a été modifié. Vous pouvez vous connecter.": "Your password has been changed. You can now log in."
+
+# --- Profil -----------------------------------------------------------------------------------
+"Le nom est obligatoire et limité à 50 caractères.": "Last name is required and limited to 50 characters."
+"Le prénom est obligatoire et limité à 50 caractères.": "First name is required and limited to 50 characters."
+"Saisissez un numéro valide de 7 à 20 caractères.": "Enter a valid number of 7 to 20 characters."
+"Choisissez une image (JPEG, PNG ou WebP).": "Choose an image (JPEG, PNG or WebP)."
+
+# --- Administration ---------------------------------------------------------------------------
+"Utilisateur introuvable.": "User not found."
+"Rôle attendu : sportif, coach, gestionnaire ou admin.": "Expected role: sportif, coach, gestionnaire or admin."
+"Vous ne pouvez pas retirer votre propre rôle administrateur.": "You cannot remove your own administrator role."
+"Ce compte gère des salles : confiez-les d’abord à un autre gestionnaire.": "This account manages gyms: hand them over to another gym manager first."
+"Ce coach anime des séances à venir : annulez-les ou confiez-les à un autre coach d’abord.": "This coach runs upcoming sessions: cancel them or hand them over to another coach first."
+"Valeur attendue : true ou false.": "Expected value: true or false."
+"Vous ne pouvez pas bloquer votre propre compte.": "You cannot block your own account."
+"Vous ne pouvez pas supprimer votre propre compte.": "You cannot delete your own account."
+"Ce coach anime des séances : bloquez plutôt son compte.": "This coach runs sessions: block their account instead."
+
+# --- Activités --------------------------------------------------------------------------------
+"Des séances utilisent cette activité : elle ne peut pas être supprimée.": "Sessions use this activity: it cannot be deleted."
+"Une activité porte déjà ce nom.": "An activity with this name already exists."
+"Activité introuvable.": "Activity not found."
+
+# --- Disponibilités et coachs -----------------------------------------------------------------
+"Précisez coachId ou salleId.": "Specify coachId or salleId."
+"Cette salle n’existe pas.": "This gym does not exist."
+"Créneau introuvable.": "Time slot not found."
+"Ce créneau ne vous appartient pas.": "This time slot does not belong to you."
+"Seuls les coachs déclarent leurs disponibilités (salleId pour une salle).": "Only coaches declare their availability (salleId for a gym)."
+"Coach introuvable.": "Coach not found."
+"Les dates du calendrier doivent être au format ISO 8601.": "Calendar dates must be in ISO 8601 format."
+"Espace réservé aux coachs.": "This area is reserved for coaches."
+
+# --- Favoris, avis, cibles --------------------------------------------------------------------
+"Déjà dans vos favoris.": "Already in your favourites."
+"Favori introuvable.": "Favourite not found."
+"Vous devez avoir participé à une séance pour donner un avis.": "You must have attended a session to leave a review."
+"Vous avez déjà donné votre avis : modifiez-le.": "You have already left a review: edit it instead."
+"Action attendue : valider, masquer ou afficher.": "Expected action: valider, masquer or afficher."
+"Avis introuvable.": "Review not found."
+"Type attendu : salle, coach ou seance.": "Expected type: salle, coach or seance."
+"L’identifiant de la cible est invalide.": "The target identifier is invalid."
+"Cible introuvable.": "Target not found."
+
+# --- Salles -----------------------------------------------------------------------------------
+"Cette salle a des séances : supprimez-les ou annulez-les d’abord.": "This gym has sessions: delete or cancel them first."
+"Choisissez le gestionnaire de la salle.": "Choose the gym manager."
+"Ce compte n’est pas un gestionnaire.": "This account is not a gym manager."
+"Salle introuvable.": "Gym not found."
+
+# --- Séances ----------------------------------------------------------------------------------
+"Le filtre date doit être au format YYYY-MM-DD.": "The date filter must be in YYYY-MM-DD format."
+"Séance introuvable.": "Session not found."
+"Seuls les coachs et les gestionnaires créent des séances.": "Only coaches and gym managers can create sessions."
+"Une séance annulée ne peut plus être modifiée.": "A cancelled session can no longer be edited."
+"{count} sportifs sont déjà inscrits : la capacité ne peut pas être inférieure.": "{count} athletes are already booked: the capacity cannot be lower."
+"Cette séance a déjà commencé : elle fait partie de l’historique et ne peut pas être supprimée.": "This session has already started: it is part of the history and cannot be deleted."
+"Des sportifs ont réservé cette séance : annulez-la plutôt pour les prévenir.": "Athletes have booked this session: cancel it instead so they are notified."
+"Cette séance a reçu des avis : annulez-la plutôt que de la supprimer.": "This session has received reviews: cancel it rather than delete it."
+"Cette activité n’existe pas.": "This activity does not exist."
+"Ce coach n’existe pas.": "This coach does not exist."
+"Complétez d’abord votre profil de coach.": "Complete your coach profile first."
+"Un coach crée ses séances sans salle : seul le gestionnaire d’une salle y programme des séances.": "Coaches create their sessions without a gym: only a gym's manager can schedule sessions there."
+"Seul le gestionnaire de la salle peut changer la salle de cette séance.": "Only the gym manager can change the gym of this session."
+"Choisissez une de vos salles.": "Choose one of your gyms."
+"Vous ne gérez pas cette salle.": "You do not manage this gym."
+"Une séance a lieu dans une salle et/ou avec un coach.": "A session takes place in a gym and/or with a coach."
+"Cette séance est déjà annulée.": "This session is already cancelled."
+"Cette séance a déjà commencé : elle ne peut plus être annulée.": "This session has already started: it can no longer be cancelled."
+
+# --- Réservations -----------------------------------------------------------------------------
+"Seuls les sportifs peuvent réserver une séance.": "Only athletes can book a session."
+"Réservation introuvable.": "Booking not found."
+"Cette séance n’est plus disponible.": "This session is no longer available."
+"Vous avez déjà réservé cette séance.": "You have already booked this session."
+"Il ne reste plus de place.": "There are no places left."
+"Cette réservation ne vous appartient pas.": "This booking does not belong to you."
+"Il est trop tard pour annuler : la séance commence dans moins de 2 heures.": "It is too late to cancel: the session starts in less than 2 hours."
+"Cette réservation est déjà annulée ou terminée.": "This booking is already cancelled or completed."
+"Résultat inattendu de la base de données.": "Unexpected database result."
+
+# --- Libellés calculés du catalogue (CataloguePresenter) -------------------------------------
+"Débutant": "Beginner"
+"Intermédiaire": "Intermediate"
+"Avancé": "Advanced"
+"Tous niveaux": "All levels"
+"{count} ans": "{1} {count} year|[0,Inf[ {count} years"
+
+# --- Notifications internes (rédigées dans la langue du sportif) ------------------------------
+"Réservation confirmée : {session}.": "Booking confirmed: {session}."
+"Réservation annulée : {session}.": "Booking cancelled: {session}."
+"Votre réservation « {session} » a été annulée par l’équipe FitBook.": "Your booking \"{session}\" has been cancelled by the FitBook team."
+"La séance « {session} » a été annulée par l’organisateur.": "The session \"{session}\" has been cancelled by the organiser."
+"Rappel : « {title} » commence bientôt.": "Reminder: \"{title}\" starts soon."
+"{title} du {date} à {time}": "{title} on {date} at {time}"
+"séance": "session"
+
+# --- E-mails (FitBookMailer, emails/message.html.twig) ---------------------------------------
+"Test e-mail FitBook": "FitBook test email"
+"Votre configuration e-mail fonctionne": "Your email configuration works"
+"Cet e-mail confirme que FitBook peut envoyer des messages.": "This email confirms that FitBook can send messages."
+"Bienvenue sur FitBook": "Welcome to FitBook"
+"Bienvenue chez FitBook": "Welcome to FitBook"
+"Bonjour {name}, votre compte est créé et vous pouvez dès maintenant vous connecter pour découvrir les séances disponibles.": "Hello {name}, your account has been created and you can now log in to discover the available sessions."
+"Réinitialisation de votre mot de passe FitBook": "Reset your FitBook password"
+"Choisissez un nouveau mot de passe": "Choose a new password"
+"Bonjour {name}, une réinitialisation de votre mot de passe a été demandée. Ce lien est valable 1 heure et ne peut servir qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe actuel reste valable.": "Hello {name}, a password reset has been requested for your account. This link is valid for 1 hour and can only be used once. If you did not make this request, ignore this email: your current password remains valid."
+"Réinitialiser mon mot de passe": "Reset my password"
+"Réservation confirmée sur FitBook": "Booking confirmed on FitBook"
+"Votre réservation est confirmée": "Your booking is confirmed"
+"Votre réservation FitBook a bien été enregistrée.": "Your FitBook booking has been recorded."
+"Annulation de votre réservation FitBook": "Your FitBook booking has been cancelled"
+"Votre réservation est annulée": "Your booking is cancelled"
+"Votre réservation FitBook a été annulée.": "Your FitBook booking has been cancelled."
+"Séance annulée sur FitBook": "Session cancelled on FitBook"
+"Votre séance est annulée": "Your session is cancelled"
+"L’organisateur a annulé cette séance. Votre réservation est annulée et aucun montant ne vous sera demandé. Découvrez les autres séances disponibles sur FitBook.": "The organiser has cancelled this session. Your booking is cancelled and you will not be charged. Discover the other sessions available on FitBook."
+"Rappel : votre séance FitBook a lieu demain": "Reminder: your FitBook session is tomorrow"
+"C’est bientôt l’heure de votre séance": "Your session is coming up soon"
+"Votre séance approche. Pensez à votre tenue et présentez le QR code de votre réservation à l’accueil.": "Your session is approaching. Remember your kit and show your booking QR code at reception."
+"Séance": "Session"
+"Date": "Date"
+"Horaire": "Time"
+"Lieu": "Location"
+"Prix": "Price"
+"À préciser par le coach": "To be confirmed by the coach"
+"Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet e-mail.": "If you did not make this request, you can ignore this email."
+"Bougez plus. Vivez mieux.": "Move more. Live better."

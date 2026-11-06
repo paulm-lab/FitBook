@@ -1,8 +1,9 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, effect, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { NIVEAUX, Reservation } from '../../../core/models';
 import { CompteService } from '../../../core/services/compte.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -12,12 +13,14 @@ import { STATUTS, annulerAvecConfirmation } from '../reservations/reservations';
 /** Détail d'une réservation avec son QR code à présenter à l'accueil (bonus US-S09). */
 @Component({
   selector: 'app-reservation-detail',
-  imports: [RouterLink, DatePipe, DecimalPipe, QRCodeComponent, LoaderComponent],
+  imports: [RouterLink, QRCodeComponent, LoaderComponent, ...I18N],
   template: `
     <header class="page-header no-print">
       <div>
-        <a class="text-link" routerLink="/mon-espace/reservations">← Mes réservations</a>
-        <h1>Ma réservation</h1>
+        <a class="text-link" routerLink="/mon-espace/reservations">{{
+          '← Mes réservations' | t
+        }}</a>
+        <h1>{{ 'Ma réservation' | t }}</h1>
       </div>
     </header>
 
@@ -30,77 +33,96 @@ import { STATUTS, annulerAvecConfirmation } from '../reservations/reservations';
       <div class="detail">
         <section class="panel">
           <div class="row row--between">
-            <span class="badge badge--{{ r.statut }}">{{ statuts[r.statut] }}</span>
-            <span class="muted"
-              >Réservation n° {{ r.id }} · le {{ r.dateReservation | date: 'd MMM y' }}</span
-            >
+            <span class="badge badge--{{ r.statut }}">{{ statuts[r.statut] | t }}</span>
+            <span class="muted">{{
+              'Réservation n° {id} · le {date}'
+                | t: { id: r.id, date: r.dateReservation | dateL: 'd MMM y' }
+            }}</span>
           </div>
           @if (s) {
             <h2>{{ s.titre }}</h2>
             <dl class="infos">
               <div>
-                <dt>Date</dt>
-                <dd>{{ s.dateDebut | date: 'EEEE d MMMM y' }}</dd>
+                <dt>{{ 'Date' | t }}</dt>
+                <dd>{{ s.dateDebut | dateL: 'EEEE d MMMM y' }}</dd>
               </div>
               <div>
-                <dt>Horaire</dt>
-                <dd>{{ s.dateDebut | date: 'HH:mm' }} – {{ s.dateFin | date: 'HH:mm' }}</dd>
+                <dt>{{ 'Horaire' | t }}</dt>
+                <dd>{{ s.dateDebut | dateL: 'HH:mm' }} – {{ s.dateFin | dateL: 'HH:mm' }}</dd>
               </div>
               <div>
-                <dt>Activité</dt>
-                <dd>{{ s.activite?.nom }} · {{ niveaux[s.niveau] }}</dd>
+                <dt>{{ 'Activité' | t }}</dt>
+                <dd>{{ s.activite?.nom }} · {{ niveaux[s.niveau] | t }}</dd>
               </div>
               <div>
-                <dt>Lieu</dt>
+                <dt>{{ 'Lieu' | t }}</dt>
                 <dd>
-                  {{ s.salle ? s.salle.nom + ', ' + s.salle.adresse : 'Précisé par le coach' }}
+                  {{
+                    s.salle ? s.salle.nom + ', ' + s.salle.adresse : ('Précisé par le coach' | t)
+                  }}
                 </dd>
               </div>
               @if (s.coach) {
                 <div>
-                  <dt>Coach</dt>
+                  <dt>{{ 'Coach' | t }}</dt>
                   <dd>{{ s.coach.prenom }} {{ s.coach.nom }}</dd>
                 </div>
               }
               <div>
-                <dt>Prix</dt>
+                <dt>{{ 'Prix' | t }}</dt>
                 <dd>
                   {{
-                    +s.prix === 0 ? 'Gratuit' : (s.prix | number: '1.2-2') + ' € (réglé sur place)'
+                    +s.prix === 0
+                      ? ('Gratuit' | t)
+                      : ('{prix} € (réglé sur place)' | t: { prix: s.prix | nombreL: '1.2-2' })
                   }}
                 </dd>
               </div>
             </dl>
-            <a class="text-link no-print" [routerLink]="['/seances', s.id]"
-              >Voir la fiche de la séance →</a
-            >
+            <!-- Séance terminée : la fiche reste accessible au participant pour donner son avis. -->
+            @if (finie(r)) {
+              <a
+                class="text-link no-print"
+                [routerLink]="['/seances', s.id]"
+                fragment="avis-titre"
+                >{{ 'Donner mon avis sur la séance →' | t }}</a
+              >
+            } @else {
+              <a class="text-link no-print" [routerLink]="['/seances', s.id]">{{
+                'Voir la fiche de la séance →' | t
+              }}</a>
+            }
           }
           @if (r.dateAnnulation) {
-            <p class="muted">Annulée le {{ r.dateAnnulation | date: 'd MMM y à HH:mm' }}.</p>
+            <p class="muted">
+              {{ 'Annulée le {date}.' | t: { date: r.dateAnnulation | dateL: dateHeure() } }}
+            </p>
           }
           <div class="row no-print actions">
             @if (r.annulable) {
               <button type="button" class="btn btn--danger" (click)="annuler(r)">
-                Annuler la réservation
+                {{ 'Annuler la réservation' | t }}
               </button>
             } @else if (r.statut === 'confirmee') {
-              <p class="muted">L'annulation n'est plus possible à moins de 2 heures du début.</p>
+              <p class="muted">
+                {{ textes.tropTard | t }}
+              </p>
             }
           </div>
         </section>
 
         @if (r.statut === 'confirmee' && r.qrToken) {
           <section class="panel qr" aria-labelledby="qr-title">
-            <h2 id="qr-title">QR code d'accès</h2>
-            <p class="muted">Présentez ce code à l'accueil le jour de la séance.</p>
+            <h2 id="qr-title">{{ textes.qrTitre | t }}</h2>
+            <p class="muted">{{ textes.qrAide | t }}</p>
             <qrcode
               [qrdata]="'FITBOOK:' + r.qrToken"
               [width]="220"
               [errorCorrectionLevel]="'M'"
-              [ariaLabel]="'QR code de la réservation ' + r.id"
+              [ariaLabel]="'QR code de la réservation {id}' | t: { id: r.id }"
             />
             <button type="button" class="btn btn--ghost no-print" (click)="imprimer()">
-              Imprimer
+              {{ 'Imprimer' | t }}
             </button>
           </section>
         }
@@ -175,8 +197,15 @@ export class ReservationDetailComponent {
   private readonly compte = inject(CompteService);
   private readonly confirm = inject(ConfirmService);
   private readonly toasts = inject(ToastService);
+  private readonly langue = inject(LangueService);
 
   readonly statuts = STATUTS;
+  /** Textes contenant une apostrophe, tenus hors du gabarit (guillemets du parseur Angular). */
+  readonly textes = {
+    tropTard: "L'annulation n'est plus possible à moins de 2 heures du début.",
+    qrTitre: "QR code d'accès",
+    qrAide: "Présentez ce code à l'accueil le jour de la séance.",
+  };
   readonly niveaux = NIVEAUX;
   readonly reservation = signal<Reservation | null>(null);
   readonly chargement = signal(true);
@@ -187,9 +216,27 @@ export class ReservationDetailComponent {
   }
 
   annuler(reservation: Reservation): void {
-    void annulerAvecConfirmation(reservation, this.confirm, this.compte, this.toasts, (r) =>
-      this.reservation.set(r),
+    void annulerAvecConfirmation(
+      reservation,
+      this.confirm,
+      this.compte,
+      this.toasts,
+      this.langue,
+      (r) => this.reservation.set(r),
     );
+  }
+
+  /** Participation terminée (statut « terminée » ou séance finie, le statut suit par tâche planifiée). */
+  finie(r: Reservation): boolean {
+    return (
+      r.statut === 'terminee' ||
+      (r.statut === 'confirmee' && !!r.seance && new Date(r.seance.dateFin) <= new Date())
+    );
+  }
+
+  /** Format date + heure dans la langue courante (« à » / « at »). */
+  dateHeure(): string {
+    return this.langue.langue() === 'en' ? "d MMM y 'at' HH:mm" : "d MMM y 'à' HH:mm";
   }
 
   imprimer(): void {
@@ -204,7 +251,7 @@ export class ReservationDetailComponent {
         this.chargement.set(false);
       },
       error: (error: unknown) => {
-        this.erreur.set(messageErreur(error, 'Cette réservation est introuvable.'));
+        this.erreur.set(messageErreur(error, this.langue.t('Cette réservation est introuvable.')));
         this.chargement.set(false);
       },
     });

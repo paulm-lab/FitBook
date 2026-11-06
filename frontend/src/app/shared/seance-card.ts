@@ -1,6 +1,6 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { I18N } from '../core/i18n/pipes';
 import { NIVEAUX, SeanceResume } from '../core/models';
 import { FavoriButtonComponent } from './favori-button';
 import { EtoilesComponent, ImageSecoursDirective } from './ui';
@@ -8,14 +8,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
 /** Carte d'une séance dans les listes (recherche, fiches salle et coach). */
 @Component({
   selector: 'app-seance-card',
-  imports: [
-    RouterLink,
-    DatePipe,
-    DecimalPipe,
-    FavoriButtonComponent,
-    EtoilesComponent,
-    ImageSecoursDirective,
-  ],
+  imports: [RouterLink, ...I18N, FavoriButtonComponent, EtoilesComponent, ImageSecoursDirective],
   template: `
     @let s = seance();
     <article class="card card--link">
@@ -27,7 +20,7 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
           decoding="async"
           appSecours
         />
-        <span class="badge badge--level">{{ niveau() }}</span>
+        <span class="badge badge--level">{{ niveau() | t }}</span>
       </a>
       <div class="card-body">
         <div class="card-top">
@@ -38,16 +31,18 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
           <a [routerLink]="['/seances', s.id]">{{ s.titre }}</a>
         </h3>
         <p class="card-meta">
-          <time [attr.datetime]="s.dateDebut">{{ s.dateDebut | date: 'EEEE d MMMM · HH:mm' }}</time>
-          – {{ s.dateFin | date: 'HH:mm' }}
+          <time [attr.datetime]="s.dateDebut">{{
+            s.dateDebut | dateL: 'EEEE d MMMM · HH:mm'
+          }}</time>
+          – {{ s.dateFin | dateL: 'HH:mm' }}
         </p>
         <p class="card-meta">
-          {{ s.salle?.nom ?? 'Lieu précisé par le coach' }}
+          {{ s.salle?.nom ?? ('Lieu précisé par le coach' | t) }}
           @if (s.coach) {
             · {{ s.coach.prenom }} {{ s.coach.nom }}
           }
           @if (s.distanceKm != null) {
-            · {{ s.distanceKm | number: '1.1-1' }} km
+            · {{ s.distanceKm | nombreL: '1.1-1' }} km
           }
         </p>
         @if (s.noteMoyenne !== undefined) {
@@ -55,14 +50,14 @@ import { EtoilesComponent, ImageSecoursDirective } from './ui';
         }
         <div class="card-footer">
           <strong class="price">{{
-            +s.prix === 0 ? 'Gratuit' : (s.prix | number: '1.2-2') + ' €'
+            +s.prix === 0 ? ('Gratuit' | t) : (s.prix | nombreL: '1.2-2') + ' €'
           }}</strong>
           @if (complet()) {
-            <span class="badge badge--full">Complet</span>
+            <span class="badge badge--full">{{ 'Complet' | t }}</span>
           } @else {
-            <span class="badge badge--ok"
-              >{{ s.placesDisponibles }} place{{ s.placesDisponibles > 1 ? 's' : '' }}</span
-            >
+            <span class="badge badge--ok">{{
+              (s.placesDisponibles > 1 ? '{n} places' : '{n} place') | t: { n: s.placesDisponibles }
+            }}</span>
           }
         </div>
       </div>

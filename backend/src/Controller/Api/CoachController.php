@@ -63,7 +63,7 @@ final class CoachController extends AbstractController
     {
         $coach = $this->coaches->find($id);
         $user = $coach?->getUser();
-        if (!$coach || !$user?->isVerified() || $user->isBlocked()) {
+        if (!$coach || !$user?->isVerified() || $user->isBlocked() || !$user->hasRole(User::ROLE_COACH)) {
             throw ApiException::notFound('Coach introuvable.');
         }
 
@@ -206,6 +206,11 @@ final class CoachController extends AbstractController
         $user = $this->getUser();
         if (!$user instanceof User) {
             throw new ApiException(401, 'Authentification requise.');
+        }
+        // Rôle stocké, pas la hiérarchie : un administrateur ne devient pas coach public
+        // (un profil serait créé et publié à son nom).
+        if (!$user->hasRole(User::ROLE_COACH)) {
+            throw ApiException::forbidden('Espace réservé aux coachs.');
         }
         if ($user->getCoachProfile() === null) {
             $user->setCoachProfile(new CoachProfile());

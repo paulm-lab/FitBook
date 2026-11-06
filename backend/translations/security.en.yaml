@@ -1,0 +1,4 @@
+# Messages de LexikJWTAuthenticationBundle en anglais : indispensable, sinon le repli
+# (fallbacks: [fr]) renverrait la version française de security.fr.yaml.
+"Invalid JWT Token": "Invalid authentication token. Please log in again."
+"Expired JWT Token": "Your session has expired. Please log in again."

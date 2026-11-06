@@ -15,15 +15,16 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\BrowserKit\Cookie;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\RawMessage;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use SymfonyCasts\Bundle\VerifyEmail\VerifyEmailHelperInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Authentification (Phase 3) : inscription avec rôle, confirmation de l'adresse (VerifyEmailBundle),
+ * Authentification (Phase 3) : inscription avec rôle (compte actif immédiatement),
  * connexion JWT (en-tête et cookie), limitation des tentatives, mot de passe oublié.
  */
 final class AuthenticationTest extends WebTestCase
@@ -36,7 +37,7 @@ final class AuthenticationTest extends WebTestCase
     // Inscription
     // -------------------------------------------------------------------------
 
-    public function testRegistrationPersistsAnUnverifiedSportifWithHashedPassword(): void
+    public function testRegistrationPersistsAnActiveSportifWithHashedPassword(): void
     {
         $client = $this->clientWithSchema();
 
@@ -46,17 +47,33 @@ final class AuthenticationTest extends WebTestCase
         $response = $this->json($client);
         self::assertSame('camille@example.test', $response['email']);
         self::assertSame('sportif', $response['role']);
-        self::assertSame('queued', $response['verificationEmailStatus']);
-        self::assertStringContainsString("en file d'attente", $response['message']);
+        self::assertSame('Compte créé avec succès. Vous pouvez maintenant vous connecter.', $response['message']);
+        self::assertArrayNotHasKey('verificationEmailStatus', $response);
 
         $user = $this->findUser('camille@example.test');
         self::assertSame('Camille', $user->getFirstName());
         self::assertSame('+33123456789', $user->getPhone());
         self::assertSame([User::ROLE_SPORTIF], $user->getRoles());
-        self::assertFalse($user->isVerified());
+        self::assertTrue($user->isVerified());
         self::assertNotSame(self::PASSWORD, $user->getPassword());
+        self::assertTrue(static::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, self::PASSWORD));
         self::assertQueuedEmailCount(1);
-        self::assertStringContainsString('signature=', $this->linkFromEmail('verify-email'));
+    }
+
+    public function testNewAccountCanLogInImmediatelyAndReachItsProfile(): void
+    {
+        $client = $this->clientWithSchema();
+        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
+        self::assertResponseStatusCodeSame(201);
+
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertResponseIsSuccessful();
+        $token = $this->json($client)['token'];
+
+        $client->setServerParameter('HTTP_AUTHORIZATION', 'Bearer ' . $token);
+        $client->request('GET', '/api/me');
+        self::assertResponseIsSuccessful();
+        self::assertSame('camille@example.test', $this->json($client)['email']);
     }
 
     public function testCoachRegistrationCreatesAnEmptyCoachProfile(): void
@@ -85,22 +102,7 @@ final class AuthenticationTest extends WebTestCase
         self::assertNull($this->findUser('pirate@example.test'));
     }
 
-    public function testRegistrationReportsAnEmailAcceptedSynchronouslyAsSent(): void
-    {
-        $client = $this->clientWithSchema();
-        $this->useMailer(new class implements MailerInterface {
-            public function send(RawMessage $message, ?Envelope $envelope = null): void
-            {
-            }
-        });
-
-        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
-
-        self::assertResponseStatusCodeSame(201);
-        self::assertSame('sent', $this->json($client)['verificationEmailStatus']);
-    }
-
-    public function testSmtpFailureStillCreatesTheAccountAndAllowsAResend(): void
+    public function testSmtpFailureDoesNotPreventRegistrationNorLogin(): void
     {
         $client = $this->clientWithSchema();
         $this->useMailer(new class implements MailerInterface {
@@ -111,15 +113,10 @@ final class AuthenticationTest extends WebTestCase
         });
 
         $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
-
         self::assertResponseStatusCodeSame(201);
-        $response = $this->json($client);
-        self::assertSame('failed', $response['verificationEmailStatus']);
-        self::assertFalse($response['verificationEmailQueued']);
-        self::assertFalse($this->findUser('camille@example.test')->isVerified());
 
-        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
-        self::assertResponseStatusCodeSame(503);
+        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
+        self::assertResponseIsSuccessful();
     }
 
     public function testRegistrationNormalizesEmailAndRejectsDuplicates(): void
@@ -155,59 +152,6 @@ final class AuthenticationTest extends WebTestCase
         $client->request('POST', '/api/inscription', server: ['CONTENT_TYPE' => 'application/json'], content: '{pas du json');
 
         self::assertResponseStatusCodeSame(400);
-    }
-
-    // -------------------------------------------------------------------------
-    // Confirmation de l'adresse e-mail (VerifyEmailBundle)
-    // -------------------------------------------------------------------------
-
-    public function testSignedLinkFromTheEmailActivatesTheAccount(): void
-    {
-        $client = $this->clientWithSchema();
-        $client->jsonRequest('POST', '/api/inscription', $this->registrationData());
-
-        $client->request('GET', $this->linkFromEmail('verify-email'));
-
-        self::assertResponseRedirects('http://localhost:4200/verification-email?status=success');
-        self::assertTrue($this->findUser('camille@example.test')->isVerified());
-
-        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
-        self::assertResponseIsSuccessful();
-    }
-
-    public function testTamperedLinkOrLinkForAnotherAddressIsRejected(): void
-    {
-        $client = $this->clientWithSchema();
-        $user = $this->createUser(verified: false);
-        $helper = static::getContainer()->get(VerifyEmailHelperInterface::class);
-        $link = $helper->generateSignature('api_auth_verify_email', (string) $user->getId(), (string) $user->getEmail(), ['id' => $user->getId()])->getSignedUrl();
-
-        // Lien modifié : la signature ne correspond plus.
-        $client->request('GET', str_replace('id=' . $user->getId(), 'id=999', $link));
-        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
-
-        // Adresse changée après l'envoi : l'ancien lien n'est plus valable.
-        $user = $this->findUser('camille@example.test')->setEmail('nouvelle@example.test');
-        $this->entityManager()->flush();
-        $client->request('GET', $link);
-        self::assertResponseRedirects('http://localhost:4200/verification-email?status=error');
-
-        self::assertFalse($this->findUser('nouvelle@example.test')->isVerified());
-    }
-
-    public function testResendVerificationQueuesANewLinkOnlyForUnverifiedAccounts(): void
-    {
-        $client = $this->clientWithSchema();
-        $this->createUser(verified: false);
-
-        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'camille@example.test']);
-        self::assertResponseIsSuccessful();
-        self::assertQueuedEmailCount(1);
-
-        // Adresse inconnue : même réponse, aucun e-mail (pas d'énumération).
-        $client->jsonRequest('POST', '/api/auth/resend-verification', ['email' => 'inconnu@example.test']);
-        self::assertResponseIsSuccessful();
-        self::assertQueuedEmailCount(0);
     }
 
     // -------------------------------------------------------------------------
@@ -273,17 +217,24 @@ final class AuthenticationTest extends WebTestCase
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testUnverifiedOrBlockedAccountCannotLogIn(): void
+    public function testRejectedCookieIsClearedByThe401Response(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser(verified: false);
 
-        $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
-        self::assertResponseStatusCodeSame(403);
-        self::assertSame('Confirmez votre adresse e-mail avant de vous connecter.', $this->json($client)['message']);
+        $client->getCookieJar()->set(new Cookie('BEARER', 'abc.def.ghi'));
+        $client->request('GET', '/api/activites');
 
-        $this->findUser('camille@example.test')->setIsVerified(true)->setIsBlocked(true);
-        $this->entityManager()->flush();
+        self::assertResponseStatusCodeSame(401);
+        $cookie = $client->getResponse()->headers->getCookies()[0] ?? null;
+        self::assertSame('BEARER', $cookie?->getName());
+        self::assertTrue($cookie->isCleared());
+    }
+
+    public function testBlockedAccountCannotLogIn(): void
+    {
+        $client = $this->clientWithSchema();
+        $this->createUser(verified: true, blocked: true);
+
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => self::PASSWORD]);
         self::assertResponseStatusCodeSame(403);
         self::assertStringContainsString('bloqué', $this->json($client)['message']);
@@ -304,7 +255,7 @@ final class AuthenticationTest extends WebTestCase
     public function testAccountStatusIsNotRevealedWithAWrongPassword(): void
     {
         $client = $this->clientWithSchema();
-        $this->createUser(verified: false);
+        $this->createUser(verified: true, blocked: true);
 
         $client->jsonRequest('POST', '/api/login', ['email' => 'camille@example.test', 'password' => 'Mauvais-mdp-1']);
 
@@ -396,7 +347,8 @@ final class AuthenticationTest extends WebTestCase
 
     private function clientWithSchema(): KernelBrowser
     {
-        $client = static::createClient();
+        // Request::create() annonce « Accept-Language: en-us » par défaut : le front envoie toujours la langue.
+        $client = static::createClient(server: ['HTTP_ACCEPT_LANGUAGE' => 'fr']);
         // La base SQLite en mémoire doit survivre entre les requêtes d'un même test.
         $client->disableReboot();
         $em = $this->entityManager();
@@ -408,7 +360,7 @@ final class AuthenticationTest extends WebTestCase
     private function useMailer(MailerInterface $mailer): void
     {
         $container = static::getContainer();
-        $container->set(FitBookMailer::class, new FitBookMailer($mailer, $container->get(MailQueueTracker::class), 'no-reply@fitbook.test'));
+        $container->set(FitBookMailer::class, new FitBookMailer($mailer, $container->get(MailQueueTracker::class), 'no-reply@fitbook.test', $container->get(TranslatorInterface::class)));
     }
 
     /**

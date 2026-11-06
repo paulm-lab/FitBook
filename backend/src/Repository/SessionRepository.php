@@ -8,6 +8,7 @@ use App\Dto\SearchCriteria;
 use App\Entity\CoachProfile;
 use App\Entity\Gym;
 use App\Entity\Reservation;
+use App\Entity\Review;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Enum\ReservationStatus;
@@ -37,7 +38,7 @@ class SessionRepository extends ServiceEntityRepository
      */
     public function findUpcoming(\DateTimeImmutable $now, ?string $activity = null, ?string $place = null, ?\DateTimeImmutable $day = null): array
     {
-        $query = $this->withRelations($this->createQueryBuilder('s'))
+        $query = $this->publicOnly($this->withRelations($this->createQueryBuilder('s')))
             ->andWhere('s.status = :active')->setParameter('active', SessionStatus::Active)
             ->andWhere('s.startAt > :now')->setParameter('now', $now)
             ->orderBy('s.startAt', 'ASC');
@@ -50,10 +51,11 @@ class SessionRepository extends ServiceEntityRepository
             $query->andWhere('LOWER(g.name) LIKE :place OR LOWER(g.address) LIKE :place OR LOWER(g.city) LIKE :place')
                 ->setParameter('place', self::like($place));
         }
+        // Jour local (fuseau de $day, Bruxelles) converti en bornes UTC, comme les dates stockées.
         if ($day !== null) {
             $query->andWhere('s.startAt >= :dayStart AND s.startAt < :dayEnd')
-                ->setParameter('dayStart', $day->setTime(0, 0))
-                ->setParameter('dayEnd', $day->setTime(0, 0)->modify('+1 day'));
+                ->setParameter('dayStart', self::utc($day->setTime(0, 0)))
+                ->setParameter('dayEnd', self::utc($day->setTime(0, 0)->modify('+1 day')));
         }
 
         return $query->getQuery()->getResult();
@@ -65,7 +67,7 @@ class SessionRepository extends ServiceEntityRepository
      */
     public function search(SearchCriteria $criteria, \DateTimeImmutable $now): QueryBuilder
     {
-        $query = $this->withRelations($this->createQueryBuilder('s'))
+        $query = $this->publicOnly($this->withRelations($this->createQueryBuilder('s')))
             ->andWhere('s.status = :active')->setParameter('active', SessionStatus::Active)
             ->andWhere('s.startAt > :now')->setParameter('now', $now);
 
@@ -111,7 +113,7 @@ class SessionRepository extends ServiceEntityRepository
      */
     public function upcomingFor(Gym|CoachProfile $owner, \DateTimeImmutable $now, int $limit = 20): array
     {
-        return $this->withRelations($this->createQueryBuilder('s'))
+        return $this->publicOnly($this->withRelations($this->createQueryBuilder('s')))
             ->andWhere($owner instanceof Gym ? 's.gym = :owner' : 's.coach = :owner')->setParameter('owner', $owner)
             ->andWhere('s.status = :active')->setParameter('active', SessionStatus::Active)
             ->andWhere('s.startAt > :now')->setParameter('now', $now)
@@ -181,6 +183,40 @@ class SessionRepository extends ServiceEntityRepository
         return $counts;
     }
 
+    /**
+     * Ce qui empêche de supprimer une séance sans perdre d'historique : réservations non
+     * annulées (confirmées ou terminées) et avis.
+     *
+     * @return array{reservations: int, reviews: int}
+     */
+    public function historyCounts(Session $session): array
+    {
+        $em = $this->getEntityManager();
+
+        return [
+            'reservations' => (int) $em->createQueryBuilder()
+                ->select('COUNT(r.id)')->from(Reservation::class, 'r')
+                ->andWhere('r.session = :session')->setParameter('session', $session)
+                ->andWhere('r.status <> :cancelled')->setParameter('cancelled', ReservationStatus::Annulee)
+                ->getQuery()->getSingleScalarResult(),
+            'reviews' => (int) $em->createQueryBuilder()
+                ->select('COUNT(v.id)')->from(Review::class, 'v')
+                ->andWhere('v.session = :session')->setParameter('session', $session)
+                ->getQuery()->getSingleScalarResult(),
+        ];
+    }
+
+    /** Nombre de séances actives à venir animées par ce coach. */
+    public function countUpcomingFor(CoachProfile $coach, \DateTimeImmutable $now): int
+    {
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.coach = :coach')->setParameter('coach', $coach)
+            ->andWhere('s.status = :active')->setParameter('active', SessionStatus::Active)
+            ->andWhere('s.startAt > :now')->setParameter('now', $now)
+            ->getQuery()->getSingleScalarResult();
+    }
+
     /** Motif LIKE insensible à la casse ; les jokers % et _ saisis par l'utilisateur sont neutralisés. */
     public static function like(string $text): string
     {
@@ -194,6 +230,15 @@ class SessionRepository extends ServiceEntityRepository
             ->leftJoin('s.coach', 'c')->addSelect('c')
             ->leftJoin('c.user', 'cu')->addSelect('cu')
             ->leftJoin('s.gym', 'g')->addSelect('g');
+    }
+
+    /**
+     * Catalogue public : les séances d'un coach bloqué (ou non vérifié) sont masquées,
+     * comme son profil (voir Session::hasAvailableCoach()).
+     */
+    private function publicOnly(QueryBuilder $query): QueryBuilder
+    {
+        return $query->andWhere('c.id IS NULL OR (cu.isVerified = true AND cu.isBlocked = false)');
     }
 
     private static function utc(\DateTimeImmutable $date): \DateTimeImmutable

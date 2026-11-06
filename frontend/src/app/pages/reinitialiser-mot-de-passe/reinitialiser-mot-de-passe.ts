@@ -12,6 +12,9 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { erreursChamps, messageErreur } from '../../core/http';
 import { ToastService } from '../../core/services/toast.service';
+import { LangueService } from '../../core/i18n/langue.service';
+
+import { I18N } from '../../core/i18n/pipes';
 
 /** Les deux saisies du mot de passe doivent être identiques. */
 function identiques(groupe: AbstractControl): ValidationErrors | null {
@@ -22,36 +25,43 @@ function identiques(groupe: AbstractControl): ValidationErrors | null {
 /** Choix d'un nouveau mot de passe depuis le lien reçu par e-mail (?token=…, usage unique, 1 h). */
 @Component({
   selector: 'app-reinitialiser-mot-de-passe',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [...I18N, ReactiveFormsModule, RouterLink],
   template: `
     <main class="form-page" id="contenu">
       <section class="form-card" aria-labelledby="reset-title">
-        <span class="section-kicker">NOUVEAU MOT DE PASSE</span>
-        <h1 id="reset-title">Choisir un nouveau mot de passe</h1>
+        <span class="section-kicker">{{ 'NOUVEAU MOT DE PASSE' | t }}</span>
+        <h1 id="reset-title">{{ 'Choisir un nouveau mot de passe' | t }}</h1>
 
         @if (!token) {
           <p class="error-message" role="alert">
-            Ce lien est incomplet. Utilisez le lien reçu par e-mail ou faites une nouvelle demande.
+            {{
+              'Ce lien est incomplet. Utilisez le lien reçu par e-mail ou faites une nouvelle demande.'
+                | t
+            }}
           </p>
-          <a class="form-action" routerLink="/mot-de-passe-oublie">Nouvelle demande</a>
+          <a class="form-action" routerLink="/mot-de-passe-oublie">{{ 'Nouvelle demande' | t }}</a>
         } @else if (succes()) {
           <div class="alert alert--success" role="status">
             <p>{{ succes() }}</p>
           </div>
-          <a class="form-action" routerLink="/connexion">Se connecter</a>
+          <a class="form-action" routerLink="/connexion">{{ 'Se connecter' | t }}</a>
         } @else if (lienInvalide()) {
           <p class="error-message" role="alert">
-            Ce lien de réinitialisation est invalide ou a expiré.
+            {{ 'Ce lien de réinitialisation est invalide ou a expiré.' | t }}
           </p>
-          <a class="form-action" routerLink="/mot-de-passe-oublie">Faire une nouvelle demande</a>
+          <a class="form-action" routerLink="/mot-de-passe-oublie">{{
+            'Faire une nouvelle demande' | t
+          }}</a>
         } @else {
           <p>
-            8 caractères minimum. Après la modification, connectez-vous avec ce nouveau mot de
-            passe.
+            {{
+              '8 caractères minimum. Après la modification, connectez-vous avec ce nouveau mot de passe.'
+                | t
+            }}
           </p>
           <form [formGroup]="formulaire" (ngSubmit)="valider()" novalidate>
             <label for="reset-password">
-              Nouveau mot de passe
+              {{ 'Nouveau mot de passe' | t }}
               <input
                 id="reset-password"
                 type="password"
@@ -65,7 +75,7 @@ function identiques(groupe: AbstractControl): ValidationErrors | null {
               }
             </label>
             <label for="reset-confirmation">
-              Confirmez le mot de passe
+              {{ 'Confirmez le mot de passe' | t }}
               <input
                 id="reset-confirmation"
                 type="password"
@@ -87,7 +97,7 @@ function identiques(groupe: AbstractControl): ValidationErrors | null {
               [disabled]="envoi()"
               [attr.aria-busy]="envoi()"
             >
-              {{ envoi() ? 'Enregistrement…' : 'Enregistrer le mot de passe' }}
+              {{ (envoi() ? 'Enregistrement…' : 'Enregistrer le mot de passe') | t }}
             </button>
           </form>
         }
@@ -98,6 +108,7 @@ function identiques(groupe: AbstractControl): ValidationErrors | null {
 export class ReinitialiserMotDePasseComponent {
   private readonly auth = inject(AuthService);
   private readonly toasts = inject(ToastService);
+  private readonly langue = inject(LangueService);
 
   readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
   readonly envoi = signal(false);
@@ -116,18 +127,19 @@ export class ReinitialiserMotDePasseComponent {
 
   erreurPassword(): string {
     const champ = this.formulaire.controls.password;
-    if (champ.touched && champ.hasError('required')) return 'Saisissez un mot de passe.';
+    if (champ.touched && champ.hasError('required'))
+      return this.langue.t('Saisissez un mot de passe.');
     if (champ.touched && champ.hasError('minlength'))
-      return 'Le mot de passe doit contenir au moins 8 caractères.';
+      return this.langue.t('Le mot de passe doit contenir au moins 8 caractères.');
     return this.erreurServeur();
   }
 
   erreurConfirmation(): string {
     const champ = this.formulaire.controls.confirmation;
     if (!champ.touched) return '';
-    if (champ.hasError('required')) return 'Confirmez le mot de passe.';
+    if (champ.hasError('required')) return this.langue.t('Confirmez le mot de passe.');
     return this.formulaire.hasError('differents')
-      ? 'Les deux mots de passe ne sont pas identiques.'
+      ? this.langue.t('Les deux mots de passe ne sont pas identiques.')
       : '';
   }
 
@@ -146,7 +158,7 @@ export class ReinitialiserMotDePasseComponent {
       .subscribe({
         next: (response) => {
           this.succes.set(response.message);
-          this.toasts.succes('Mot de passe modifié. Vous pouvez vous connecter.');
+          this.toasts.succes(this.langue.t('Mot de passe modifié. Vous pouvez vous connecter.'));
         },
         error: (error: unknown) => {
           if (error instanceof HttpErrorResponse && error.status === 400) {

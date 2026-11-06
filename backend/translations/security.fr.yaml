@@ -1,0 +1,4 @@
+# Messages de LexikJWTAuthenticationBundle (domaine security, traduits par son authentificateur).
+# Les clés sont les messages anglais du bundle : voir aussi security.en.yaml.
+"Invalid JWT Token": "Jeton d’authentification invalide. Reconnectez-vous."
+"Expired JWT Token": "Votre session a expiré. Reconnectez-vous."
