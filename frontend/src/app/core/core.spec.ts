@@ -131,6 +131,27 @@ describe('AuthService et intercepteur', () => {
     });
   });
 
+  it('visiteur avec un cookie invalide : efface le cookie puis rejoue la lecture une fois', async () => {
+    const { http } = configurer();
+    const client = TestBed.inject(HttpClient);
+    const reponse = firstValueFrom(client.get('/api/salles'));
+    const echec = client.get('/api/coachs');
+    let erreur: unknown = null;
+    echec.subscribe({ error: (e: unknown) => (erreur = e) });
+
+    http.expectOne('/api/salles').flush({}, { status: 401, statusText: 'Unauthorized' });
+    http.expectOne('/api/coachs').flush({}, { status: 401, statusText: 'Unauthorized' });
+    // Un seul /api/logout pour les deux requêtes refusées.
+    http.expectOne('/api/logout').flush({});
+
+    http.expectOne('/api/salles').flush([{ id: 1 }]);
+    expect(await reponse).toEqual([{ id: 1 }]);
+    // Rejouée une seule fois : un second 401 remonte à l'appelant.
+    http.expectOne('/api/coachs').flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect((erreur as HttpErrorResponse).status).toBe(401);
+    http.verify();
+  });
+
   it("l'administrateur hérite de tous les rôles", () => {
     const { http, auth } = configurer();
     auth.connexion('admin@exemple.test', 'secret123').subscribe();

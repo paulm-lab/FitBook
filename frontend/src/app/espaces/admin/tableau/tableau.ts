@@ -5,6 +5,8 @@ import { Evolution, ROLES, Role } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { GraphiqueEvolutionComponent } from '../../../shared/graphique';
 import { LoaderComponent } from '../../../shared/ui';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 
 interface StatsAdmin {
   utilisateursParRole: Record<string, number>;
@@ -27,13 +29,13 @@ const STATUTS: Record<string, string> = {
 /** Tableau de bord global de l'administrateur (US-A01). */
 @Component({
   selector: 'app-tableau-admin',
-  imports: [RouterLink, LoaderComponent, GraphiqueEvolutionComponent],
+  imports: [RouterLink, LoaderComponent, GraphiqueEvolutionComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Administration</span>
-        <h1>Vue d'ensemble</h1>
-        <p>Surveillez l'activité de la plateforme FitBook.</p>
+        <span class="section-kicker">{{ 'Administration' | t }}</span>
+        <h1>{{ 'Vue d’ensemble' | t }}</h1>
+        <p>{{ 'Surveillez l’activité de la plateforme FitBook.' | t }}</p>
       </div>
     </header>
 
@@ -46,19 +48,21 @@ const STATUTS: Record<string, string> = {
       <div class="stats">
         <a class="stat tile-link" routerLink="/admin/utilisateurs"
           ><span class="stat-value">{{ s.nbUtilisateurs }}</span
-          ><span class="stat-label">Utilisateurs</span></a
+          ><span class="stat-label">{{ 'Utilisateurs' | t }}</span></a
         >
         <a class="stat tile-link" routerLink="/admin/salles"
           ><span class="stat-value">{{ s.nbSalles }}</span
-          ><span class="stat-label">Salles</span></a
+          ><span class="stat-label">{{ 'Salles' | t }}</span></a
         >
         <a class="stat tile-link" routerLink="/admin/activites"
           ><span class="stat-value">{{ s.nbActivites }}</span
-          ><span class="stat-label">Activités</span></a
+          ><span class="stat-label">{{ 'Activités' | t }}</span></a
         >
         <a class="stat tile-link" routerLink="/admin/seances"
           ><span class="stat-value">{{ s.nbSeancesAVenir }}</span
-          ><span class="stat-label">Séances à venir (sur {{ s.nbSeances }})</span></a
+          ><span class="stat-label">{{
+            'Séances à venir (sur {n})' | t: { n: s.nbSeances }
+          }}</span></a
         >
         <a
           class="stat tile-link"
@@ -67,17 +71,17 @@ const STATUTS: Record<string, string> = {
           [queryParams]="{ filtre: 'non_moderes' }"
         >
           <span class="stat-value">{{ s.avisEnAttente }}</span
-          ><span class="stat-label">Avis en attente de modération</span>
+          ><span class="stat-label">{{ 'Avis en attente de modération' | t }}</span>
         </a>
       </div>
 
       <div class="grid--2 grid">
         <section class="panel" aria-labelledby="roles-titre">
-          <h2 id="roles-titre">Utilisateurs par rôle</h2>
+          <h2 id="roles-titre">{{ 'Utilisateurs par rôle' | t }}</h2>
           <ul class="bars">
             @for (r of roles(); track r.code) {
               <li>
-                <span class="bar-label">{{ r.libelle }}</span>
+                <span class="bar-label">{{ r.libelle | t }}</span>
                 <span class="bar-track" aria-hidden="true"
                   ><span class="bar-fill" [style.width.%]="r.pourcent"></span
                 ></span>
@@ -88,12 +92,12 @@ const STATUTS: Record<string, string> = {
         </section>
 
         <section class="panel" aria-labelledby="resa-titre">
-          <h2 id="resa-titre">Réservations par statut</h2>
+          <h2 id="resa-titre">{{ 'Réservations par statut' | t }}</h2>
           <ul class="bars">
             @for (r of statuts(); track r.code) {
               <li>
                 <span class="bar-label"
-                  ><span class="badge badge--{{ r.code }}">{{ r.libelle }}</span></span
+                  ><span class="badge badge--{{ r.code }}">{{ r.libelle | t }}</span></span
                 >
                 <span class="bar-track" aria-hidden="true"
                   ><span class="bar-fill" [style.width.%]="r.pourcent"></span
@@ -102,12 +106,14 @@ const STATUTS: Record<string, string> = {
               </li>
             }
           </ul>
-          <a class="text-link" routerLink="/admin/reservations">Voir les réservations →</a>
+          <a class="text-link" routerLink="/admin/reservations">{{
+            'Voir les réservations →' | t
+          }}</a>
         </section>
       </div>
 
       <section class="panel evo" aria-labelledby="evo-titre">
-        <h2 id="evo-titre">Évolution des réservations</h2>
+        <h2 id="evo-titre">{{ 'Évolution des réservations' | t }}</h2>
         <app-graphique-evolution [donnees]="s.evolution" />
       </section>
     }
@@ -170,6 +176,7 @@ const STATUTS: Record<string, string> = {
 })
 export class TableauAdminComponent {
   private readonly gestion = inject(GestionService);
+  private readonly langue = inject(LangueService);
   readonly stats = signal<StatsAdmin | null>(null);
   readonly erreur = signal('');
 
@@ -196,7 +203,8 @@ export class TableauAdminComponent {
   constructor() {
     this.gestion.statsAdmin().subscribe({
       next: (s) => this.stats.set(s),
-      error: (e) => this.erreur.set(messageErreur(e, 'Impossible de charger les statistiques.')),
+      error: (e) =>
+        this.erreur.set(messageErreur(e, this.langue.t('Impossible de charger les statistiques.'))),
     });
   }
 }

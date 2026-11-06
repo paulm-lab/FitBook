@@ -1,11 +1,13 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { CalendarOptions, DatesSetArg, EventClickArg, EventInput } from '@fullcalendar/core';
+import enGbLocale from '@fullcalendar/core/locales/en-gb';
 import frLocale from '@fullcalendar/core/locales/fr';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { LangueService } from '../core/i18n/langue.service';
 import { Disponibilite, SeanceResume } from '../core/models';
 
 /** Séance → évènement FullCalendar (couleur selon le remplissage ou l'annulation). */
@@ -37,13 +39,14 @@ export function evenementsDisponibilites(disponibilites: Disponibilite[]): Event
   }));
 }
 
-/** Calendrier FullCalendar en français (semaine, mois, liste), utilisé par les espaces. */
+/** Calendrier FullCalendar dans la langue du site (semaine, mois, liste), utilisé par les espaces. */
 @Component({
   selector: 'app-calendrier',
   imports: [FullCalendarModule],
   template: `<div class="calendar-wrap"><full-calendar [options]="options()" /></div>`,
 })
 export class CalendrierComponent {
+  private readonly langue = inject(LangueService);
   readonly evenements = input<EventInput[]>([]);
   readonly vue = input<'timeGridWeek' | 'dayGridMonth' | 'listWeek'>('timeGridWeek');
   /** Nouvelle fenêtre affichée (pour charger les séances de la période). */
@@ -53,7 +56,7 @@ export class CalendrierComponent {
 
   readonly options = computed<CalendarOptions>(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
-    locale: frLocale,
+    locale: this.langue.langue() === 'en' ? enGbLocale : frLocale,
     initialView: this.vue(),
     headerToolbar: {
       left: 'prev,next today',

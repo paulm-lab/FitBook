@@ -1,10 +1,11 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
 import { Page, Reservation } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import {
   ConfirmService,
   EtatVideComponent,
@@ -21,27 +22,27 @@ const STATUTS: Record<string, string> = {
 /** Toutes les réservations (US-A03) : filtres, annulation sans condition de délai. */
 @Component({
   selector: 'app-reservations-admin',
-  imports: [DatePipe, RouterLink, LoaderComponent, EtatVideComponent, PaginationComponent],
+  imports: [RouterLink, LoaderComponent, EtatVideComponent, PaginationComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Administration</span>
-        <h1>Réservations</h1>
-        <p>Consultez et corrigez les réservations de la plateforme.</p>
+        <span class="section-kicker">{{ 'Administration' | t }}</span>
+        <h1>{{ 'Réservations' | t }}</h1>
+        <p>{{ 'Consultez et corrigez les réservations de la plateforme.' | t }}</p>
       </div>
     </header>
 
     <div class="row filters">
       <label class="field">
-        <span>Statut</span>
+        <span>{{ 'Statut' | t }}</span>
         <select
           class="input"
           [value]="statut()"
           (change)="statut.set($any($event.target).value); charger(1)"
         >
-          <option value="">Tous</option>
+          <option value="">{{ 'Tous' | t }}</option>
           @for (s of statuts; track s.code) {
-            <option [value]="s.code">{{ s.libelle }}</option>
+            <option [value]="s.code">{{ s.libelle | t }}</option>
           }
         </select>
       </label>
@@ -51,7 +52,7 @@ const STATUTS: Record<string, string> = {
           [checked]="aVenir()"
           (change)="aVenir.set($any($event.target).checked); charger(1)"
         />
-        À venir uniquement
+        {{ 'À venir uniquement' | t }}
       </label>
     </div>
 
@@ -61,21 +62,27 @@ const STATUTS: Record<string, string> = {
       <app-loader />
     } @else if (page()!.items.length === 0) {
       <app-etat-vide
-        titre="Aucune réservation"
-        message="Aucune réservation ne correspond à ces filtres."
+        [titre]="'Aucune réservation' | t"
+        [message]="'Aucune réservation ne correspond à ces filtres.' | t"
       />
     } @else {
-      <p class="muted">{{ page()!.total }} réservation(s)</p>
+      <p class="muted">
+        {{
+          (page()!.total === 1 ? '{n} réservation' : '{n} réservations') | t: { n: page()!.total }
+        }}
+      </p>
       <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">Séance</th>
-              <th scope="col">Salle</th>
-              <th scope="col">Sportif</th>
-              <th scope="col">Statut</th>
-              <th scope="col">Réservée le</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              <th scope="col">{{ 'Séance' | t }}</th>
+              <th scope="col">{{ 'Salle' | t }}</th>
+              <th scope="col">{{ 'Sportif' | t }}</th>
+              <th scope="col">{{ 'Statut' | t }}</th>
+              <th scope="col">{{ 'Réservée le' | t }}</th>
+              <th scope="col">
+                <span class="sr-only">{{ 'Actions' | t }}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -86,7 +93,7 @@ const STATUTS: Record<string, string> = {
                     <a [routerLink]="['/seances', s.id]"
                       ><strong>{{ s.titre }}</strong></a
                     ><br />
-                    <span class="muted">{{ s.dateDebut | date: 'EEE d MMM y, HH:mm' }}</span>
+                    <span class="muted">{{ s.dateDebut | dateL: 'EEE d MMM y, HH:mm' }}</span>
                   }
                 </td>
                 <td>{{ r.seance?.salle?.nom ?? '—' }}</td>
@@ -96,9 +103,9 @@ const STATUTS: Record<string, string> = {
                   }
                 </td>
                 <td>
-                  <span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) }}</span>
+                  <span class="badge badge--{{ r.statut }}">{{ libelle(r.statut) | t }}</span>
                 </td>
-                <td>{{ r.dateReservation | date: 'd MMM y' }}</td>
+                <td>{{ r.dateReservation | dateL: 'd MMM y' }}</td>
                 <td>
                   <div class="actions">
                     @if (r.statut === 'confirmee') {
@@ -108,7 +115,7 @@ const STATUTS: Record<string, string> = {
                         [disabled]="enCours() === r.id"
                         (click)="annuler(r)"
                       >
-                        Annuler
+                        {{ 'Annuler' | t }}
                       </button>
                     }
                   </div>
@@ -136,6 +143,7 @@ export class ReservationsAdminComponent {
   private readonly gestion = inject(GestionService);
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  private readonly langue = inject(LangueService);
 
   readonly statuts = Object.entries(STATUTS).map(([code, libelle]) => ({ code, libelle }));
   readonly statut = signal('');
@@ -162,15 +170,24 @@ export class ReservationsAdminComponent {
       })
       .subscribe({
         next: (p) => this.page.set(p),
-        error: (e) => this.erreur.set(messageErreur(e, 'Impossible de charger les réservations.')),
+        error: (e) =>
+          this.erreur.set(
+            messageErreur(e, this.langue.t('Impossible de charger les réservations.')),
+          ),
       });
   }
 
   async annuler(r: Reservation): Promise<void> {
     const ok = await this.confirm.demander({
-      titre: 'Annuler la réservation',
-      message: `La réservation de ${r.sportif?.prenom ?? 'ce sportif'} pour « ${r.seance?.titre ?? 'la séance'} » sera annulée, sans condition de délai. Le sportif sera prévenu par e-mail.`,
-      confirmer: 'Annuler la réservation',
+      titre: this.langue.t('Annuler la réservation'),
+      message: this.langue.t(
+        'La réservation de {prenom} pour « {titre} » sera annulée, sans condition de délai. Le sportif sera prévenu par e-mail.',
+        {
+          prenom: r.sportif?.prenom ?? this.langue.t('ce sportif'),
+          titre: r.seance?.titre ?? this.langue.t('la séance'),
+        },
+      ),
+      confirmer: this.langue.t('Annuler la réservation'),
       danger: true,
     });
     if (!ok) return;
@@ -187,7 +204,7 @@ export class ReservationsAdminComponent {
               ),
             },
         );
-        this.toasts.succes('Réservation annulée, le sportif est prévenu.');
+        this.toasts.succes(this.langue.t('Réservation annulée, le sportif est prévenu.'));
       },
       error: (e) => {
         this.enCours.set(null);

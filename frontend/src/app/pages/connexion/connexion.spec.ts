@@ -3,16 +3,18 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { LangueService } from '../../core/i18n/langue.service';
 import { ConnexionComponent } from './connexion';
 
 describe('ConnexionComponent', () => {
-  const auth = { connexion: vi.fn(), renvoyerVerification: vi.fn(), espace: () => '/mon-espace' };
+  const auth = { connexion: vi.fn(), espace: () => '/mon-espace' };
   let returnUrl: string | null = null;
+  let emailParam: string | null = null;
 
   beforeEach(async () => {
     auth.connexion.mockReset();
-    auth.renvoyerVerification.mockReset();
     returnUrl = null;
+    emailParam = null;
     await TestBed.configureTestingModule({
       imports: [ConnexionComponent],
       providers: [
@@ -20,7 +22,13 @@ describe('ConnexionComponent', () => {
         { provide: AuthService, useValue: auth },
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: { get: () => returnUrl } } },
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (cle: string) => (cle === 'email' ? emailParam : returnUrl),
+              },
+            },
+          },
         },
       ],
     }).compileComponents();
@@ -81,36 +89,14 @@ describe('ConnexionComponent', () => {
     expect(component.erreur()).toBe('Adresse e-mail ou mot de passe incorrect.');
   });
 
-  it('affiche le message du serveur pour un compte non activé', () => {
-    auth.connexion.mockReturnValue(
-      throwError(
-        () =>
-          new HttpErrorResponse({
-            status: 403,
-            error: { message: 'Confirmez votre adresse e-mail avant de vous connecter.' },
-          }),
-      ),
-    );
-    const component = creerComposant();
+  it('pré-remplit l’adresse transmise par la page d’inscription', () => {
+    emailParam = 'camille@example.test';
+    const component = TestBed.createComponent(ConnexionComponent).componentInstance;
 
-    component.connecter();
-
-    expect(component.erreur()).toBe('Confirmez votre adresse e-mail avant de vous connecter.');
-    expect(component.nonVerifie()).toBe(true);
+    expect(component.formulaire.controls.email.value).toBe('camille@example.test');
   });
 
-  it('renvoie le lien de confirmation pour un compte non vérifié', () => {
-    auth.renvoyerVerification.mockReturnValue(of({ message: 'Demande prise en compte.' }));
-    const component = creerComposant();
-
-    component.renvoyerLien();
-
-    expect(auth.renvoyerVerification).toHaveBeenCalledWith('camille@example.test');
-    expect(component.renvoiMessage()).toBe('Demande prise en compte.');
-    expect(component.renvoiEnCours()).toBe(false);
-  });
-
-  it('n’affiche pas le renvoi de lien pour un compte bloqué', () => {
+  it('affiche le message du serveur pour un compte bloqué', () => {
     auth.connexion.mockReturnValue(
       throwError(
         () =>
@@ -125,7 +111,6 @@ describe('ConnexionComponent', () => {
     component.connecter();
 
     expect(component.erreur()).toContain('bloqué');
-    expect(component.nonVerifie()).toBe(false);
   });
 
   it('affiche le message de limitation après trop de tentatives', () => {
@@ -182,5 +167,29 @@ describe('ConnexionComponent', () => {
     expect(bouton().textContent?.trim()).toBe('Se connecter');
     expect(bouton().disabled).toBe(false);
     expect(element.querySelector('[role="alert"]')?.textContent).toContain('injoignable');
+  });
+
+  it('s’affiche en anglais quand la langue choisie est l’anglais', async () => {
+    const langue = TestBed.inject(LangueService);
+    langue.choisir('en');
+    try {
+      const fixture = TestBed.createComponent(ConnexionComponent);
+      await fixture.whenStable();
+      const element: HTMLElement = fixture.nativeElement;
+
+      expect(element.querySelector('h1')?.textContent?.trim()).toBe('Log in');
+      expect(element.querySelector('button[type="submit"]')?.textContent?.trim()).toBe('Log in');
+      expect(element.querySelector('label[for="login-password"]')?.textContent?.trim()).toBe(
+        'Password',
+      );
+      expect(element.querySelector('.forgot-link')?.textContent?.trim()).toBe(
+        'Forgotten your password?',
+      );
+    } finally {
+      // Langue mémorisée dans le navigateur : on revient au français pour les autres tests.
+      langue.choisir('fr');
+      TestBed.tick();
+      localStorage.removeItem('fitbook-langue');
+    }
   });
 });

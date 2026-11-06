@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { map } from 'rxjs';
 import { Component, computed, inject, signal } from '@angular/core';
 import {
@@ -9,6 +8,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { erreursChamps, messageErreur } from '../../../core/http';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import { Disponibilite, JOURS, Salle } from '../../../core/models';
 import { CatalogueService } from '../../../core/services/catalogue.service';
 import { DisponibiliteSaisie, GestionService } from '../../../core/services/gestion.service';
@@ -34,17 +35,21 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
 /** Disponibilités récurrentes ou ponctuelles d'un coach ou d'une salle (US-C03, US-G03). */
 @Component({
   selector: 'app-disponibilites',
-  imports: [ReactiveFormsModule, DatePipe, LoaderComponent, EtatVideComponent],
+  imports: [ReactiveFormsModule, LoaderComponent, EtatVideComponent, ...I18N],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Disponibilités</span>
-        <h1>{{ espace === 'coach' ? 'Mes disponibilités' : 'Disponibilités des salles' }}</h1>
-        <p>Déclarez vos créneaux récurrents (chaque semaine) ou ponctuels (une date précise).</p>
+        <span class="section-kicker">{{ 'Disponibilités' | t }}</span>
+        <h1>{{ (espace === 'coach' ? 'Mes disponibilités' : 'Disponibilités des salles') | t }}</h1>
+        <p>
+          {{
+            'Déclarez vos créneaux récurrents (chaque semaine) ou ponctuels (une date précise).' | t
+          }}
+        </p>
       </div>
       @if (espace !== 'coach') {
         <label class="field" style="min-width:220px">
-          <span>Salle</span>
+          <span>{{ 'Salle' | t }}</span>
           <select [value]="salleId() ?? ''" (change)="choisirSalle($any($event.target).value)">
             @for (s of salles(); track s.id) {
               <option [value]="s.id">{{ s.nom }}</option>
@@ -56,18 +61,18 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
 
     <div class="grid grid--2" style="align-items:start">
       <section class="panel" aria-labelledby="dispo-liste">
-        <h2 id="dispo-liste">Créneaux</h2>
+        <h2 id="dispo-liste">{{ 'Créneaux' | t }}</h2>
         @if (chargement()) {
           <app-loader />
         } @else if (creneaux().length === 0) {
           <app-etat-vide
-            titre="Aucun créneau"
-            message="Ajoutez votre premier créneau avec le formulaire."
+            [titre]="'Aucun créneau' | t"
+            [message]="'Ajoutez votre premier créneau avec le formulaire.' | t"
             icone="🕒"
           />
         } @else {
           @for (groupe of groupes(); track groupe.titre) {
-            <h3 style="font-size:15px;margin:16px 0 8px">{{ groupe.titre }}</h3>
+            <h3 style="font-size:15px;margin:16px 0 8px">{{ groupe.titre | t }}</h3>
             <ul class="stack" style="list-style:none;margin:0;padding:0;gap:8px">
               @for (c of groupe.items; track c.id) {
                 <li
@@ -76,16 +81,16 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
                 >
                   <span>
                     @if (!c.recurrent) {
-                      <strong>{{ c.date | date: 'EEE d MMM y' }}</strong> ·
+                      <strong>{{ c.date | dateL: 'EEE d MMM y' }}</strong> ·
                     }
                     {{ c.heureDebut }} – {{ c.heureFin }}
                   </span>
                   <span class="row" style="gap:6px">
                     <button type="button" class="btn btn--sm btn--ghost" (click)="editer(c)">
-                      Modifier
+                      {{ 'Modifier' | t }}
                     </button>
                     <button type="button" class="btn btn--sm btn--danger" (click)="supprimer(c)">
-                      Supprimer
+                      {{ 'Supprimer' | t }}
                     </button>
                   </span>
                 </li>
@@ -96,9 +101,11 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
       </section>
 
       <section class="panel" aria-labelledby="dispo-form">
-        <h2 id="dispo-form">{{ edition() ? 'Modifier le créneau' : 'Ajouter un créneau' }}</h2>
+        <h2 id="dispo-form">
+          {{ (edition() ? 'Modifier le créneau' : 'Ajouter un créneau') | t }}
+        </h2>
         <form class="form" [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
-          <div class="tabs" role="radiogroup" aria-label="Type de créneau">
+          <div class="tabs" role="radiogroup" [attr.aria-label]="'Type de créneau' | t">
             <button
               type="button"
               class="tab"
@@ -107,7 +114,7 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
               [attr.aria-selected]="form.controls.recurrent.value"
               (click)="form.controls.recurrent.setValue(true)"
             >
-              Récurrent
+              {{ 'Récurrent' | t }}
             </button>
             <button
               type="button"
@@ -117,25 +124,25 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
               [attr.aria-selected]="!form.controls.recurrent.value"
               (click)="form.controls.recurrent.setValue(false)"
             >
-              Ponctuel
+              {{ 'Ponctuel' | t }}
             </button>
           </div>
 
           @if (form.controls.recurrent.value) {
             <div class="field">
-              <label for="d-jour">Jour de la semaine</label>
+              <label for="d-jour">{{ 'Jour de la semaine' | t }}</label>
               <select
                 id="d-jour"
                 formControlName="jourSemaine"
                 [attr.aria-invalid]="soumis() && form.hasError('jour')"
               >
-                <option [ngValue]="null">Choisir…</option>
+                <option [ngValue]="null">{{ 'Choisir…' | t }}</option>
                 @for (j of jours; track j.n) {
-                  <option [ngValue]="j.n">{{ j.nom }}</option>
+                  <option [ngValue]="j.n">{{ j.nom | t }}</option>
                 }
               </select>
               @if (soumis() && form.hasError('jour')) {
-                <small class="field-error">Choisissez le jour.</small>
+                <small class="field-error">{{ 'Choisissez le jour.' | t }}</small>
               }
               @if (serveur()['jourSemaine']) {
                 <small class="field-error">{{ serveur()['jourSemaine'] }}</small>
@@ -143,7 +150,7 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
             </div>
           } @else {
             <div class="field">
-              <label for="d-date">Date</label>
+              <label for="d-date">{{ 'Date' | t }}</label>
               <input
                 id="d-date"
                 type="date"
@@ -151,7 +158,7 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
                 [attr.aria-invalid]="soumis() && form.hasError('date')"
               />
               @if (soumis() && form.hasError('date')) {
-                <small class="field-error">Choisissez la date.</small>
+                <small class="field-error">{{ 'Choisissez la date.' | t }}</small>
               }
               @if (serveur()['date']) {
                 <small class="field-error">{{ serveur()['date'] }}</small>
@@ -161,14 +168,14 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
 
           <div class="form-row">
             <div class="field">
-              <label for="d-debut">Début</label>
+              <label for="d-debut">{{ 'Début' | t }}</label>
               <input id="d-debut" type="time" formControlName="heureDebut" />
               @if (serveur()['heureDebut']) {
                 <small class="field-error">{{ serveur()['heureDebut'] }}</small>
               }
             </div>
             <div class="field">
-              <label for="d-fin">Fin</label>
+              <label for="d-fin">{{ 'Fin' | t }}</label>
               <input
                 id="d-fin"
                 type="time"
@@ -177,7 +184,9 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
                 aria-describedby="d-fin-err"
               />
               @if (soumis() && form.hasError('finAvantDebut')) {
-                <small class="field-error" id="d-fin-err">La fin doit suivre le début.</small>
+                <small class="field-error" id="d-fin-err">{{
+                  'La fin doit suivre le début.' | t
+                }}</small>
               }
               @if (serveur()['heureFin']) {
                 <small class="field-error">{{ serveur()['heureFin'] }}</small>
@@ -187,11 +196,11 @@ function creneauValide(group: AbstractControl): ValidationErrors | null {
 
           <div class="row">
             <button class="btn" type="submit" [disabled]="envoi()">
-              {{ edition() ? 'Enregistrer' : 'Ajouter' }}
+              {{ (edition() ? 'Enregistrer' : 'Ajouter') | t }}
             </button>
             @if (edition()) {
               <button class="btn btn--ghost" type="button" (click)="reinitialiser()">
-                Annuler
+                {{ 'Annuler' | t }}
               </button>
             }
           </div>
@@ -206,6 +215,7 @@ export class DisponibilitesComponent {
   private readonly toasts = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly fb = inject(FormBuilder);
+  private readonly langue = inject(LangueService);
 
   readonly espace = espaceCourant();
   readonly jours = JOURS.slice(1).map((nom, i) => ({ n: i + 1, nom }));
@@ -327,7 +337,7 @@ export class DisponibilitesComponent {
     this.serveur.set({});
     if (this.form.invalid) return;
     if (this.espace !== 'coach' && !this.salleId()) {
-      this.toasts.erreur('Créez d’abord une salle.');
+      this.toasts.erreur(this.langue.t('Créez d’abord une salle.'));
       return;
     }
     const v = this.form.getRawValue();
@@ -347,7 +357,7 @@ export class DisponibilitesComponent {
     requete.subscribe({
       next: () => {
         this.envoi.set(false);
-        this.toasts.succes(edition ? 'Créneau modifié.' : 'Créneau ajouté.');
+        this.toasts.succes(this.langue.t(edition ? 'Créneau modifié.' : 'Créneau ajouté.'));
         this.reinitialiser();
         this.charger();
       },
@@ -362,15 +372,15 @@ export class DisponibilitesComponent {
 
   async supprimer(c: Disponibilite): Promise<void> {
     const ok = await this.confirm.demander({
-      titre: 'Supprimer ce créneau ?',
+      titre: this.langue.t('Supprimer ce créneau ?'),
       message: `${c.heureDebut} – ${c.heureFin}`,
-      confirmer: 'Supprimer',
+      confirmer: this.langue.t('Supprimer'),
       danger: true,
     });
     if (!ok) return;
     this.gestion.supprimerDisponibilite(c.id).subscribe({
       next: () => {
-        this.toasts.succes('Créneau supprimé.');
+        this.toasts.succes(this.langue.t('Créneau supprimé.'));
         this.charger();
       },
       error: (error) => this.toasts.erreur(messageErreur(error)),

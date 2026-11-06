@@ -1,9 +1,7 @@
-import { DecimalPipe } from '@angular/common';
 import {
   Component,
   Directive,
   ElementRef,
-  HostListener,
   Injectable,
   computed,
   inject,
@@ -12,6 +10,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { LangueService } from '../core/i18n/langue.service';
+import { I18N } from '../core/i18n/pipes';
 import { ToastService } from '../core/services/toast.service';
 
 /*
@@ -29,11 +29,10 @@ export class AutoFocusDirective {
 }
 
 /** Image de secours si la photo distante ne se charge pas. */
-@Directive({ selector: 'img[appSecours]' })
+@Directive({ selector: 'img[appSecours]', host: { '(error)': 'remplacer()' } })
 export class ImageSecoursDirective {
   private readonly element = inject(ElementRef<HTMLImageElement>);
 
-  @HostListener('error')
   remplacer(): void {
     const image = this.element.nativeElement;
     if (image.dataset['secours']) return;
@@ -52,12 +51,12 @@ export class ImageSecoursDirective {
           class="toast toast--{{ toast.type }}"
           [attr.role]="toast.type === 'erreur' ? 'alert' : 'status'"
         >
-          <span>{{ toast.message }}</span>
+          <span>{{ toast.message | t }}</span>
           <button
             type="button"
             class="toast-close"
             (click)="toasts.fermer(toast.id)"
-            aria-label="Fermer le message"
+            [attr.aria-label]="'Fermer le message' | t"
           >
             ×
           </button>
@@ -65,6 +64,7 @@ export class ImageSecoursDirective {
       }
     </div>
   `,
+  imports: [...I18N],
 })
 export class ToastsComponent {
   readonly toasts = inject(ToastService);
@@ -101,7 +101,7 @@ export class ConfirmService {
   selector: 'app-confirm-dialog',
   template: `
     @if (confirm.demande(); as d) {
-      <!-- Fond cliquable à la souris ; au clavier, Échap ferme la fenêtre (HostListener ci-dessous). -->
+      <!-- Fond cliquable à la souris ; au clavier, Échap ferme la fenêtre (host ci-dessous). -->
       <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
       <div class="modal-backdrop" (click)="d.repondre(false)"></div>
       <div
@@ -111,10 +111,12 @@ export class ConfirmService {
         aria-labelledby="confirm-title"
         aria-describedby="confirm-message"
       >
-        <h2 id="confirm-title">{{ d.titre }}</h2>
-        <p id="confirm-message">{{ d.message }}</p>
+        <h2 id="confirm-title">{{ d.titre | t }}</h2>
+        <p id="confirm-message">{{ d.message | t }}</p>
         <div class="modal-actions">
-          <button type="button" class="btn btn--ghost" (click)="d.repondre(false)">Retour</button>
+          <button type="button" class="btn btn--ghost" (click)="d.repondre(false)">
+            {{ 'Retour' | t }}
+          </button>
           <button
             type="button"
             class="btn"
@@ -122,18 +124,19 @@ export class ConfirmService {
             (click)="d.repondre(true)"
             appAutoFocus
           >
-            {{ d.confirmer ?? 'Confirmer' }}
+            {{ d.confirmer ?? 'Confirmer' | t }}
           </button>
         </div>
       </div>
     }
   `,
-  imports: [AutoFocusDirective],
+  imports: [AutoFocusDirective, ...I18N],
+  // Échap ferme la fenêtre.
+  host: { '(document:keydown.escape)': 'fermer()' },
 })
 export class ConfirmDialogComponent {
   readonly confirm = inject(ConfirmService);
 
-  @HostListener('document:keydown.escape')
   fermer(): void {
     this.confirm.demande()?.repondre(false);
   }
@@ -142,8 +145,9 @@ export class ConfirmDialogComponent {
 @Component({
   selector: 'app-loader',
   template: `<div class="loader" role="status">
-    <span class="loader-spinner" aria-hidden="true"></span><span>{{ texte() }}</span>
+    <span class="loader-spinner" aria-hidden="true"></span><span>{{ texte() | t }}</span>
   </div>`,
+  imports: [...I18N],
 })
 export class LoaderComponent {
   readonly texte = input('Chargement…');
@@ -154,13 +158,14 @@ export class LoaderComponent {
   template: `
     <div class="empty-state">
       <span class="empty-state-icon" aria-hidden="true">{{ icone() }}</span>
-      <h3>{{ titre() }}</h3>
+      <h3>{{ titre() | t }}</h3>
       @if (message()) {
-        <p>{{ message() }}</p>
+        <p>{{ message() | t }}</p>
       }
       <ng-content />
     </div>
   `,
+  imports: [...I18N],
 })
 export class EtatVideComponent {
   readonly titre = input.required<string>();
@@ -173,14 +178,14 @@ export class EtatVideComponent {
   selector: 'app-pagination',
   template: `
     @if (pages() > 1) {
-      <nav class="pagination" aria-label="Pagination">
+      <nav class="pagination" [attr.aria-label]="'Pagination' | t">
         <button
           type="button"
           class="pagination-btn"
           [disabled]="page() <= 1"
           (click)="aller(page() - 1)"
         >
-          ← Précédent
+          {{ '← Précédent' | t }}
         </button>
         @for (p of numeros(); track p) {
           <button
@@ -199,11 +204,12 @@ export class EtatVideComponent {
           [disabled]="page() >= pages()"
           (click)="aller(page() + 1)"
         >
-          Suivant →
+          {{ 'Suivant →' | t }}
         </button>
       </nav>
     }
   `,
+  imports: [...I18N],
 })
 export class PaginationComponent {
   readonly page = input.required<number>();
@@ -234,23 +240,26 @@ export class PaginationComponent {
       </span>
       @if (avecTexte()) {
         <span class="stars-text"
-          >{{ note() !== null ? (note()! | number: '1.1-1') : 'Pas encore d’avis' }}
+          >{{ note() !== null ? (note()! | nombreL: '1.1-1') : ('Pas encore d’avis' | t) }}
           @if (nbAvis() !== null && note() !== null) {
-            · {{ nbAvis() }} avis
+            · {{ (nbAvis() === 1 ? '1 avis' : '{n} avis') | t: { n: nbAvis() } }}
           }
         </span>
       }
     </span>
   `,
-  imports: [DecimalPipe],
+  imports: [...I18N],
 })
 export class EtoilesComponent {
+  private readonly langue = inject(LangueService);
   readonly note = input<number | null | undefined>(null);
   readonly nbAvis = input<number | null>(null);
   readonly avecTexte = input(true);
   readonly arrondi = computed(() => Math.round(this.note() ?? 0));
   readonly libelle = computed(() =>
-    this.note() != null ? `Note moyenne ${this.note()} sur 5` : 'Pas encore noté',
+    this.note() != null
+      ? this.langue.t('Note moyenne {note} sur 5', { note: this.note() })
+      : this.langue.t('Pas encore noté'),
   );
 }
 
@@ -259,7 +268,7 @@ export class EtoilesComponent {
   selector: 'app-saisie-note',
   template: `
     <fieldset class="star-input">
-      <legend>{{ legende() }}</legend>
+      <legend>{{ legende() | t }}</legend>
       @for (i of [1, 2, 3, 4, 5]; track i) {
         <label [class.on]="i <= (survol() || valeur())">
           <input
@@ -272,11 +281,12 @@ export class EtoilesComponent {
           <span (mouseenter)="survol.set(i)" (mouseleave)="survol.set(0)" aria-hidden="true"
             >★</span
           >
-          <span class="sr-only">{{ i }} étoile{{ i > 1 ? 's' : '' }}</span>
+          <span class="sr-only">{{ (i > 1 ? '{n} étoiles' : '{n} étoile') | t: { n: i } }}</span>
         </label>
       }
     </fieldset>
   `,
+  imports: [...I18N],
 })
 export class SaisieNoteComponent {
   readonly valeur = model(0);

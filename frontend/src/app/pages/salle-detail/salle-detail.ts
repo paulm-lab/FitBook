@@ -16,6 +16,8 @@ import {
 } from '../../shared/ui';
 import { DisponibilitesListeComponent } from './disponibilites-liste';
 
+import { I18N } from '../../core/i18n/pipes';
+
 type Etat = 'chargement' | 'ok' | 'introuvable' | 'erreur';
 
 const JOURS_OUVERTURE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -24,6 +26,7 @@ const JOURS_OUVERTURE = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'sam
 @Component({
   selector: 'app-salle-detail',
   imports: [
+    ...I18N,
     RouterLink,
     LoaderComponent,
     EtatVideComponent,

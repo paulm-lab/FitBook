@@ -1,10 +1,11 @@
-import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
 import { Avis, Cible, Page } from '../../../core/models';
 import { GestionService } from '../../../core/services/gestion.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { LangueService } from '../../../core/i18n/langue.service';
+import { I18N } from '../../../core/i18n/pipes';
 import {
   EtatVideComponent,
   EtoilesComponent,
@@ -27,23 +28,25 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
 @Component({
   selector: 'app-moderation',
   imports: [
-    DatePipe,
     RouterLink,
     LoaderComponent,
     EtatVideComponent,
     EtoilesComponent,
     PaginationComponent,
+    ...I18N,
   ],
   template: `
     <header class="page-header">
       <div>
-        <span class="section-kicker">Administration</span>
-        <h1>Modération des avis</h1>
-        <p>Un avis masqué disparaît des fiches et ne compte plus dans la note moyenne.</p>
+        <span class="section-kicker">{{ 'Administration' | t }}</span>
+        <h1>{{ 'Modération des avis' | t }}</h1>
+        <p>
+          {{ 'Un avis masqué disparaît des fiches et ne compte plus dans la note moyenne.' | t }}
+        </p>
       </div>
     </header>
 
-    <div class="tabs" role="tablist" aria-label="Filtre des avis">
+    <div class="tabs" role="tablist" [attr.aria-label]="'Filtre des avis' | t">
       @for (o of onglets; track o.code) {
         <button
           type="button"
@@ -52,7 +55,7 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
           [attr.aria-selected]="filtre() === o.code"
           (click)="choisir(o.code)"
         >
-          {{ o.libelle }}
+          {{ o.libelle | t }}
         </button>
       }
     </div>
@@ -63,12 +66,13 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
       <app-loader />
     } @else if (page()!.items.length === 0) {
       <app-etat-vide
-        [titre]="filtre() === 'non_moderes' ? 'Aucun avis en attente' : 'Aucun avis'"
+        [titre]="(filtre() === 'non_moderes' ? 'Aucun avis en attente' : 'Aucun avis') | t"
         icone="✓"
         [message]="
-          filtre() === 'non_moderes'
+          (filtre() === 'non_moderes'
             ? 'Tous les avis publiés ont été modérés.'
             : 'Aucun avis ne correspond à ce filtre.'
+          ) | t
         "
       />
     } @else {
@@ -78,24 +82,24 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
             <div class="row row--between">
               <div>
                 @if (a.cible; as c) {
-                  <span class="card-kicker">{{ typeLibelle(c) }}</span>
+                  <span class="card-kicker">{{ typeLibelle(c) | t }}</span>
                   <a class="review-target" [routerLink]="[lien(c), c.id]">{{
-                    c.nom ?? 'Cible supprimée'
+                    c.nom ?? ('Cible supprimée' | t)
                   }}</a>
                 }
                 <p class="muted review-meta">
-                  {{ a.auteur ?? 'Auteur inconnu' }} ·
-                  <time [attr.datetime]="a.date">{{ a.date | date: 'd MMMM y, HH:mm' }}</time>
+                  {{ a.auteur ?? ('Auteur inconnu' | t) }} ·
+                  <time [attr.datetime]="a.date">{{ a.date | dateL: 'd MMMM y, HH:mm' }}</time>
                 </p>
               </div>
               <div class="chips">
                 @if (a.estModere) {
-                  <span class="badge badge--ok">Modéré</span>
+                  <span class="badge badge--ok">{{ 'Modéré' | t }}</span>
                 } @else {
-                  <span class="badge badge--primary">En attente</span>
+                  <span class="badge badge--primary">{{ 'En attente' | t }}</span>
                 }
                 @if (!a.estVisible) {
-                  <span class="badge badge--full">Masqué</span>
+                  <span class="badge badge--full">{{ 'Masqué' | t }}</span>
                 }
               </div>
             </div>
@@ -103,7 +107,7 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
             @if (a.commentaire) {
               <p class="review-text">{{ a.commentaire }}</p>
             } @else {
-              <p class="muted">Pas de commentaire.</p>
+              <p class="muted">{{ 'Pas de commentaire.' | t }}</p>
             }
             <div class="row">
               @if (!a.estModere || !a.estVisible) {
@@ -113,7 +117,7 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
                   [disabled]="enCours() === a.id"
                   (click)="moderer(a, 'valider')"
                 >
-                  Valider
+                  {{ 'Valider' | t }}
                 </button>
               }
               @if (a.estVisible) {
@@ -123,7 +127,7 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
                   [disabled]="enCours() === a.id"
                   (click)="moderer(a, 'masquer')"
                 >
-                  Masquer
+                  {{ 'Masquer' | t }}
                 </button>
               } @else {
                 <button
@@ -132,7 +136,7 @@ const LIENS: Record<string, string> = { salle: '/salles', coach: '/coachs', sean
                   [disabled]="enCours() === a.id"
                   (click)="moderer(a, 'afficher')"
                 >
-                  Réafficher
+                  {{ 'Réafficher' | t }}
                 </button>
               }
             </div>
@@ -180,6 +184,7 @@ export class ModerationComponent {
   private readonly gestion = inject(GestionService);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly langue = inject(LangueService);
 
   readonly onglets = ONGLETS;
   readonly filtre = signal<Filtre>('non_moderes');
@@ -209,40 +214,36 @@ export class ModerationComponent {
     this.charger(1);
   }
 
-  charger(numero: number): void {
+  /** @param repli rechargement après une modération : page gardée affichée, recul si elle est vide */
+  charger(numero: number, repli = false): void {
     this.erreur.set('');
-    this.page.set(null);
+    if (!repli) this.page.set(null);
     const filtre = this.filtre() === 'tous' ? undefined : this.filtre();
     this.gestion.avisModeration({ filtre, page: numero }).subscribe({
-      next: (p) => this.page.set(p),
-      error: (e) => this.erreur.set(messageErreur(e, 'Impossible de charger les avis.')),
+      next: (p) => {
+        if (repli && numero > 1 && p.items.length === 0) this.charger(numero - 1, true);
+        else this.page.set(p);
+      },
+      error: (e) =>
+        this.erreur.set(messageErreur(e, this.langue.t('Impossible de charger les avis.'))),
     });
   }
 
   moderer(a: Avis, action: 'valider' | 'masquer' | 'afficher'): void {
     this.enCours.set(a.id);
     this.gestion.moderer(a.id, action).subscribe({
-      next: (maj) => {
+      next: () => {
         this.enCours.set(null);
-        const garder = this.correspond(maj);
-        this.page.update(
-          (p) =>
-            p && {
-              ...p,
-              total: garder ? p.total : p.total - 1,
-              items: garder
-                ? p.items.map((i) =>
-                    i.id === maj.id ? { ...maj, cible: maj.cible ?? i.cible } : i,
-                  )
-                : p.items.filter((i) => i.id !== maj.id),
-            },
-        );
+        // Page rechargée depuis le serveur : total, pagination et onglet restent exacts.
+        this.charger(this.page()?.page ?? 1, true);
         this.toasts.succes(
-          action === 'valider'
-            ? 'Avis validé.'
-            : action === 'masquer'
-              ? 'Avis masqué.'
-              : 'Avis réaffiché.',
+          this.langue.t(
+            action === 'valider'
+              ? 'Avis validé.'
+              : action === 'masquer'
+                ? 'Avis masqué.'
+                : 'Avis réaffiché.',
+          ),
         );
       },
       error: (e) => {
@@ -250,17 +251,5 @@ export class ModerationComponent {
         this.toasts.erreur(messageErreur(e));
       },
     });
-  }
-
-  /** L'avis appartient-il encore à l'onglet affiché ? */
-  private correspond(a: Avis): boolean {
-    switch (this.filtre()) {
-      case 'non_moderes':
-        return !a.estModere && a.estVisible;
-      case 'masques':
-        return !a.estVisible;
-      default:
-        return true;
-    }
   }
 }

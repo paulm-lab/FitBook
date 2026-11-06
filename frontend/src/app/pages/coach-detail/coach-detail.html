@@ -9,9 +9,9 @@
         icone="?"
         message="Ce coach n’existe pas ou son profil n’est plus publié."
       >
-        <a class="btn" [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }"
-          >Voir les coachs</a
-        >
+        <a class="btn" [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">{{
+          'Voir les coachs' | t
+        }}</a>
       </app-etat-vide>
     }
     @case ('erreur') {
@@ -20,13 +20,13 @@
         icone="!"
         message="Le profil n’a pas pu être chargé. Vérifiez votre connexion."
       >
-        <button type="button" class="btn" (click)="charger(id())">Réessayer</button>
+        <button type="button" class="btn" (click)="charger(id())">{{ 'Réessayer' | t }}</button>
       </app-etat-vide>
     }
     @case ('ok') {
       @let c = coach()!;
-      <nav class="breadcrumb" aria-label="Fil d’Ariane">
-        <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">Coachs</a> ›
+      <nav class="breadcrumb" [attr.aria-label]="'Fil d’Ariane' | t">
+        <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">{{ 'Coachs' | t }}</a> ›
         <span>{{ c.prenom }} {{ c.nom }}</span>
       </nav>
 
@@ -35,7 +35,7 @@
           <img
             class="coach-photo"
             [src]="c.photo"
-            [alt]="'Photo de ' + c.prenom + ' ' + c.nom"
+            [alt]="'Photo de {nom}' | t: { nom: c.prenom + ' ' + c.nom }"
             appSecours
           />
         } @else {
@@ -43,12 +43,14 @@
         }
         <div class="stack coach-id">
           <div>
-            <span class="section-kicker">Coach{{ c.ville ? ' · ' + c.ville : '' }}</span>
+            <span class="section-kicker">{{
+              c.ville ? ('Coach · {ville}' | t: { ville: c.ville }) : ('Coach' | t)
+            }}</span>
             <h1>{{ c.prenom }} {{ c.nom }}</h1>
             <app-etoiles [note]="c.note.note" [nbAvis]="c.note.nbAvis" />
           </div>
           @if (c.specialites.length) {
-            <div class="chips" aria-label="Spécialités">
+            <div class="chips" [attr.aria-label]="'Spécialités' | t">
               @for (s of c.specialites; track s) {
                 <span class="chip">{{ s }}</span>
               }
@@ -57,18 +59,22 @@
           <dl class="facts">
             @if (c.experienceAnnees != null) {
               <div>
-                <dt>Expérience</dt>
-                <dd>{{ c.experienceAnnees }} an{{ c.experienceAnnees > 1 ? 's' : '' }}</dd>
+                <dt>{{ 'Expérience' | t }}</dt>
+                <dd>
+                  {{
+                    (c.experienceAnnees > 1 ? '{n} ans' : '{n} an') | t: { n: c.experienceAnnees }
+                  }}
+                </dd>
               </div>
             }
             @if (c.tarifHoraire) {
               <div>
-                <dt>Tarif horaire</dt>
-                <dd>{{ c.tarifHoraire | number: '1.0-2' }} €</dd>
+                <dt>{{ 'Tarif horaire' | t }}</dt>
+                <dd>{{ c.tarifHoraire | nombreL: '1.0-2' }} €</dd>
               </div>
             }
             <div>
-              <dt>Séances à venir</dt>
+              <dt>{{ 'Séances à venir' | t }}</dt>
               <dd>{{ c.prochainesSeances.length }}</dd>
             </div>
           </dl>
@@ -79,18 +85,18 @@
       <div class="coach-grid">
         <div class="stack">
           <section class="panel">
-            <h2>Biographie</h2>
+            <h2>{{ 'Biographie' | t }}</h2>
             <p class="text pre">
-              {{ c.biographie || 'Ce coach n’a pas encore rédigé sa présentation.' }}
+              {{ c.biographie || ('Ce coach n’a pas encore rédigé sa présentation.' | t) }}
             </p>
             @if (c.certification) {
-              <h3>Certifications</h3>
+              <h3>{{ 'Certifications' | t }}</h3>
               <p class="text pre">{{ c.certification }}</p>
             }
           </section>
 
           <section class="panel">
-            <h2>Prochaines séances</h2>
+            <h2>{{ 'Prochaines séances' | t }}</h2>
             @if (c.prochainesSeances.length) {
               <div class="grid">
                 @for (seance of c.prochainesSeances; track seance.id) {
@@ -98,7 +104,7 @@
                 }
               </div>
             } @else {
-              <p class="muted">Aucune séance programmée pour le moment.</p>
+              <p class="muted">{{ 'Aucune séance programmée pour le moment.' | t }}</p>
             }
           </section>
 
@@ -112,7 +118,7 @@
         </div>
 
         <aside class="panel">
-          <h2>Disponibilités</h2>
+          <h2>{{ 'Disponibilités' | t }}</h2>
           <app-disponibilites-liste [disponibilites]="c.disponibilites" />
         </aside>
       </div>

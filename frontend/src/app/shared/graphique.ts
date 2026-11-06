@@ -4,6 +4,7 @@ import {
   ElementRef,
   OnDestroy,
   effect,
+  inject,
   input,
   viewChild,
 } from '@angular/core';
@@ -20,6 +21,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js';
+import { LangueService } from '../core/i18n/langue.service';
 import { Evolution } from '../core/models';
 
 Chart.register(
@@ -54,6 +56,7 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
   readonly donnees = input.required<Evolution[]>();
   readonly libelle = input('Réservations par semaine');
 
+  private readonly langue = inject(LangueService);
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private chart?: Chart;
 
@@ -63,6 +66,7 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
       if (this.chart) {
         this.chart.data.labels = donnees.map((d) => this.semaine(d.semaine));
         this.chart.data.datasets[0].data = donnees.map((d) => d.reservations);
+        this.chart.data.datasets[0].label = this.langue.t(this.libelle());
         this.chart.update();
       }
     });
@@ -70,7 +74,11 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
 
   description(): string {
     const total = this.donnees().reduce((somme, d) => somme + d.reservations, 0);
-    return `${this.libelle()} : ${total} réservations sur ${this.donnees().length} semaines.`;
+    return this.langue.t('{libelle} : {total} réservations sur {semaines} semaines.', {
+      libelle: this.langue.t(this.libelle()),
+      total,
+      semaines: this.donnees().length,
+    });
   }
 
   ngAfterViewInit(): void {
@@ -84,7 +92,7 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
         labels: this.donnees().map((d) => this.semaine(d.semaine)),
         datasets: [
           {
-            label: this.libelle(),
+            label: this.langue.t(this.libelle()),
             data: this.donnees().map((d) => d.reservations),
             backgroundColor: '#ff642d',
             hoverBackgroundColor: '#e84e1e',
@@ -98,7 +106,11 @@ export class GraphiqueEvolutionComponent implements AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { title: (items) => `Semaine du ${items[0].label}` } },
+          tooltip: {
+            callbacks: {
+              title: (items) => this.langue.t('Semaine du {date}', { date: items[0].label }),
+            },
+          },
         },
         scales: {
           x: { ticks: { color: texte }, grid: { display: false } },

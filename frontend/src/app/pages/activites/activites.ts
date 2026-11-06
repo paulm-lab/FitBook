@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { catchError, map, of, startWith } from 'rxjs';
 import { VisualShowcaseComponent } from '../../components/visual-showcase/visual-showcase';
+import { I18N } from '../../core/i18n/pipes';
 import { Activite } from '../../core/models';
 import { CatalogueService } from '../../core/services/catalogue.service';
 import { EtatVideComponent, ImageSecoursDirective, LoaderComponent } from '../../shared/ui';
@@ -24,6 +25,7 @@ interface EtatActivites {
     LoaderComponent,
     EtatVideComponent,
     ImageSecoursDirective,
+    ...I18N,
   ],
   templateUrl: './activites.html',
   styleUrl: './activites.css',

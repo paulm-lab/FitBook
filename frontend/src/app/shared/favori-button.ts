@@ -3,6 +3,8 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from '../core/auth/auth.service';
 import { messageErreur } from '../core/http';
+import { LangueService } from '../core/i18n/langue.service';
+import { I18N } from '../core/i18n/pipes';
 import { Favori, TypeCible } from '../core/models';
 import { CompteService } from '../core/services/compte.service';
 import { ToastService } from '../core/services/toast.service';
@@ -26,12 +28,10 @@ export class FavorisStore {
   }
 
   recharger(): void {
-    this.compte
-      .favoris()
-      .subscribe({
-        next: (favoris) => this.favoris.set(favoris),
-        error: () => this.favoris.set([]),
-      });
+    this.compte.favoris().subscribe({
+      next: (favoris) => this.favoris.set(favoris),
+      error: () => this.favoris.set([]),
+    });
   }
 
   trouver(type: TypeCible, id: number): Favori | undefined {
@@ -49,16 +49,17 @@ export class FavorisStore {
       [class.on]="favori()"
       [disabled]="envoi()"
       [attr.aria-pressed]="!!favori()"
-      [attr.aria-label]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
-      [title]="favori() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+      [attr.aria-label]="(favori() ? 'Retirer des favoris' : 'Ajouter aux favoris') | t"
+      [title]="(favori() ? 'Retirer des favoris' : 'Ajouter aux favoris') | t"
       (click)="basculer($event)"
     >
       <span aria-hidden="true">{{ favori() ? '♥' : '♡' }}</span>
       @if (avecTexte()) {
-        <span>{{ favori() ? 'Favori' : 'Ajouter aux favoris' }}</span>
+        <span>{{ (favori() ? 'Favori' : 'Ajouter aux favoris') | t }}</span>
       }
     </button>
   `,
+  imports: [...I18N],
 })
 export class FavoriButtonComponent {
   readonly type = input.required<TypeCible>();
@@ -70,6 +71,7 @@ export class FavoriButtonComponent {
   private readonly auth = inject(AuthService);
   private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly langue = inject(LangueService);
 
   readonly envoi = signal(false);
   readonly favori = computed(() =>
@@ -87,13 +89,23 @@ export class FavoriButtonComponent {
 
     this.envoi.set(true);
     const existant = this.favori();
-    const requete: Observable<unknown> = existant
+    const requete: Observable<Favori | void> = existant
       ? this.compte.retirerFavori(existant.id)
       : this.compte.ajouterFavori(this.type(), this.cibleId());
     requete.subscribe({
-      next: () => {
-        this.store.recharger();
-        this.toasts.succes(existant ? 'Retiré de vos favoris.' : 'Ajouté à vos favoris.');
+      next: (cree) => {
+        // Liste mise à jour tout de suite : un second clic envoie la bonne requête.
+        this.store.favoris.update((liste) =>
+          existant
+            ? liste.filter((f) => f.id !== existant.id)
+            : cree
+              ? [...liste.filter((f) => f.id !== cree.id), cree]
+              : liste,
+        );
+        if (!existant && !cree?.cible) this.store.recharger();
+        this.toasts.succes(
+          this.langue.t(existant ? 'Retiré de vos favoris.' : 'Ajouté à vos favoris.'),
+        );
         this.envoi.set(false);
       },
       error: (error: unknown) => {

@@ -1,23 +1,23 @@
 <main class="container page" id="contenu">
   <header class="page-header">
     <div>
-      <span class="section-kicker">Trouvez votre discipline</span>
-      <h1>Les activités</h1>
-      <p>Explorez les pratiques et trouvez une séance près de chez vous.</p>
+      <span class="section-kicker">{{ 'Trouvez votre discipline' | t }}</span>
+      <h1>{{ 'Les activités' | t }}</h1>
+      <p>{{ 'Explorez les pratiques et trouvez une séance près de chez vous.' | t }}</p>
     </div>
     <label class="field activity-search">
-      <span class="sr-only">Rechercher une activité</span>
+      <span class="sr-only">{{ 'Rechercher une activité' | t }}</span>
       <input
         type="search"
         [ngModel]="texte()"
         (ngModelChange)="texte.set($event)"
-        placeholder="Rechercher une activité"
+        [placeholder]="'Rechercher une activité' | t"
       />
     </label>
   </header>
 
   @if (categories().length > 1) {
-    <div class="tabs" role="group" aria-label="Filtrer par catégorie">
+    <div class="tabs" role="group" [attr.aria-label]="'Filtrer par catégorie' | t">
       <button
         type="button"
         class="tab"
@@ -25,7 +25,7 @@
         [attr.aria-pressed]="!categorie()"
         (click)="categorie.set('')"
       >
-        Toutes
+        {{ 'Toutes' | t }}
       </button>
       @for (c of categories(); track c) {
         <button
@@ -45,10 +45,14 @@
     <app-loader texte="Chargement des activités…" />
   } @else if (erreur()) {
     <p class="alert alert--error" role="alert">
-      Impossible de charger les activités. Réessayez plus tard.
+      {{ 'Impossible de charger les activités. Réessayez plus tard.' | t }}
     </p>
   } @else {
-    <p class="sr-only" aria-live="polite">{{ activites().length }} activité(s)</p>
+    <p class="sr-only" aria-live="polite">
+      {{
+        (activites().length > 1 ? '{n} activités' : '{n} activité') | t: { n: activites().length }
+      }}
+    </p>
     <div class="grid">
       @for (a of activites(); track a.id) {
         <article class="card card--link">
@@ -86,7 +90,7 @@
                 class="btn btn--sm"
                 [routerLink]="['/recherche']"
                 [queryParams]="{ activiteId: a.id }"
-                >Voir les séances</a
+                >{{ 'Voir les séances' | t }}</a
               >
             </div>
           </div>

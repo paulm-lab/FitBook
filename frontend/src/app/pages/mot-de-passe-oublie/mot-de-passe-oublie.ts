@@ -5,30 +5,38 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { messageErreur } from '../../core/http';
 
+import { I18N } from '../../core/i18n/pipes';
+
 /**
  * Demande d'un lien de réinitialisation (US-V07). L'API répond le même message que l'adresse
  * existe ou non : la page ne révèle jamais si un compte existe.
  */
 @Component({
   selector: 'app-mot-de-passe-oublie',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [...I18N, ReactiveFormsModule, RouterLink],
   template: `
     <main class="form-page" id="contenu">
       <section class="form-card" aria-labelledby="forgot-title">
-        <span class="section-kicker">MOT DE PASSE OUBLIÉ</span>
-        <h1 id="forgot-title">Réinitialiser mon mot de passe</h1>
-        <p>Saisissez l'adresse de votre compte : nous vous enverrons un lien valable 1 heure.</p>
+        <span class="section-kicker">{{ 'MOT DE PASSE OUBLIÉ' | t }}</span>
+        <h1 id="forgot-title">{{ 'Réinitialiser mon mot de passe' | t }}</h1>
+        <p>
+          {{
+            "Saisissez l'adresse de votre compte : nous vous enverrons un lien valable 1 heure." | t
+          }}
+        </p>
 
         @if (message()) {
           <div class="alert alert--success" role="status">
             <p>{{ message() }}</p>
-            <p>Pensez à vérifier vos courriers indésirables.</p>
+            <p>{{ 'Pensez à vérifier vos courriers indésirables.' | t }}</p>
           </div>
-          <p class="form-switch"><a routerLink="/connexion">Retour à la connexion</a></p>
+          <p class="form-switch">
+            <a routerLink="/connexion">{{ 'Retour à la connexion' | t }}</a>
+          </p>
         } @else {
           <form [formGroup]="formulaire" (ngSubmit)="envoyer()" novalidate>
             <label for="forgot-email">
-              E-mail
+              {{ 'E-mail' | t }}
               <input
                 id="forgot-email"
                 type="email"
@@ -39,7 +47,9 @@ import { messageErreur } from '../../core/http';
                 [attr.aria-describedby]="invalide() ? 'forgot-email-error' : null"
               />
               @if (invalide()) {
-                <small id="forgot-email-error">Saisissez une adresse e-mail valide.</small>
+                <small id="forgot-email-error">{{
+                  'Saisissez une adresse e-mail valide.' | t
+                }}</small>
               }
             </label>
             @if (erreur()) {
@@ -51,10 +61,12 @@ import { messageErreur } from '../../core/http';
               [disabled]="envoi()"
               [attr.aria-busy]="envoi()"
             >
-              {{ envoi() ? 'Envoi…' : 'Recevoir le lien' }}
+              {{ (envoi() ? 'Envoi…' : 'Recevoir le lien') | t }}
             </button>
           </form>
-          <p class="form-switch"><a routerLink="/connexion">Retour à la connexion</a></p>
+          <p class="form-switch">
+            <a routerLink="/connexion">{{ 'Retour à la connexion' | t }}</a>
+          </p>
         }
       </section>
     </main>

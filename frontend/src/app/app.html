@@ -1,7 +1,7 @@
-<a class="skip-link" href="#contenu">Aller au contenu</a>
+<a class="skip-link" href="#contenu">{{ 'Aller au contenu' | t }}</a>
 
 <header class="navbar" [class.menu-open]="menuOuvert()">
-  <a routerLink="/" class="brand" aria-label="FitBook, accueil"
+  <a routerLink="/" class="brand" [attr.aria-label]="'FitBook, accueil' | t"
     ><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a
   >
 
@@ -11,28 +11,50 @@
     (click)="menuOuvert.set(!menuOuvert())"
     [attr.aria-expanded]="menuOuvert()"
     aria-controls="site-navigation"
-    [attr.aria-label]="menuOuvert() ? 'Fermer le menu' : 'Ouvrir le menu'"
+    [attr.aria-label]="(menuOuvert() ? 'Fermer le menu' : 'Ouvrir le menu') | t"
   >
     <span></span><span></span><span></span>
   </button>
 
-  <nav class="main-nav" id="site-navigation" aria-label="Navigation principale">
-    <a routerLink="/recherche" routerLinkActive="active">Rechercher</a>
-    <a routerLink="/activites" routerLinkActive="active">Activités</a>
-    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }">Salles</a>
-    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">Coachs</a>
-    <a routerLink="/tarifs" routerLinkActive="active">Tarifs</a>
+  <nav class="main-nav" id="site-navigation" [attr.aria-label]="'Navigation principale' | t">
+    <a routerLink="/recherche" routerLinkActive="active">{{ 'Rechercher' | t }}</a>
+    <a routerLink="/activites" routerLinkActive="active">{{ 'Activités' | t }}</a>
+    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }">{{ 'Salles' | t }}</a>
+    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">{{ 'Coachs' | t }}</a>
+    <a routerLink="/tarifs" routerLinkActive="active">{{ 'Tarifs' | t }}</a>
   </nav>
 
   <div class="nav-actions">
+    <div class="lang-switch" role="group" [attr.aria-label]="'Langue du site' | t">
+      <button
+        type="button"
+        lang="fr"
+        [class.active]="langue.langue() === 'fr'"
+        [attr.aria-pressed]="langue.langue() === 'fr'"
+        (click)="langue.choisir('fr')"
+        title="Français"
+      >
+        FR
+      </button>
+      <button
+        type="button"
+        lang="en"
+        [class.active]="langue.langue() === 'en'"
+        [attr.aria-pressed]="langue.langue() === 'en'"
+        (click)="langue.choisir('en')"
+        title="English"
+      >
+        EN
+      </button>
+    </div>
     <button
       type="button"
       class="icon-btn"
       (click)="theme.basculer()"
       [attr.aria-label]="
-        theme.theme() === 'sombre' ? 'Activer le mode clair' : 'Activer le mode sombre'
+        (theme.theme() === 'sombre' ? 'Activer le mode clair' : 'Activer le mode sombre') | t
       "
-      [title]="theme.theme() === 'sombre' ? 'Mode clair' : 'Mode sombre'"
+      [title]="(theme.theme() === 'sombre' ? 'Mode clair' : 'Mode sombre') | t"
     >
       <span aria-hidden="true">{{ theme.theme() === 'sombre' ? '☀' : '☾' }}</span>
     </button>
@@ -42,9 +64,12 @@
         routerLink="/mon-espace/notifications"
         class="icon-btn notif-btn"
         [attr.aria-label]="
-          nonLues() > 0 ? nonLues() + ' notification(s) non lue(s)' : 'Notifications'
+          nonLues() > 0
+            ? ((nonLues() > 1 ? '{n} notifications non lues' : '{n} notification non lue')
+              | t: { n: nonLues() })
+            : ('Notifications' | t)
         "
-        title="Notifications"
+        [title]="'Notifications' | t"
       >
         <span aria-hidden="true">🔔</span>
         @if (nonLues() > 0) {
@@ -60,19 +85,20 @@
           }}</span>
         }
         <span>{{
-          auth.role() === 'sportif'
+          (auth.role() === 'sportif'
             ? 'Mon espace'
             : auth.role() === 'admin'
               ? 'Administration'
               : 'Mon espace pro'
+          ) | t
         }}</span>
       </a>
       <button class="btn btn--sm btn--ghost" type="button" (click)="deconnecter()">
-        Déconnexion
+        {{ 'Déconnexion' | t }}
       </button>
     } @else {
-      <a routerLink="/connexion" class="login-link">Connexion</a>
-      <a routerLink="/inscription" class="btn btn--sm">S'inscrire</a>
+      <a routerLink="/connexion" class="login-link">{{ 'Connexion' | t }}</a>
+      <a routerLink="/inscription" class="btn btn--sm">{{ "S'inscrire" | t }}</a>
     }
   </div>
 </header>
@@ -86,17 +112,17 @@
     <a routerLink="/" class="brand"
       ><span class="brand-icon" aria-hidden="true">F</span><span>FitBook</span></a
     >
-    <p>Le sport à votre rythme. Salles, cours et coachs à Bruxelles.</p>
+    <p>{{ 'Le sport à votre rythme. Salles, cours et coachs à Bruxelles.' | t }}</p>
   </div>
-  <nav class="footer-links" aria-label="Liens du pied de page">
-    <a routerLink="/recherche">Séances</a>
-    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }">Salles</a>
-    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">Coachs</a>
-    <a routerLink="/activites">Activités</a>
-    <a routerLink="/tarifs">Tarifs</a>
-    <a routerLink="/inscription">Devenir coach ou partenaire</a>
+  <nav class="footer-links" [attr.aria-label]="'Liens du pied de page' | t">
+    <a routerLink="/recherche">{{ 'Séances' | t }}</a>
+    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'salles' }">{{ 'Salles' | t }}</a>
+    <a [routerLink]="['/recherche']" [queryParams]="{ type: 'coachs' }">{{ 'Coachs' | t }}</a>
+    <a routerLink="/activites">{{ 'Activités' | t }}</a>
+    <a routerLink="/tarifs">{{ 'Tarifs' | t }}</a>
+    <a routerLink="/inscription">{{ 'Devenir coach ou partenaire' | t }}</a>
   </nav>
-  <p class="footer-copy">© {{ annee }} FitBook · Projet UAA MI08</p>
+  <p class="footer-copy">{{ '© {annee} FitBook · Projet UAA MI08' | t: { annee } }}</p>
 </footer>
 
 <app-toasts />

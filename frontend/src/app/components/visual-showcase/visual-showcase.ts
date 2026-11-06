@@ -1,4 +1,5 @@
-import { Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { Component, ElementRef, computed, input, signal, viewChild } from '@angular/core';
+import { I18N } from '../../core/i18n/pipes';
 
 type VisualPage =
   | 'home'
@@ -215,21 +216,21 @@ const content: Record<VisualPage, VisualContent> = {
 @Component({
   selector: 'app-visual-showcase',
   standalone: true,
+  imports: [...I18N],
   templateUrl: './visual-showcase.html',
   styleUrl: './visual-showcase.css',
 })
 export class VisualShowcaseComponent {
-  @Input() page: VisualPage = 'home';
-  @Input() compact = false;
-  videoUnavailable = false;
-  @ViewChild('galleryTrack') private galleryTrack?: ElementRef<HTMLDivElement>;
+  readonly page = input<VisualPage>('home');
+  readonly compact = input(false);
+  readonly videoUnavailable = signal(false);
+  private readonly galleryTrack = viewChild<ElementRef<HTMLDivElement>>('galleryTrack');
 
-  get visuals(): VisualContent {
-    return content[this.page];
-  }
+  /** Textes en français (clés de traduction), traduits dans le gabarit. */
+  readonly visuals = computed<VisualContent>(() => content[this.page()]);
 
   scrollGallery(direction: -1 | 1): void {
-    this.galleryTrack?.nativeElement.scrollBy({ left: direction * 300, behavior: 'smooth' });
+    this.galleryTrack()?.nativeElement.scrollBy({ left: direction * 300, behavior: 'smooth' });
   }
 
   useFallback(event: Event): void {
@@ -240,6 +241,6 @@ export class VisualShowcaseComponent {
   }
 
   markVideoUnavailable(): void {
-    this.videoUnavailable = true;
+    this.videoUnavailable.set(true);
   }
 }
