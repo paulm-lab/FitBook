@@ -106,14 +106,22 @@ final class ReservationService
         return $reservation;
     }
 
-    /** Annulation par l'administrateur (correction des données) : sans condition de délai. */
+    /**
+     * Annulation par l'administrateur (correction des données) : sans le délai de 2 h, mais
+     * jamais une fois la séance commencée (elle fait partie de l'historique du sportif).
+     */
     public function cancelByAdmin(Reservation $reservation): Reservation
     {
-        if ($reservation->getStatus() !== ReservationStatus::Confirmee) {
+        $now = new \DateTimeImmutable();
+        if ($reservation->getEffectiveStatus($now) !== ReservationStatus::Confirmee) {
             throw ApiException::conflict('Cette réservation est déjà annulée ou terminée.');
         }
+        $startAt = $reservation->getSession()?->getStartAt();
+        if ($startAt !== null && $startAt <= $now) {
+            throw ApiException::conflict('Cette séance a déjà commencé : la réservation ne peut plus être annulée.');
+        }
 
-        $reservation->setStatus(ReservationStatus::Annulee)->setCancelledAt(new \DateTimeImmutable());
+        $reservation->setStatus(ReservationStatus::Annulee)->setCancelledAt($now);
         $this->inApp($reservation, 'reservation_annulee', 'Votre réservation « {session} » a été annulée par l’équipe FitBook.');
         $this->em->flush();
         $this->notify(fn () => $this->mailer->sendReservationCancellation($reservation), 'annulation de réservation');

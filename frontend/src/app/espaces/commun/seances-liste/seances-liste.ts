@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { messageErreur } from '../../../core/http';
 import { LangueService } from '../../../core/i18n/langue.service';
 import { I18N } from '../../../core/i18n/pipes';
@@ -61,10 +62,11 @@ import { espaceCourant } from '../espace';
       @if (espace === 'gestionnaire') {
         <label class="field" style="min-width: 220px">
           <span>{{ 'Salle' | t }}</span>
-          <select [value]="salleId() ?? ''" (change)="changerSalle($any($event.target).value)">
-            <option value="">{{ 'Toutes mes salles' | t }}</option>
+          <!-- [selected] sur chaque option : les salles arrivent après le ?salleId de l’URL. -->
+          <select (change)="changerSalle($any($event.target).value)">
+            <option value="" [selected]="salleId() === null">{{ 'Toutes mes salles' | t }}</option>
             @for (s of salles(); track s.id) {
-              <option [value]="s.id">{{ s.nom }}</option>
+              <option [value]="s.id" [selected]="s.id === salleId()">{{ s.nom }}</option>
             }
           </select>
         </label>
@@ -190,6 +192,7 @@ export class SeancesListeComponent {
   readonly page = signal<Page<SeanceResume> | null>(null);
   readonly chargement = signal(true);
   readonly erreur = signal('');
+  private requete?: Subscription;
 
   constructor() {
     const salle = Number(this.route.snapshot.queryParamMap.get('salleId'));
@@ -221,7 +224,9 @@ export class SeancesListeComponent {
   charger(page: number, repli = false): void {
     this.chargement.set(true);
     this.erreur.set('');
-    this.gestion
+    // Une réponse lente de l'onglet ou de la salle précédente n'écrase pas la vue courante.
+    this.requete?.unsubscribe();
+    this.requete = this.gestion
       .seances(this.espace, { periode: this.periode(), page, salleId: this.salleId() ?? undefined })
       .subscribe({
         next: (reponse) => {

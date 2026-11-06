@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { messageErreur } from '../../../core/http';
 import { LangueService } from '../../../core/i18n/langue.service';
@@ -31,8 +31,16 @@ import { espaceCourant } from '../espace';
         <h1>{{ (espace === 'gestionnaire' ? 'Avis sur mes salles' : 'Avis reçus') | t }}</h1>
         <p>{{ 'Les avis visibles publiés par les sportifs après leurs séances.' | t }}</p>
       </div>
-      @if (moyenne() !== null) {
-        <app-etoiles [note]="moyenne()" [nbAvis]="page()?.total ?? null" />
+      @if (moyenne(); as m) {
+        <div class="stack" style="gap:4px;align-items:flex-end">
+          <!-- Tous les avis tiennent sur la page : la moyenne porte sur le total. -->
+          @if (m.nb === page()?.total) {
+            <app-etoiles [note]="m.note" [nbAvis]="m.nb" />
+          } @else {
+            <app-etoiles [note]="m.note" />
+            <small class="muted">{{ 'Moyenne des {n} avis affichés' | t: { n: m.nb } }}</small>
+          }
+        </div>
       }
     </header>
 
@@ -80,7 +88,18 @@ export class AvisRecusComponent {
   readonly page = signal<Page<Avis> | null>(null);
   readonly chargement = signal(true);
   readonly erreur = signal('');
-  readonly moyenne = signal<number | null>(null);
+  /**
+   * Moyenne des avis de la page affichée, avec leur nombre : l'API ne renvoie pas de moyenne
+   * sur l'ensemble de ces avis (la note officielle de chaque cible est sur sa fiche publique).
+   */
+  readonly moyenne = computed<{ note: number; nb: number } | null>(() => {
+    const items = this.page()?.items ?? [];
+    if (items.length === 0) {
+      return null;
+    }
+    const somme = items.reduce((s, a) => s + a.note, 0);
+    return { note: Math.round((somme / items.length) * 10) / 10, nb: items.length };
+  });
 
   constructor() {
     this.charger(1);
@@ -92,12 +111,6 @@ export class AvisRecusComponent {
     this.gestion.avisRecus(espace, page).subscribe({
       next: (p) => {
         this.page.set(p);
-        // Moyenne de la page affichée (indicative) : la note officielle est sur la fiche publique.
-        if (page === 1 && p.items.length) {
-          this.moyenne.set(
-            Math.round((p.items.reduce((s, a) => s + a.note, 0) / p.items.length) * 10) / 10,
-          );
-        }
         this.chargement.set(false);
       },
       error: (error) => {

@@ -8,6 +8,7 @@ use App\Dto\SearchCriteria;
 use App\Entity\CoachProfile;
 use App\Entity\Session;
 use App\Entity\User;
+use App\Enum\SessionStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -59,10 +60,14 @@ class CoachProfileRepository extends ServiceEntityRepository
             $query->andWhere('c.hourlyRate <= :maxRate')->setParameter('maxRate', $criteria->prixMax);
         }
         if ($criteria->activiteId !== null || $criteria->activite !== '') {
-            // Coachs qui animent au moins une séance de cette activité, ou qui l'ont en spécialité.
+            // Coachs qui animent au moins une séance active et à venir de cette activité,
+            // ou qui l'ont en spécialité (une séance annulée ou passée ne compte pas).
             $sub = $this->getEntityManager()->createQueryBuilder()
                 ->select('1')->from(Session::class, 'cs')->join('cs.activity', 'ca')
-                ->andWhere('cs.coach = c');
+                ->andWhere('cs.coach = c')
+                ->andWhere('cs.status = :activeStatus AND cs.startAt > :now');
+            $query->setParameter('activeStatus', SessionStatus::Active)
+                ->setParameter('now', new \DateTimeImmutable());
             if ($criteria->activiteId !== null) {
                 $sub->andWhere('ca.id = :activityId');
                 $query->andWhere($query->expr()->exists($sub->getDQL()))->setParameter('activityId', $criteria->activiteId);

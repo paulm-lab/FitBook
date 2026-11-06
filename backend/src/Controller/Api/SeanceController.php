@@ -225,13 +225,15 @@ final class SeanceController extends AbstractController
         $session = $this->find($id);
         $this->denyAccessUnlessGranted(SessionVoter::VIEW_RESERVATIONS, $session);
         $now = new \DateTimeImmutable();
-        $count = $this->sessions->confirmedCounts([$session])[$session->getId()] ?? 0;
 
         $items = $reservations->createQueryBuilder('r')
             ->join('r.user', 'u')->addSelect('u')
             ->andWhere('r.session = :session')->setParameter('session', $session)
             ->orderBy('r.status', 'ASC')->addOrderBy('u.lastName', 'ASC')
             ->getQuery()->getResult();
+        // Participants = réservations confirmées ou terminées (une séance finie garde ses
+        // participants) : même définition pour « nbConfirmes » et « placesDisponibles ».
+        $count = \count(array_filter($items, static fn (Reservation $r): bool => $r->getStatus() !== ReservationStatus::Annulee));
 
         return $this->json([
             'seance' => $this->presenter->session($session, $count),
@@ -239,7 +241,7 @@ final class SeanceController extends AbstractController
                 fn (Reservation $r): array => $this->presenter->reservation($r, $now, withUser: true, confirmedCount: $count),
                 $items,
             ),
-            'nbConfirmes' => \count(array_filter($items, static fn (Reservation $r): bool => $r->getStatus() !== ReservationStatus::Annulee)),
+            'nbConfirmes' => $count,
         ]);
     }
 

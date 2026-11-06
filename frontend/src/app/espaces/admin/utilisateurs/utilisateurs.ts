@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { messageErreur } from '../../../core/http';
 import { Page, ROLES, Role, UtilisateurAdmin } from '../../../core/models';
@@ -186,6 +186,7 @@ export class UtilisateursComponent {
   readonly erreur = signal('');
   readonly enCours = signal<number | null>(null);
   readonly saisie$ = new Subject<string>();
+  private requete?: Subscription;
 
   moi(): number | undefined {
     return this.auth.utilisateur()?.id;
@@ -209,14 +210,20 @@ export class UtilisateursComponent {
   /** @param repli page vide après une suppression : on recule d'une page */
   charger(numero: number, repli = false): void {
     this.erreur.set('');
-    this.gestion.utilisateurs({ q: this.q(), role: this.role(), page: numero }).subscribe({
-      next: (p) => {
-        if (repli && numero > 1 && p.items.length === 0) this.charger(numero - 1);
-        else this.page.set(p);
-      },
-      error: (e) =>
-        this.erreur.set(messageErreur(e, this.langue.t('Impossible de charger les utilisateurs.'))),
-    });
+    // Une réponse lente d'une recherche précédente n'écrase pas la liste courante.
+    this.requete?.unsubscribe();
+    this.requete = this.gestion
+      .utilisateurs({ q: this.q(), role: this.role(), page: numero })
+      .subscribe({
+        next: (p) => {
+          if (repli && numero > 1 && p.items.length === 0) this.charger(numero - 1);
+          else this.page.set(p);
+        },
+        error: (e) =>
+          this.erreur.set(
+            messageErreur(e, this.langue.t('Impossible de charger les utilisateurs.')),
+          ),
+      });
   }
 
   async changerRole(u: UtilisateurAdmin, select: HTMLSelectElement): Promise<void> {
