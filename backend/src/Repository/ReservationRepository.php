@@ -10,6 +10,7 @@ use App\Entity\Reservation;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Enum\ReservationStatus;
+use App\Enum\SessionStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\ORM\QueryBuilder;
@@ -83,8 +84,8 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Passe à « terminée » les réservations confirmées des séances finies : c'est ce statut
-     * qui ouvre le droit de laisser un avis (RG-06).
+     * Passe à « terminée » les réservations confirmées des séances actives finies : c'est ce
+     * statut qui ouvre le droit de laisser un avis (RG-06). Une séance annulée n'a pas eu lieu.
      *
      * @return int nombre de réservations mises à jour
      */
@@ -93,9 +94,10 @@ class ReservationRepository extends ServiceEntityRepository
         $ids = $this->createQueryBuilder('r')
             ->select('r.id')
             ->join('r.session', 's')
-            ->andWhere('r.status = :confirmed AND s.endAt <= :now')
+            ->andWhere('r.status = :confirmed AND s.endAt <= :now AND s.status = :active')
             ->setParameter('confirmed', ReservationStatus::Confirmee)
             ->setParameter('now', $now)
+            ->setParameter('active', SessionStatus::Active)
             ->getQuery()->getSingleColumnResult();
 
         if ($ids === []) {
@@ -109,6 +111,53 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('finished', ReservationStatus::Terminee)
             ->setParameter('ids', $ids)
             ->getQuery()->execute();
+    }
+
+    /** Nouvel horaire de la séance : chaque inscrit recevra un nouveau rappel (app:send-reminders). */
+    public function resetReminders(Session $session): int
+    {
+        return $this->createQueryBuilder('r')
+            ->update()
+            ->set('r.reminderSentAt', 'NULL')
+            ->where('r.session = :session')
+            ->setParameter('session', $session)
+            ->getQuery()->execute();
+    }
+
+    /**
+     * Marque le rappel comme envoyé, seulement s'il ne l'était pas encore (mise à jour atomique) :
+     * renvoie faux si un autre passage de la commande l'a déjà pris en charge (aucun double envoi).
+     */
+    public function claimReminder(Reservation $reservation, \DateTimeImmutable $sentAt): bool
+    {
+        return $this->createQueryBuilder('r')
+            ->update()
+            ->set('r.reminderSentAt', ':sentAt')
+            ->where('r.id = :id AND r.reminderSentAt IS NULL')
+            ->setParameter('sentAt', $sentAt)
+            ->setParameter('id', $reservation->getId())
+            ->getQuery()->execute() > 0;
+    }
+
+    /** Envoi du rappel échoué : la marque est retirée pour qu'il soit retenté. */
+    public function releaseReminder(Reservation $reservation): void
+    {
+        $this->createQueryBuilder('r')
+            ->update()
+            ->set('r.reminderSentAt', 'NULL')
+            ->where('r.id = :id')
+            ->setParameter('id', $reservation->getId())
+            ->getQuery()->execute();
+    }
+
+    /**
+     * Enregistre le jeton du QR code par une requête directe : un échec (collision du jeton
+     * unique, coupure) ne ferme pas l'EntityManager et n'annule pas la réservation.
+     */
+    public function storeQrToken(int $reservationId, string $token): void
+    {
+        $this->getEntityManager()->getConnection()
+            ->executeStatement('UPDATE reservation SET qr_token = ? WHERE id = ?', [$token, $reservationId]);
     }
 
     /**

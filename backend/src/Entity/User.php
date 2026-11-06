@@ -61,6 +61,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(options: ['default' => false])]
     private bool $isBlocked = false;
 
+    /** Langue des e-mails et notifications (fr ou en), reprise de la dernière requête du compte. */
+    #[ORM\Column(length: 2, options: ['default' => 'fr'])]
+    private string $locale = 'fr';
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -229,6 +233,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsBlocked(bool $isBlocked): static
     {
         $this->isBlocked = $isBlocked;
+
+        return $this;
+    }
+
+    public function getLocale(): string
+    {
+        return $this->locale;
+    }
+
+    /** Toute langue autre que l'anglais retombe sur le français (langue par défaut). */
+    public function setLocale(string $locale): static
+    {
+        $this->locale = $locale === 'en' ? 'en' : 'fr';
 
         return $this;
     }

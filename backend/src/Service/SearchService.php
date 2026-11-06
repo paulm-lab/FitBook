@@ -110,7 +110,8 @@ final class SearchService
         if ($criteria->noteMin !== null) {
             $rows = array_filter($rows, static fn (array $r): bool => $r['noteMoyenne'] !== null && $r['noteMoyenne'] >= $criteria->noteMin);
         }
-        if ($criteria->hasLocation() && $criteria->rayon !== null) {
+        // Les coachs n'ont pas de position (distanceKm toujours nulle) : pas de filtre par rayon.
+        if ($criteria->hasLocation() && $criteria->rayon !== null && $criteria->type !== 'coachs') {
             $rows = array_filter($rows, static fn (array $r): bool => $r['distanceKm'] !== null && $r['distanceKm'] <= $criteria->rayon);
         }
         $rows = array_values($rows);

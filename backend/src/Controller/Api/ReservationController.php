@@ -47,13 +47,19 @@ final class ReservationController extends AbstractController
     #[Route('', name: 'api_reservations_create', methods: ['POST'])]
     public function create(Request $request, ApiRequest $api, JsonSchemaValidator $schema): JsonResponse
     {
+        // Rôle stocké, pas la hiérarchie : un administrateur, un coach ou un gestionnaire ne réserve pas.
+        $user = $this->currentUser();
+        if (!$user->hasRole(User::ROLE_SPORTIF)) {
+            throw ApiException::forbidden('Seuls les sportifs peuvent réserver une séance.');
+        }
+
         $data = $api->json($request);
         $schema->validate($data, 'reservation');
 
-        $reservation = $this->service->reserve($this->currentUser(), (int) $data['seanceId']);
+        $reservation = $this->service->reserve($user, (int) $data['seanceId']);
         $session = $reservation->getSession();
 
-        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable()) + [
+        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable(), viewer: $user) + [
             'nombrePlaces' => 1,
             'montantTotal' => $session?->getPrice(),
         ], 201);
@@ -66,10 +72,11 @@ final class ReservationController extends AbstractController
     {
         $period = $request->query->get('periode', 'a_venir') === 'historique' ? 'historique' : 'a_venir';
         $now = new \DateTimeImmutable();
+        $user = $this->currentUser();
 
         return $this->json(Pagination::fromRequest($request)->paginate(
-            $reservations->forUser($this->currentUser(), $period, $now),
-            fn (Reservation $r): array => $this->presenter->reservation($r, $now),
+            $reservations->forUser($user, $period, $now),
+            fn (Reservation $r): array => $this->presenter->reservation($r, $now, viewer: $user),
         ));
     }
 
@@ -79,7 +86,7 @@ final class ReservationController extends AbstractController
         $reservation = $reservations->find($id) ?? throw ApiException::notFound('Réservation introuvable.');
         $this->denyAccessUnlessGranted(ReservationVoter::VIEW, $reservation);
 
-        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable()));
+        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable(), viewer: $this->currentUser()));
     }
 
     /** Annulation par le sportif (sp_annuler_reservation) : 409 à moins de 2 h du début. */
@@ -99,7 +106,7 @@ final class ReservationController extends AbstractController
             $this->service->cancel($user, $reservation);
         }
 
-        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable()));
+        return $this->json($this->presenter->reservation($reservation, new \DateTimeImmutable(), viewer: $user));
     }
 
     private function currentUser(): User

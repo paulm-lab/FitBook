@@ -31,7 +31,8 @@ final class CatalogueAndReservationTest extends WebTestCase
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        // Request::create() annonce « Accept-Language: en-us » par défaut : le front envoie toujours la langue.
+        $this->client = static::createClient(server: ['HTTP_ACCEPT_LANGUAGE' => 'fr']);
         $this->client->disableReboot();
         $em = $this->em();
         (new SchemaTool($em))->createSchema($em->getMetadataFactory()->getAllMetadata());

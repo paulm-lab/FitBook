@@ -120,7 +120,8 @@ final class ProfileControllerTest extends WebTestCase
 
     private function clientWithSchema(): KernelBrowser
     {
-        $client = static::createClient();
+        // Request::create() annonce « Accept-Language: en-us » par défaut : le front envoie toujours la langue.
+        $client = static::createClient(server: ['HTTP_ACCEPT_LANGUAGE' => 'fr']);
         $em = static::getContainer()->get(EntityManagerInterface::class);
         // Base SQLite en mémoire : le schéma complet est créé à chaque client.
         if (!$em->getConnection()->createSchemaManager()->tablesExist(['user'])) {

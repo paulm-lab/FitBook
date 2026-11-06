@@ -11,8 +11,10 @@ use App\Entity\Gym;
 use App\Entity\Reservation;
 use App\Entity\Review;
 use App\Entity\Session;
+use App\Entity\User;
 use App\Enum\ReservationStatus;
 use App\Enum\SessionLevel;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Représentation JSON du catalogue (activités, coachs, salles, séances).
@@ -31,6 +33,11 @@ final class CataloguePresenter
         'intermediaire' => 'Intermédiaire',
         'avance' => 'Avancé',
     ];
+
+    /** Libellés calculés (niveaux, expérience) traduits dans la langue de la requête. */
+    public function __construct(private readonly TranslatorInterface $translator)
+    {
+    }
 
     /** @return array<string, mixed> */
     public function activity(Activity $activity): array
@@ -63,7 +70,7 @@ final class CataloguePresenter
             'specialites' => $coach->getSpecialities(),
             'description' => $coach->getBio(),
             'biographie' => $coach->getBio(),
-            'experience' => $coach->getExperienceYears() !== null ? $coach->getExperienceYears() . ' ans' : null,
+            'experience' => $coach->getExperienceYears() !== null ? $this->translator->trans('{count} ans', ['{count}' => $coach->getExperienceYears(), '%count%' => $coach->getExperienceYears()]) : null,
             'experienceAnnees' => $coach->getExperienceYears(),
             'certification' => $coach->getCertifications(),
             'tarifHoraire' => $coach->getHourlyRate(),
@@ -191,18 +198,22 @@ final class CataloguePresenter
     /**
      * Réservation vue par le sportif (ou par l'organisateur, avec $withUser).
      *
+     * Le jeton du QR code est un secret du sportif : il n'est renvoyé qu'à lui ($viewer),
+     * jamais au coach, au gestionnaire ni à l'administrateur.
+     *
      * @return array<string, mixed>
      */
-    public function reservation(Reservation $reservation, \DateTimeImmutable $now, bool $withUser = false, ?int $confirmedCount = null): array
+    public function reservation(Reservation $reservation, \DateTimeImmutable $now, bool $withUser = false, ?int $confirmedCount = null, ?User $viewer = null): array
     {
         $session = $reservation->getSession();
+        $isOwner = $viewer !== null && $viewer->getId() !== null && $reservation->getUser()?->getId() === $viewer->getId();
         $data = [
             'id' => $reservation->getId(),
             'statut' => $reservation->getStatus()->value,
             'dateReservation' => $reservation->getCreatedAt()->format(\DATE_ATOM),
             'dateAnnulation' => $reservation->getCancelledAt()?->format(\DATE_ATOM),
             'annulable' => $reservation->isCancellable($now),
-            'qrToken' => $reservation->getStatus() === ReservationStatus::Confirmee ? $reservation->getQrToken() : null,
+            'qrToken' => $isOwner && $reservation->getStatus() === ReservationStatus::Confirmee ? $reservation->getQrToken() : null,
             'seance' => $session ? $this->session($session, $confirmedCount ?? $session->getConfirmedCount()) : null,
         ];
 
@@ -258,6 +269,8 @@ final class CataloguePresenter
             static fn (string $l): bool => \in_array($l, $levels, true),
         ));
 
-        return $ordered === [] ? 'Tous niveaux' : implode(', ', array_map(static fn (string $l): string => self::LEVEL_LABELS[$l], $ordered));
+        return $ordered === []
+            ? $this->translator->trans('Tous niveaux')
+            : implode(', ', array_map(fn (string $l): string => $this->translator->trans(self::LEVEL_LABELS[$l]), $ordered));
     }
 }

@@ -9,9 +9,13 @@ use App\Entity\User;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * E-mails transactionnels de FitBook (template Twig unique : emails/message.html.twig).
+ *
+ * Chaque e-mail est rédigé dans la langue du destinataire (User::getLocale(), fr ou en) :
+ * les textes français servent de clés de traduction (translations/messages.en.yaml).
  *
  * Chaque méthode renvoie le résultat réel de l'envoi : envoyé directement ou mis en file
  * Messenger. Une exception signifie un échec : l'appelant décide du message à afficher.
@@ -22,41 +26,32 @@ final class FitBookMailer
         private readonly MailerInterface $mailer,
         private readonly MailQueueTracker $queueTracker,
         private readonly string $senderAddress,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
-    /** E-mail de test de la configuration (route /api/dev/mail-test). */
+    /** E-mail de test de la configuration (route /api/dev/mail-test), dans la langue de la requête. */
     public function sendTest(string $recipient): EmailDeliveryStatus
     {
         return $this->send(
             $recipient,
+            $this->translator->getLocale(),
             'Test e-mail FitBook',
             'Votre configuration e-mail fonctionne',
             'Cet e-mail confirme que FitBook peut envoyer des messages.',
         );
     }
 
-    /** Lien de confirmation de l'adresse e-mail après l'inscription. */
-    public function sendVerification(User $user, string $verificationUrl): EmailDeliveryStatus
-    {
-        return $this->send(
-            (string) $user->getEmail(),
-            'Vérifiez votre adresse e-mail FitBook',
-            'Confirmez votre adresse e-mail',
-            sprintf('Bonjour %s, confirmez votre adresse pour activer votre compte FitBook. Ce lien expire dans 24 heures.', $user->getFirstName()),
-            $verificationUrl,
-            'Vérifier mon adresse',
-        );
-    }
-
-    /** Bienvenue, une fois l'adresse confirmée. */
+    /** Bienvenue, juste après l'inscription. */
     public function sendRegistrationConfirmation(User $user): EmailDeliveryStatus
     {
         return $this->send(
             (string) $user->getEmail(),
-            'Votre compte FitBook est activé',
+            $user->getLocale(),
+            'Bienvenue sur FitBook',
             'Bienvenue chez FitBook',
-            sprintf('Bonjour %s, votre adresse est vérifiée et votre compte est maintenant actif. Vous pouvez découvrir les séances disponibles.', $user->getFirstName()),
+            'Bonjour {name}, votre compte est créé et vous pouvez dès maintenant vous connecter pour découvrir les séances disponibles.',
+            ['{name}' => (string) $user->getFirstName()],
         );
     }
 
@@ -65,9 +60,11 @@ final class FitBookMailer
     {
         return $this->send(
             (string) $user->getEmail(),
+            $user->getLocale(),
             'Réinitialisation de votre mot de passe FitBook',
             'Choisissez un nouveau mot de passe',
-            sprintf('Bonjour %s, une réinitialisation de votre mot de passe a été demandée. Ce lien est valable 1 heure et ne peut servir qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe actuel reste valable.', $user->getFirstName()),
+            'Bonjour {name}, une réinitialisation de votre mot de passe a été demandée. Ce lien est valable 1 heure et ne peut servir qu’une fois. Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe actuel reste valable.',
+            ['{name}' => (string) $user->getFirstName()],
             $resetUrl,
             'Réinitialiser mon mot de passe',
         );
@@ -115,33 +112,43 @@ final class FitBookMailer
         );
     }
 
-    /** E-mail de réservation avec le récapitulatif de la séance. */
+    /** E-mail de réservation avec le récapitulatif de la séance, dans la langue du sportif. */
     private function sendReservationNotice(Reservation $reservation, string $subject, string $title, string $message): EmailDeliveryStatus
     {
         $session = $reservation->getSession();
+        $locale = $reservation->getUser()?->getLocale() ?? 'fr';
         $timezone = new \DateTimeZone(CataloguePresenter::LOCAL_TIMEZONE);
         $details = [];
 
         if ($session !== null) {
+            $label = fn (string $text): string => $this->translator->trans($text, [], 'messages', $locale);
             $details = [
-                'Séance' => (string) $session->getTitle(),
+                $label('Séance') => (string) $session->getTitle(),
                 // Dates stockées en UTC : affichées à l'heure de Bruxelles, où sont les salles.
-                'Date' => $session->getStartAt()?->setTimezone($timezone)->format('d/m/Y') ?? '',
-                'Horaire' => sprintf('%s – %s', $session->getStartAt()?->setTimezone($timezone)->format('H:i'), $session->getEndAt()?->setTimezone($timezone)->format('H:i')),
-                'Lieu' => $session->getGym()?->getName() ?? 'À préciser par le coach',
-                'Prix' => $session->getPrice() . ' €',
+                $label('Date') => $session->getStartAt()?->setTimezone($timezone)->format('d/m/Y') ?? '',
+                $label('Horaire') => sprintf('%s – %s', $session->getStartAt()?->setTimezone($timezone)->format('H:i'), $session->getEndAt()?->setTimezone($timezone)->format('H:i')),
+                $label('Lieu') => $session->getGym()?->getName() ?? $label('À préciser par le coach'),
+                $label('Prix') => $session->getPrice() . ' €',
             ];
         }
 
-        return $this->send((string) $reservation->getUser()?->getEmail(), $subject, $title, $message, null, null, $details);
+        return $this->send((string) $reservation->getUser()?->getEmail(), $locale, $subject, $title, $message, details: $details);
     }
 
-    /** @param array<string, string> $details */
+    /**
+     * Sujet, titre, message et bouton sont des clés françaises, traduites ici dans la langue
+     * du destinataire ; le template traduit ses propres mentions fixes avec la même langue.
+     *
+     * @param array<string, string> $parameters paramètres du message ({name}…)
+     * @param array<string, string> $details    récapitulatif, libellés déjà traduits
+     */
     private function send(
         string $recipient,
+        string $locale,
         string $subject,
         string $title,
         string $message,
+        array $parameters = [],
         ?string $actionUrl = null,
         ?string $actionLabel = null,
         array $details = [],
@@ -150,16 +157,21 @@ final class FitBookMailer
             throw new \InvalidArgumentException('L’adresse destinataire est absente ou invalide.');
         }
 
+        $trans = fn (string $text, array $params = []): string => $this->translator->trans($text, $params, 'messages', $locale);
+
         $email = (new TemplatedEmail())
             ->from(new Address($this->senderAddress, 'FitBook'))
             ->to($recipient)
-            ->subject($subject)
+            ->subject($trans($subject))
             ->htmlTemplate('emails/message.html.twig')
+            // Rendu du template dans cette langue, même s'il a lieu plus tard (worker Messenger).
+            ->locale($locale)
             ->context([
-                'title' => $title,
-                'message' => $message,
+                'locale' => $locale,
+                'title' => $trans($title),
+                'message' => $trans($message, $parameters),
                 'actionUrl' => $actionUrl,
-                'actionLabel' => $actionLabel,
+                'actionLabel' => $actionLabel !== null ? $trans($actionLabel) : null,
                 'details' => $details,
             ]);
 
